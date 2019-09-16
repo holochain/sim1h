@@ -1,4 +1,5 @@
 //! implementation details for dynamodb
 
-pub mod client;
 pub mod api;
+pub mod client;
+pub mod schema;

@@ -1,9 +1,9 @@
 //! settings and convenience fns for a local client
 
 use crate::dht::bbdht::dynamodb::client::client;
+use crate::dht::bbdht::dynamodb::client::Client;
 use rusoto_core::region::Region;
 use tokio::runtime::Runtime;
-use crate::dht::bbdht::dynamodb::client::Client;
 
 /// the region means nothing for a local install
 const LOCAL_REGION: &str = "us-east-1";
@@ -15,7 +15,7 @@ pub fn local_runtime() -> Runtime {
 }
 
 pub fn local_region() -> Region {
-    Region::Custom{
+    Region::Custom {
         name: LOCAL_REGION.into(),
         endpoint: LOCAL_ENDPOINT.into(),
     }
@@ -28,10 +28,10 @@ pub fn local_client() -> Client {
 #[cfg(test)]
 pub mod tests {
     use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::dht::bbdht::dynamodb::client::local::local_runtime;
     use crate::dht::bbdht::dynamodb::client::local::local_region;
-    use crate::dht::bbdht::dynamodb::client::local::LOCAL_REGION;
+    use crate::dht::bbdht::dynamodb::client::local::local_runtime;
     use crate::dht::bbdht::dynamodb::client::local::LOCAL_ENDPOINT;
+    use crate::dht::bbdht::dynamodb::client::local::LOCAL_REGION;
 
     use rusoto_core::region::Region;
 
@@ -50,7 +50,8 @@ pub mod tests {
                 name: LOCAL_REGION.into(),
                 endpoint: LOCAL_ENDPOINT.into(),
             },
-            region);
+            region
+        );
     }
 
     #[test]
