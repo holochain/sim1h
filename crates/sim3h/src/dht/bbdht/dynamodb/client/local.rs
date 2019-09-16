@@ -1,8 +1,9 @@
+//! settings and convenience fns for a local client
+
 use crate::dht::bbdht::dynamodb::client::client;
-use dynomite::dynamodb::DynamoDbClient;
 use rusoto_core::region::Region;
 use tokio::runtime::Runtime;
-use dynomite::retry::RetryingDynamoDb;
+use crate::dht::bbdht::dynamodb::client::Client;
 
 /// the region means nothing for a local install
 const LOCAL_REGION: &str = "us-east-1";
@@ -20,24 +21,19 @@ pub fn local_region() -> Region {
     }
 }
 
-pub fn local_client() -> RetryingDynamoDb<DynamoDbClient> {
+pub fn local_client() -> Client {
     client(local_region())
 }
 
 #[cfg(test)]
 pub mod tests {
-    use crate::dht::bbdht::dynamodb::local::local_client;
-    use crate::dht::bbdht::dynamodb::local::local_runtime;
-    use crate::dht::bbdht::dynamodb::local::local_region;
-    use crate::dht::bbdht::dynamodb::local::LOCAL_REGION;
-    use crate::dht::bbdht::dynamodb::local::LOCAL_ENDPOINT;
-    use dynomite::{
-        dynamodb::{
-            DynamoDb, ListTablesInput
-        },
-    };
+    use crate::dht::bbdht::dynamodb::client::local::local_client;
+    use crate::dht::bbdht::dynamodb::client::local::local_runtime;
+    use crate::dht::bbdht::dynamodb::client::local::local_region;
+    use crate::dht::bbdht::dynamodb::client::local::LOCAL_REGION;
+    use crate::dht::bbdht::dynamodb::client::local::LOCAL_ENDPOINT;
+
     use rusoto_core::region::Region;
-    use rusoto_dynamodb::ListTablesOutput;
 
     #[test]
     /// boot a local runtime
@@ -58,18 +54,7 @@ pub mod tests {
     }
 
     #[test]
-    /// we should be able to open up a connection to the local db and find it empty
-    fn local_client_test() {
-        let client = local_client();
-
-        let list_tables_input: ListTablesInput = Default::default();
-
-        let foo = local_runtime().block_on(client.list_tables(list_tables_input));
-
-        assert_eq!(
-            Ok(ListTablesOutput { last_evaluated_table_name: None, table_names: Some([].to_vec()) }),
-            foo
-        );
-
+    fn local_client_smoke_test() {
+        local_client();
     }
 }

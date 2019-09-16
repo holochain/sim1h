@@ -1,10 +1,14 @@
+pub mod local;
+
 use dynomite::Retries;
 use dynomite::dynamodb::DynamoDbClient;
 use rusoto_core::Region;
 use dynomite::retry::Policy;
 use dynomite::retry::RetryingDynamoDb;
 
-pub fn client (region: Region) -> RetryingDynamoDb<DynamoDbClient> {
+pub type Client = RetryingDynamoDb<DynamoDbClient>;
+
+pub fn client (region: Region) -> Client {
     DynamoDbClient::new(region).with_retries(Policy::default())
 }
 
