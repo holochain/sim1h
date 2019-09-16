@@ -10,8 +10,17 @@ const LOCAL_REGION: &str = "us-east-1";
 /// the endpoint needs to be explicitly set to hit the local database
 const LOCAL_ENDPOINT: &str = "http://localhost:8000";
 
+// lazy_static! {
+//     static ref LOCAL_RUNTIME: Runtime = {
+//         Runtime::new().expect("failed to initialize futures runtime for local dynamodb client")
+//     };
+// }
+
 pub fn local_runtime() -> Runtime {
+    // tokio_executor::enter()
+    // .expect("Multiple executors at once");
     Runtime::new().expect("failed to initialize futures runtime for local dynamodb client")
+    // &mut *LOCAL_RUNTIME
 }
 
 pub fn local_region() -> Region {
