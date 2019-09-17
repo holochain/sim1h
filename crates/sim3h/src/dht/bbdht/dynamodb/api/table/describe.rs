@@ -19,6 +19,14 @@ pub fn describe_table(
 #[cfg(test)]
 pub mod test {
 
+    use crate::dht::bbdht::dynamodb::api::fixture::attribute_definitions_a;
+    use crate::dht::bbdht::dynamodb::api::fixture::key_schema_a;
+    use crate::dht::bbdht::dynamodb::api::fixture::table_name_fresh;
+    use crate::dht::bbdht::dynamodb::api::table::create::create_table;
+    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
+    use crate::dht::bbdht::dynamodb::client::local::local_client;
+    use crate::test::setup;
+
     #[test]
     fn describe_table_test() {
         setup();
@@ -35,23 +43,21 @@ pub mod test {
         );
 
         info!("create_table_test create the table");
-        let create_table_result = create_table(
+        assert!(create_table(
             &local_client,
             &table_name,
             &key_schema,
             &attribute_definitions,
-        );
+        )
+        .is_ok());
 
         info!(
             "create_table_test check the table was created {}",
             table_name
         );
-        assert!(create_table_result.is_ok());
         assert!(
             table_exists(&local_client, &table_name).expect("could not check that table exists")
         );
-
-            
     }
 
 }

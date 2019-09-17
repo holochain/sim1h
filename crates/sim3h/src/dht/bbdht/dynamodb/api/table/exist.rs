@@ -33,7 +33,6 @@ pub fn until_table_exists_or_not(client: &Client, table_name: &str, exists: bool
     loop {
         match table_exists(client, table_name) {
             Ok(does_exist) => {
-                info!("{} {}", exists, does_exist);
                 if exists == does_exist {
                     break;
                 }

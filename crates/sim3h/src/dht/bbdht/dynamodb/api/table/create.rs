@@ -1,6 +1,9 @@
+use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
 use crate::dht::bbdht::dynamodb::api::table::exist::until_table_exists;
 use crate::dht::bbdht::dynamodb::client::Client;
-use dynomite::dynamodb::{CreateTableError, CreateTableInput, CreateTableOutput};
+use dynomite::dynamodb::{
+    CreateTableError, CreateTableInput, CreateTableOutput, DescribeTableError,
+};
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::AttributeDefinition;
 use rusoto_dynamodb::DynamoDb;
@@ -37,10 +40,18 @@ pub fn create_table_if_not_exists(
 ) -> Result<Option<CreateTableOutput>, RusotoError<CreateTableError>> {
     // well in reality we end up with concurrency issues if we do a list or describe
     // there is a specific error returned for a table that already exists so we defuse to None
-    match create_table(client, table_name, key_schema, attribute_definitions) {
-        Ok(created) => Ok(Some(created)),
-        Err(RusotoError::Service(CreateTableError::ResourceInUse(_))) => Ok(None),
-        Err(err) => Err(err),
+    match table_exists(client, table_name) {
+        Ok(false) => match create_table(client, table_name, key_schema, attribute_definitions) {
+            Ok(created) => Ok(Some(created)),
+            Err(RusotoError::Service(CreateTableError::ResourceInUse(_))) => Ok(None),
+            Err(err) => Err(err),
+        },
+        Ok(true) => Ok(None),
+        Err(RusotoError::Service(DescribeTableError::InternalServerError(err))) => Err(
+            RusotoError::Service(CreateTableError::InternalServerError(err)),
+        ),
+        // the only other error is resource in use which is false for table exists
+        _ => unreachable!(),
     }
 }
 
@@ -72,18 +83,18 @@ pub mod test {
         );
 
         info!("create_table_test create the table");
-        let create_table_result = create_table(
+        assert!(create_table(
             &local_client,
             &table_name,
             &key_schema,
             &attribute_definitions,
-        );
+        )
+        .is_ok());
 
         info!(
             "create_table_test check the table was created {}",
             table_name
         );
-        assert!(create_table_result.is_ok());
         assert!(
             table_exists(&local_client, &table_name).expect("could not check that table exists")
         );
@@ -103,30 +114,27 @@ pub mod test {
         assert!(!table_exists(&local_client, &table_name).unwrap());
 
         info!("create_table_if_not_exists_test creating table if not exists (first call)");
-        let create_table_if_not_exists_result = create_table_if_not_exists(
+        assert!(create_table_if_not_exists(
             &local_client,
             &table_name,
             &key_schema,
             &attribute_definitions,
-        );
+        )
+        .is_ok());
 
         info!("create_table_if_not_exists_test check table exists");
-        assert!(create_table_if_not_exists_result.is_ok());
         assert!(table_exists(&local_client, &table_name).unwrap());
 
-        info!("create_table_if_not_exists_test create the same table again");
-        let create_table_if_not_exists_result_2 = create_table_if_not_exists(
-            &local_client,
-            &table_name,
-            &key_schema,
-            &attribute_definitions,
-        );
-
-        info!("create_table_if_not_exists_test check table exists");
-        assert!(create_table_if_not_exists_result_2.is_ok());
+        info!("create_table_if_not_exists_test check create again");
         assert_eq!(
             None,
-            create_table_if_not_exists_result_2.expect("could not check table")
+            create_table_if_not_exists(
+                &local_client,
+                &table_name,
+                &key_schema,
+                &attribute_definitions,
+            )
+            .expect("could not check table")
         );
         assert!(table_exists(&local_client, &table_name).unwrap());
     }
