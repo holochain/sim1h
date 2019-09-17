@@ -16,11 +16,6 @@ pub fn put_content(
     table_name: &str,
     content: &dyn AddressableContent,
 ) -> Result<PutItemOutput, RusotoError<PutItemError>> {
-    // let mut item = PutItemInputAttributeMap::default();
-    // item.insert(
-    //     String::from(content.address()),
-    //     val!(S => String::from(content.content())),
-    // );
     let mut item = HashMap::new();
     item.insert(
         String::from(ADDRESS_KEY),
