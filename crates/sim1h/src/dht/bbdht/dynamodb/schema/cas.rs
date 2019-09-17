@@ -3,8 +3,8 @@ use crate::dht::bbdht::dynamodb::schema::string_attribute_definition;
 use rusoto_dynamodb::AttributeDefinition;
 use rusoto_dynamodb::KeySchemaElement;
 
-const ADDRESS_KEY: &str = "address";
-const CONTENT_KEY: &str = "content";
+pub const ADDRESS_KEY: &str = "address";
+pub const CONTENT_KEY: &str = "content";
 
 pub fn address_key_schema() -> KeySchemaElement {
     hash_key(ADDRESS_KEY)

@@ -7,6 +7,8 @@ use std::collections::HashMap;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use rusoto_dynamodb::PutItemError;
 use rusoto_dynamodb::PutItemInput;
+use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
+use crate::dht::bbdht::dynamodb::schema::cas::CONTENT_KEY;
 use rusoto_dynamodb::PutItemOutput;
 
 pub fn put_content(
@@ -21,11 +23,11 @@ pub fn put_content(
     // );
     let mut item = HashMap::new();
     item.insert(
-        String::from("address"),
+        String::from(ADDRESS_KEY),
         string_attribute_value(&String::from(content.address())),
     );
     item.insert(
-        String::from("content"),
+        String::from(CONTENT_KEY),
         string_attribute_value(&String::from(content.content())),
     );
 
@@ -38,39 +40,34 @@ pub fn put_content(
         .sync()
 }
 
-// #[cfg(test)]
-// pub mod tests {
-//
-//     use crate::test::setup;
-//     use crate::dht::bbdht::dynamodb::client::local::local_client;
-//     use crate::dht::bbdht::dynamodb::api::item::fixture::content_fresh;
-//     use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
-//     use crate::dht::bbdht::dynamodb::api::table::create::create_table;
-//     use crate::dht::bbdht::dynamodb::schema::cas::key_schema_cas;
-//     use crate::dht::bbdht::dynamodb::schema::cas::attribute_definitions_cas;
-//     use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
-//     use crate::dht::bbdht::dynamodb::api::item::write::put_content;
-//
-//     #[test]
-//     fn put_content_test() {
-//         setup();
-//
-//         info!("put_content_test fixtures");
-//         let local_client = local_client();
-//         let table_name = table_name_fresh();
-//         let key_schema = key_schema_cas();
-//         let attribute_definitions = attribute_definitions_cas();
-//         let content = content_fresh();
-//
-//         // info!("put_content_test create table");
-//         // assert!(create_table(&local_client, &table_name, &key_schema, &attribute_definitions).is_ok());
-//         //
-//         // info!("put_content_test check table exists");
-//         // assert!(table_exists(&local_client, &table_name).expect("could not check table exists"));
-//         //
-//         // info!("put_content_test put content");
-//         // println!("{:?}", put_content(&local_client, &table_name, &content));
-//         // assert!(put_content(&local_client, &table_name, &content).is_ok());
-//     }
-//
-// }
+#[cfg(test)]
+pub mod tests {
+
+    use crate::test::setup;
+    use crate::dht::bbdht::dynamodb::client::local::local_client;
+    use crate::dht::bbdht::dynamodb::api::item::fixture::content_fresh;
+    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
+    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
+    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
+    use crate::dht::bbdht::dynamodb::api::item::write::put_content;
+
+    #[test]
+    fn put_content_test() {
+        setup();
+
+        info!("put_content_test fixtures");
+        let local_client = local_client();
+        let table_name = table_name_fresh();
+        let content = content_fresh();
+
+        info!("put_content_test ensure cas table");
+        assert!(ensure_cas_table(&local_client, &table_name).is_ok());
+
+        info!("put_content_test check table exists");
+        assert!(table_exists(&local_client, &table_name).expect("could not check table exists"));
+
+        info!("put_content_test put content");
+        assert!(put_content(&local_client, &table_name, &content).is_ok());
+    }
+
+}
