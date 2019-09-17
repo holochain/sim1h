@@ -7,21 +7,22 @@ pub fn table_exists(
     client: &Client,
     table_name: &str,
 ) -> Result<bool, RusotoError<DescribeTableError>> {
-    let describe_table_result = describe_table(client, table_name);
-    match describe_table_result {
-        Ok(describe_table_output) => Ok(match describe_table_output.table {
-            Some(table_description) => match table_description.table_status {
-                Some(status) => {
-                    if status == "ACTIVE".to_string() {
-                        true
-                    } else {
-                        false
-                    }
+    let table_description_result = describe_table(client, table_name);
+    match table_description_result {
+        Ok(table_description) => {
+            Ok(
+                match table_description.table_status {
+                    Some(status) => {
+                        if status == "ACTIVE".to_string() {
+                            true
+                        } else {
+                            false
+                        }
+                    },
+                    _ => false,
                 }
-                _ => false,
-            },
-            _ => false,
-        }),
+            )
+        },
         Err(err) => match err {
             RusotoError::Service(DescribeTableError::ResourceNotFound(_)) => Ok(false),
             _ => Err(err),

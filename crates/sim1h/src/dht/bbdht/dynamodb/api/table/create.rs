@@ -1,9 +1,7 @@
 use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
 use crate::dht::bbdht::dynamodb::api::table::exist::until_table_exists;
 use crate::dht::bbdht::dynamodb::client::Client;
-use dynomite::dynamodb::{
-    CreateTableError, CreateTableInput, DescribeTableError,
-};
+use dynomite::dynamodb::{CreateTableError, CreateTableInput, DescribeTableError};
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::AttributeDefinition;
 use rusoto_dynamodb::DynamoDb;
