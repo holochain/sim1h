@@ -1,6 +1,8 @@
 use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
 use crate::dht::bbdht::dynamodb::api::table::exist::until_table_exists;
 use crate::dht::bbdht::dynamodb::client::Client;
+use crate::dht::bbdht::dynamodb::schema::cas::attribute_definitions_cas;
+use crate::dht::bbdht::dynamodb::schema::cas::key_schema_cas;
 use dynomite::dynamodb::{CreateTableError, CreateTableInput, DescribeTableError};
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::AttributeDefinition;
@@ -54,8 +56,16 @@ pub fn ensure_table(
     }
 }
 
-pub fn ensure_cas_table(client: &Client, table_name: &str) -> Result<Option<TableDescription>, RusotoError<CreateTableError>> {
-    ensure_table(client, table_name, key_schema_cas(), attribute_definitions_cas())
+pub fn ensure_cas_table(
+    client: &Client,
+    table_name: &str,
+) -> Result<Option<TableDescription>, RusotoError<CreateTableError>> {
+    ensure_table(
+        client,
+        table_name,
+        &key_schema_cas(),
+        &attribute_definitions_cas(),
+    )
 }
 
 #[cfg(test)]
@@ -63,9 +73,13 @@ pub mod test {
     use crate::dht::bbdht::dynamodb::api::table::create::create_table;
     use crate::dht::bbdht::dynamodb::api::table::create::ensure_table;
 
+    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
+    use crate::dht::bbdht::dynamodb::api::table::describe::describe_table;
     use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
     use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
+    use crate::dht::bbdht::dynamodb::schema::cas::attribute_definitions_cas;
+    use crate::dht::bbdht::dynamodb::schema::cas::key_schema_cas;
     use crate::dht::bbdht::dynamodb::schema::fixture::attribute_definitions_a;
     use crate::dht::bbdht::dynamodb::schema::fixture::key_schema_a;
     use crate::test::setup;
@@ -149,15 +163,25 @@ pub mod test {
         info!("ensure_cas_table_test fixtures");
         let local_client = local_client();
         let table_name = table_name_fresh();
-        let key_schema = key_schema_cas();
-        let attribute_definitions = attribute_definitions_cas();
 
         info!("ensure_cas_table_test create cas table");
-        assert!(create_table(&local_client, &table_name, &key_schema, &attribute_definitions).is_ok());
+        assert!(ensure_cas_table(&local_client, &table_name).is_ok());
 
         info!("ensure_cas_table_test check table schema");
-        println!("{:?}", describe_table(&local_client, &table_name));
+        let table_description =
+            describe_table(&local_client, &table_name).expect("could not describe table");
 
+        assert_eq!(Some(key_schema_cas()), table_description.key_schema);
+        assert_eq!(
+            Some(attribute_definitions_cas()),
+            table_description.attribute_definitions
+        );
+
+        info!("ensure_cas_table_test thrash a bit");
+        for _ in 0..100 {
+            info!("thrashing the cas");
+            assert!(ensure_cas_table(&local_client, &table_name).is_ok());
+        }
     }
 
 }
