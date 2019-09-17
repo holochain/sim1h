@@ -2,20 +2,21 @@ use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
 use crate::dht::bbdht::dynamodb::api::table::exist::until_table_exists;
 use crate::dht::bbdht::dynamodb::client::Client;
 use dynomite::dynamodb::{
-    CreateTableError, CreateTableInput, CreateTableOutput, DescribeTableError,
+    CreateTableError, CreateTableInput, DescribeTableError,
 };
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::AttributeDefinition;
 use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::KeySchemaElement;
 use rusoto_dynamodb::ProvisionedThroughput;
+use rusoto_dynamodb::TableDescription;
 
 pub fn create_table(
     client: &Client,
     table_name: &str,
     key_schema: &Vec<KeySchemaElement>,
     attribute_definitions: &Vec<AttributeDefinition>,
-) -> Result<CreateTableOutput, RusotoError<CreateTableError>> {
+) -> Result<Option<TableDescription>, RusotoError<CreateTableError>> {
     let create_table_input = CreateTableInput {
         table_name: table_name.to_string(),
         key_schema: key_schema.clone(),
@@ -29,7 +30,7 @@ pub fn create_table(
 
     let output = client.create_table(create_table_input).sync()?;
     until_table_exists(client, table_name);
-    Ok(output)
+    Ok(output.table_description)
 }
 
 pub fn create_table_if_not_exists(
@@ -37,12 +38,12 @@ pub fn create_table_if_not_exists(
     table_name: &str,
     key_schema: &Vec<KeySchemaElement>,
     attribute_definitions: &Vec<AttributeDefinition>,
-) -> Result<Option<CreateTableOutput>, RusotoError<CreateTableError>> {
+) -> Result<Option<TableDescription>, RusotoError<CreateTableError>> {
     // well in reality we end up with concurrency issues if we do a list or describe
     // there is a specific error returned for a table that already exists so we defuse to None
     match table_exists(client, table_name) {
         Ok(false) => match create_table(client, table_name, key_schema, attribute_definitions) {
-            Ok(created) => Ok(Some(created)),
+            Ok(created) => Ok(created),
             Err(RusotoError::Service(CreateTableError::ResourceInUse(_))) => Ok(None),
             Err(err) => Err(err),
         },
