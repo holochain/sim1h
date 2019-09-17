@@ -21,3 +21,5 @@ uuid = { version = "=0.4", features = ["v4"] }
 log = "=0.4.8"
 env_logger = "=0.6.2"
 lazy_static = "=1.2.0"
+holochain_persistence_api = "=0.0.8"
+holochain_json_api = "=0.0.17"

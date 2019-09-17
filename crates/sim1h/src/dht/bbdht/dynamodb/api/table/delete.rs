@@ -21,13 +21,13 @@ pub fn delete_table(
 #[cfg(test)]
 pub mod test {
 
-    use crate::dht::bbdht::dynamodb::schema::fixture::attribute_definitions_a;
-    use crate::dht::bbdht::dynamodb::schema::fixture::key_schema_a;
-    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
     use crate::dht::bbdht::dynamodb::api::table::create::create_table;
     use crate::dht::bbdht::dynamodb::api::table::delete::delete_table;
     use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
+    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
+    use crate::dht::bbdht::dynamodb::schema::fixture::attribute_definitions_a;
+    use crate::dht::bbdht::dynamodb::schema::fixture::key_schema_a;
     use crate::test::setup;
 
     #[test]

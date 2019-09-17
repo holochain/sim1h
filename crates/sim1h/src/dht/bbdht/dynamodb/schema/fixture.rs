@@ -1,8 +1,8 @@
-use uuid::Uuid;
-use rusoto_dynamodb::KeySchemaElement;
 use crate::dht::bbdht::dynamodb::schema::hash_key;
+use crate::dht::bbdht::dynamodb::schema::string_attribute_definition;
 use rusoto_dynamodb::AttributeDefinition;
-use crate::dht::bbdht::dynamodb::schema::string_attribute;
+use rusoto_dynamodb::KeySchemaElement;
+use uuid::Uuid;
 
 pub fn primary_key_attribute_name_a() -> String {
     "key_a".into()
@@ -17,5 +17,5 @@ pub fn key_schema_a() -> Vec<KeySchemaElement> {
 }
 
 pub fn attribute_definitions_a() -> Vec<AttributeDefinition> {
-    vec![string_attribute(&primary_key_attribute_name_a())]
+    vec![string_attribute_definition(&primary_key_attribute_name_a())]
 }

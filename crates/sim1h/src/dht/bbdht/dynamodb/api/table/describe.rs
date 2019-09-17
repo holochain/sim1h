@@ -26,13 +26,13 @@ pub fn describe_table(
 #[cfg(test)]
 pub mod test {
 
+    use crate::dht::bbdht::dynamodb::api::table::create::create_table;
+    use crate::dht::bbdht::dynamodb::api::table::describe::describe_table;
+    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
+    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
+    use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::dht::bbdht::dynamodb::schema::fixture::attribute_definitions_a;
     use crate::dht::bbdht::dynamodb::schema::fixture::key_schema_a;
-    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
-    use crate::dht::bbdht::dynamodb::api::table::create::create_table;
-    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::dht::bbdht::dynamodb::api::table::describe::describe_table;
     use crate::test::setup;
 
     use rusoto_core::RusotoError;
@@ -73,7 +73,9 @@ pub mod test {
         info!("describe_table_test check the description of the table");
         assert_eq!(
             Some(String::from("ACTIVE")),
-            describe_table(&local_client, &table_name).expect("could not describe table").table_status,
+            describe_table(&local_client, &table_name)
+                .expect("could not describe table")
+                .table_status,
         );
     }
 
@@ -88,7 +90,9 @@ pub mod test {
         info!("describe_table_missing_test describe a table that does not exist");
         let description = describe_table(&local_client, &table_name);
         assert_eq!(
-            Err(RusotoError::Service(DescribeTableError::ResourceNotFound(String::from("Cannot do operations on a non-existent table")))),
+            Err(RusotoError::Service(DescribeTableError::ResourceNotFound(
+                String::from("Cannot do operations on a non-existent table")
+            ))),
             description,
         );
     }

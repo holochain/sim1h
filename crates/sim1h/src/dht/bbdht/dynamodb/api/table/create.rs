@@ -31,7 +31,7 @@ pub fn create_table(
     Ok(output.table_description)
 }
 
-pub fn create_table_if_not_exists(
+pub fn ensure_table(
     client: &Client,
     table_name: &str,
     key_schema: &Vec<KeySchemaElement>,
@@ -54,16 +54,20 @@ pub fn create_table_if_not_exists(
     }
 }
 
+pub fn ensure_cas_table(client: &Client, table_name: &str) -> Result<Option<TableDescription>, RusotoError<CreateTableError>> {
+    ensure_table(client, table_name, key_schema_cas(), attribute_definitions_cas())
+}
+
 #[cfg(test)]
 pub mod test {
     use crate::dht::bbdht::dynamodb::api::table::create::create_table;
-    use crate::dht::bbdht::dynamodb::api::table::create::create_table_if_not_exists;
+    use crate::dht::bbdht::dynamodb::api::table::create::ensure_table;
 
+    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
+    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
+    use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::dht::bbdht::dynamodb::schema::fixture::attribute_definitions_a;
     use crate::dht::bbdht::dynamodb::schema::fixture::key_schema_a;
-    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
-    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::test::setup;
 
     #[test]
@@ -100,20 +104,20 @@ pub mod test {
     }
 
     #[test]
-    fn create_table_if_not_exists_test() {
+    fn ensure_table_test() {
         setup();
 
-        info!("create_table_if_not_exists_test fixtures");
+        info!("ensure_table_test fixtures");
         let local_client = local_client();
         let table_name = table_name_fresh();
         let key_schema = key_schema_a();
         let attribute_definitions = attribute_definitions_a();
 
-        info!("create_table_if_not_exists_test checking table not exists");
+        info!("ensure_table_test checking table not exists");
         assert!(!table_exists(&local_client, &table_name).unwrap());
 
-        info!("create_table_if_not_exists_test creating table if not exists (first call)");
-        assert!(create_table_if_not_exists(
+        info!("ensure_table_test creating table if not exists (first call)");
+        assert!(ensure_table(
             &local_client,
             &table_name,
             &key_schema,
@@ -121,13 +125,13 @@ pub mod test {
         )
         .is_ok());
 
-        info!("create_table_if_not_exists_test check table exists");
+        info!("ensure_table_test check table exists");
         assert!(table_exists(&local_client, &table_name).unwrap());
 
-        info!("create_table_if_not_exists_test check create again");
+        info!("ensure_table_test check create again");
         assert_eq!(
             None,
-            create_table_if_not_exists(
+            ensure_table(
                 &local_client,
                 &table_name,
                 &key_schema,
@@ -136,6 +140,24 @@ pub mod test {
             .expect("could not check table")
         );
         assert!(table_exists(&local_client, &table_name).unwrap());
+    }
+
+    #[test]
+    fn ensure_cas_table_test() {
+        setup();
+
+        info!("ensure_cas_table_test fixtures");
+        let local_client = local_client();
+        let table_name = table_name_fresh();
+        let key_schema = key_schema_cas();
+        let attribute_definitions = attribute_definitions_cas();
+
+        info!("ensure_cas_table_test create cas table");
+        assert!(create_table(&local_client, &table_name, &key_schema, &attribute_definitions).is_ok());
+
+        info!("ensure_cas_table_test check table schema");
+        println!("{:?}", describe_table(&local_client, &table_name));
+
     }
 
 }
