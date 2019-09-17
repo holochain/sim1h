@@ -27,8 +27,8 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::client::local::LOCAL_ENDPOINT;
     use crate::dht::bbdht::dynamodb::client::local::LOCAL_REGION;
 
-    use rusoto_core::region::Region;
     use crate::test::setup;
+    use rusoto_core::region::Region;
 
     #[test]
     /// check the value is what we want

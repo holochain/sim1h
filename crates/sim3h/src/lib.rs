@@ -8,5 +8,5 @@ extern crate futures;
 
 pub mod dht;
 pub mod protocol_map;
-pub mod workflow;
 pub mod test;
+pub mod workflow;
