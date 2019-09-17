@@ -1,4 +1,4 @@
-# sim3h
+# sim1h
 
 A simulator/emulator for [lib3h](https://github.com/holochain/lib3h).
 

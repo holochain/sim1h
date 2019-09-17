@@ -1,5 +1,5 @@
 [package]
-name = "sim3h"
+name = "sim1h"
 version = "0.0.1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
@@ -8,8 +8,8 @@ keywords = ["holochain", "holo", "p2p", "network", "simulation"]
 categories = ["network-programming"]
 license = "Apache-2.0"
 readme = "readme.md"
-documentation = "https://github.com/holochain/sim3h"
-repository = "https://github.com/holochain/sim3h"
+documentation = "https://github.com/holochain/sim1h"
+repository = "https://github.com/holochain/sim1h"
 
 [dependencies]
 rusoto_core = "=0.40.0"

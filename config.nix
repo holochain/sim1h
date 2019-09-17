@@ -93,7 +93,7 @@ See:
    owner = "holochain";
 
    # repository name on github that release are deployed to
-   repo = "sim3h";
+   repo = "sim1h";
 
    # canonical local upstream name as per `git remote -v`
    upstream = "origin";
