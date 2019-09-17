@@ -52,3 +52,44 @@ pub fn until_table_exists(client: &Client, table_name: &str) {
 pub fn until_table_not_exists(client: &Client, table_name: &str) {
     until_table_exists_or_not(client, table_name, false);
 }
+
+#[cfg(test)]
+pub mod tests {
+
+    use crate::test::setup;
+    use crate::dht::bbdht::dynamodb::client::local::local_client;
+    use crate::dht::bbdht::dynamodb::api::fixture::table_name_fresh;
+    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
+    use crate::dht::bbdht::dynamodb::api::table::create::create_table;
+    use crate::dht::bbdht::dynamodb::api::fixture::key_schema_a;
+    use crate::dht::bbdht::dynamodb::api::fixture::attribute_definitions_a;
+    use crate::dht::bbdht::dynamodb::api::table::delete::delete_table;
+
+    #[test]
+    fn table_exists_test() {
+        setup();
+
+        info!("table_exists_test fixtures");
+
+        let local_client = local_client();
+        let table_name = table_name_fresh();
+        let key_schema = key_schema_a();
+        let attribute_definitions = attribute_definitions_a();
+
+        info!("table_exists_test table not exists before created");
+        assert!(!table_exists(&local_client, &table_name).expect("could not check if table exists"));
+
+        info!("table_exists_test create a table");
+        assert!(create_table(&local_client, &table_name, &key_schema, &attribute_definitions).is_ok());
+
+        info!("table_exists_test table exists after create");
+        assert!(table_exists(&local_client, &table_name).expect("could not check if table exists"));
+
+        info!("table_exists_test delete the table");
+        assert!(delete_table(&local_client, &table_name).is_ok());
+
+        info!("table_exists_test table not exists after delete");
+        assert!(!table_exists(&local_client, &table_name).expect("could not check if table exists"));
+    }
+
+}
