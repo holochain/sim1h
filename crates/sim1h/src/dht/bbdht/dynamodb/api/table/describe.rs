@@ -26,9 +26,9 @@ pub fn describe_table(
 #[cfg(test)]
 pub mod test {
 
-    use crate::dht::bbdht::dynamodb::api::fixture::attribute_definitions_a;
-    use crate::dht::bbdht::dynamodb::api::fixture::key_schema_a;
-    use crate::dht::bbdht::dynamodb::api::fixture::table_name_fresh;
+    use crate::dht::bbdht::dynamodb::schema::fixture::attribute_definitions_a;
+    use crate::dht::bbdht::dynamodb::schema::fixture::key_schema_a;
+    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
     use crate::dht::bbdht::dynamodb::api::table::create::create_table;
     use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
