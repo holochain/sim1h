@@ -6,7 +6,9 @@ use rusoto_dynamodb::AttributeDefinition;
 use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::KeySchemaElement;
 use rusoto_dynamodb::ProvisionedThroughput;
-use tokio::runtime::Runtime;
+// use futures::future::Future;
+// use futures::Async::Ready;
+// use crate::dht::bbdht::dynamodb::client::local::poll_until_result;
 
 pub fn create_table(
     client: &Client,
@@ -25,20 +27,12 @@ pub fn create_table(
         ..Default::default()
     };
 
-    let create_table_future = client.create_table(create_table_input);
-    loop {
-        match create_table_future.poll() {
-        Ok(create_table_output) => {
-            wait_until_table_exists_or_not(runtime, client, table_name, true);
-            Ok(create_table_output)
-        }
-        Err(err) => Err(err)
-    }
-    }
+    let output = client.create_table(create_table_input).sync();
+    wait_until_table_exists_or_not(client, table_name, true);
+    output
 }
 
 pub fn create_table_if_not_exists(
-    runtime: &mut Runtime,
     client: &Client,
     table_name: &str,
     key_schema: &Vec<KeySchemaElement>,
@@ -47,7 +41,6 @@ pub fn create_table_if_not_exists(
     // well in reality we end up with concurrency issues if we do a list or describe
     // there is a specific error returned for a table that already exists so we defuse to None
     match create_table(
-        runtime,
         client,
         table_name,
         key_schema,
@@ -69,7 +62,6 @@ pub mod test {
     use crate::dht::bbdht::dynamodb::api::fixture::table_name_fresh;
     use crate::dht::bbdht::dynamodb::api::list_tables::table_exists;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::dht::bbdht::dynamodb::client::local::local_runtime;
     use crate::test::setup;
 
     #[test]
@@ -77,7 +69,6 @@ pub mod test {
         setup();
 
         info!("create_table_test fixtures");
-        let mut local_runtime = local_runtime();
         let local_client = local_client();
         let table_name = table_name_fresh();
         let key_schema = key_schema_a();
@@ -85,13 +76,12 @@ pub mod test {
 
         info!("create_table_test check table not exists at init");
         assert!(
-            !table_exists(&mut local_runtime, &local_client, &table_name)
+            !table_exists(&local_client, &table_name)
                 .expect("could not check that table exists")
         );
 
         info!("create_table_test create the table");
         let create_table_result = create_table(
-            &mut local_runtime,
             &local_client,
             &table_name,
             &key_schema,
@@ -100,36 +90,47 @@ pub mod test {
 
         info!("create_table_test check the table was created {}", table_name);
         assert!(create_table_result.is_ok());
-        assert!(table_exists(&mut local_runtime, &local_client, &table_name)
+        assert!(table_exists(&local_client, &table_name)
             .expect("could not check that table exists"));
     }
 
-    // #[test]
-    // fn create_table_if_not_exists_test() {
-    //     setup();
-    //
-    //     info!("create_table_if_not_exists_test fixtures");
-    //     let mut local_runtime = local_runtime();
-    //     let local_client = local_client();
-    //     let table_name = table_name_fresh();
-    //     let key_schema = key_schema_a();
-    //     let attribute_definitions = attribute_definitions_a();
-    //
-    //     info!("create_table_if_not_exists_test checking table not exists");
-    //     assert!(!table_exists(&mut local_runtime, &local_client, &table_name).unwrap());
-    //
-    //     info!("create_table_if_not_exists_test creating table if not exists (first call)");
-    //     let create_table_if_not_exists_result = create_table_if_not_exists(
-    //         &mut local_runtime,
-    //         &local_client,
-    //         &table_name,
-    //         &key_schema,
-    //         &attribute_definitions,
-    //     );
-    //
-    //     info!("create_table_if_not_exists_test check table exists");
-    //     assert!(create_table_if_not_exists_result.is_ok());
-    //     assert!(table_exists(&mut local_runtime, &local_client, &table_name).unwrap());
-    // }
+    #[test]
+    fn create_table_if_not_exists_test() {
+        setup();
+
+        info!("create_table_if_not_exists_test fixtures");
+        let local_client = local_client();
+        let table_name = table_name_fresh();
+        let key_schema = key_schema_a();
+        let attribute_definitions = attribute_definitions_a();
+
+        info!("create_table_if_not_exists_test checking table not exists");
+        assert!(!table_exists(&local_client, &table_name).unwrap());
+
+        info!("create_table_if_not_exists_test creating table if not exists (first call)");
+        let create_table_if_not_exists_result = create_table_if_not_exists(
+            &local_client,
+            &table_name,
+            &key_schema,
+            &attribute_definitions,
+        );
+
+        info!("create_table_if_not_exists_test check table exists");
+        assert!(create_table_if_not_exists_result.is_ok());
+        assert!(table_exists(&local_client, &table_name).unwrap());
+
+        info!("create_table_if_not_exists_test create the same table again");
+        let create_table_if_not_exists_result_2 = create_table_if_not_exists(
+            &local_client,
+            &table_name,
+            &key_schema,
+            &attribute_definitions,
+        );
+
+        info!("create_table_if_not_exists_test check table exists");
+        assert!(create_table_if_not_exists_result_2.is_ok());
+        assert_eq!(None, create_table_if_not_exists_result_2.expect("could not check table"));
+        assert!(table_exists(&local_client, &table_name).unwrap());
+    }
 
 }

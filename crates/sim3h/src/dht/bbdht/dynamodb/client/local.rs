@@ -3,25 +3,11 @@
 use crate::dht::bbdht::dynamodb::client::client;
 use crate::dht::bbdht::dynamodb::client::Client;
 use rusoto_core::region::Region;
-use tokio::runtime::Runtime;
 
 /// the region means nothing for a local install
 const LOCAL_REGION: &str = "us-east-1";
 /// the endpoint needs to be explicitly set to hit the local database
 const LOCAL_ENDPOINT: &str = "http://localhost:8000";
-
-// lazy_static! {
-//     static ref LOCAL_RUNTIME: Runtime = {
-//         Runtime::new().expect("failed to initialize futures runtime for local dynamodb client")
-//     };
-// }
-
-pub fn local_runtime() -> Runtime {
-    // tokio_executor::enter()
-    // .expect("Multiple executors at once");
-    Runtime::new().expect("failed to initialize futures runtime for local dynamodb client")
-    // &mut *LOCAL_RUNTIME
-}
 
 pub fn local_region() -> Region {
     Region::Custom {
@@ -38,21 +24,18 @@ pub fn local_client() -> Client {
 pub mod tests {
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::dht::bbdht::dynamodb::client::local::local_region;
-    use crate::dht::bbdht::dynamodb::client::local::local_runtime;
     use crate::dht::bbdht::dynamodb::client::local::LOCAL_ENDPOINT;
     use crate::dht::bbdht::dynamodb::client::local::LOCAL_REGION;
 
     use rusoto_core::region::Region;
-
-    #[test]
-    /// boot a local runtime
-    fn local_runtime_smoke_test() {
-        local_runtime();
-    }
+    use crate::test::setup;
 
     #[test]
     /// check the value is what we want
     fn local_region_test() {
+        setup();
+
+        info!("local_region_test compare values");
         let region = local_region();
         assert_eq!(
             Region::Custom {
@@ -65,6 +48,9 @@ pub mod tests {
 
     #[test]
     fn local_client_smoke_test() {
+        setup();
+
+        info!("build local client");
         local_client();
     }
 }
