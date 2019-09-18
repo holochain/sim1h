@@ -6,6 +6,7 @@ use lib3h_protocol::protocol::Lib3hToClient;
 use lib3h_protocol::protocol::Lib3hToClientResponse;
 use lib3h_zombie_actor::create_ghost_channel;
 use lib3h_zombie_actor::GhostActor;
+use crate::workflow::bootstrap::bootstrap;
 use lib3h_zombie_actor::GhostContextEndpoint;
 use lib3h_zombie_actor::GhostEndpoint;
 use lib3h_zombie_actor::GhostResult;
@@ -62,7 +63,7 @@ impl SimGhostActor {
         match msg.take_message().expect("exists") {
             ClientToLib3h::Bootstrap(data) => {
                 trace!("ClientToLib3h::Bootstrap: {:?}", &data);
-                Ok(true.into())
+                bootstrap(&self.dbclient)
             },
             ClientToLib3h::JoinSpace(data) => {
                 trace!("ClientToLib3h::JoinSpace: {:?}", &data);
