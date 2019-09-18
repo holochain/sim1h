@@ -157,6 +157,7 @@ impl<'engine>
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use crate::dht::bbdht::dynamodb::client::local::LOCAL_ENDPOINT;
     use lib3h_tracing::test_span;
     use lib3h_zombie_actor::GhostCallbackData;
     use lib3h_protocol::{
@@ -164,8 +165,7 @@ pub mod tests {
         Address,
     };
 
-    fn get_response_to_request(request: ClientToLib3h) -> GhostCallbackData<ClientToLib3hResponse, Lib3hError> {
-        let mut engine = SimGhostActor::new(&"invalid-endpoint".to_string());
+    fn get_response_to_request(mut engine: SimGhostActor, request: ClientToLib3h) -> GhostCallbackData<ClientToLib3hResponse, Lib3hError> {
         let mut parent_endpoint: GhostContextEndpoint<(), _, _, _, _, _> = engine
             .take_parent_endpoint()
             .expect("Could not get parent endpoint")
@@ -189,16 +189,46 @@ pub mod tests {
     }
 
     #[test]
-    fn can_send_bootstrap_message() {
+    fn bootstrap_to_invalid_url_fails() {
+        let engine = SimGhostActor::new(&"invalid-endpoint".to_string());
+
         let bootstrap_data = BootstrapData {
             space_address: Address::from(""),
             bootstrap_uri: Url::parse("http://fake_url").unwrap(),
         };
 
-        match get_response_to_request(ClientToLib3h::Bootstrap(bootstrap_data)) {
+        match get_response_to_request(engine, ClientToLib3h::Bootstrap(bootstrap_data)) {
             GhostCallbackData::Response(Err(_)) => assert!(true),
             GhostCallbackData::Timeout => panic!("unexpected timeout"),
             r => panic!("unexpected response: {:?}", r)
         }
     }
-}
+
+    #[test]
+    fn bootstrap_to_database_url_succeeds() {
+        let engine = SimGhostActor::new(&LOCAL_ENDPOINT.to_string());
+
+        let bootstrap_data = BootstrapData {
+            space_address: Address::from(""),
+            bootstrap_uri: Url::parse("http://fake_url").unwrap(),
+        };
+
+        match get_response_to_request(engine, ClientToLib3h::Bootstrap(bootstrap_data)) {
+            GhostCallbackData::Response(Ok(ClientToLib3hResponse::BootstrapSuccess)) => assert!(true),
+            r => panic!("unexpected response: {:?}", r)
+        }
+    }
+
+    #[test]
+    fn call_to_join_space_succeeds() {
+        let engine = SimGhostActor::new(&LOCAL_ENDPOINT.to_string());
+        let space_data = SpaceData {
+            space_address: Address::from("space-123"),
+            request_id: String::from("0"),
+            agent_id: Address::from("an-agent"),
+        };
+        match get_response_to_request(engine, ClientToLib3h::JoinSpace(space_data)) {
+            GhostCallbackData::Response(Ok(ClientToLib3hResponse::JoinSpaceResult)) => assert!(true),
+            r => panic!("unexpected response: {:?}", r)
+        }
+    }}
