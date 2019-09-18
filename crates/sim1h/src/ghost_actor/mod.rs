@@ -7,9 +7,50 @@ use lib3h_protocol::protocol::ClientToLib3h;
 use lib3h_zombie_actor::WorkWasDone;
 use lib3h_zombie_actor::GhostResult;
 use lib3h_zombie_actor::GhostEndpoint;
+use lib3h_zombie_actor::create_ghost_channel;
+use lib3h_zombie_actor::GhostContextEndpoint;
+use detach::Detach;
+
+const REQUEST_ID_PREFIX: &str = "sim";
 
 pub struct SimGhostActor {
-    client_endpoint: Option<GhostEndpoint<ClientToLib3h, ClientToLib3hResponse, Lib3hToClient, Lib3hToClientResponse, Lib3hError>>
+    pub lib3h_endpoint: Detach<
+        GhostContextEndpoint<
+            SimGhostActor,
+            Lib3hToClient,
+            Lib3hToClientResponse,
+            ClientToLib3h,
+            ClientToLib3hResponse,
+            Lib3hError,
+        >,
+    >,
+    pub client_endpoint: Option<
+        GhostEndpoint<
+            ClientToLib3h,
+            ClientToLib3hResponse,
+            Lib3hToClient,
+            Lib3hToClientResponse,
+            Lib3hError,
+        >,
+    >,
+}
+
+impl SimGhostActor {
+
+    pub fn new(_netname: String) -> Self {
+        let (endpoint_parent, endpoint_self) = create_ghost_channel();
+        Self {
+            client_endpoint: Some(endpoint_parent),
+            lib3h_endpoint: Detach::new(
+                endpoint_self
+                    .as_context_endpoint_builder()
+                    .request_id_prefix(REQUEST_ID_PREFIX)
+                    .build(),
+            ),
+            // reciever: None,
+        }
+    }
+
 }
 
 impl<'engine>

@@ -19,6 +19,7 @@ futures = "=0.1.21"
 lib3h = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
 lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
 lib3h_zombie_actor = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
+detach = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
 uuid = { version = "=0.4", features = ["v4"] }
 log = "=0.4.8"
 env_logger = "=0.6.2"
