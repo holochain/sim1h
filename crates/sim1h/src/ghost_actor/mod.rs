@@ -66,7 +66,7 @@ impl SimGhostActor {
         match msg.take_message().expect("exists") {
             ClientToLib3h::Bootstrap(data) => {
                 trace!("ClientToLib3h::Bootstrap: {:?}", &data);
-                msg.respond(bootstrap(&self.dbclient));
+                msg.respond(bootstrap(&self.dbclient))?;
                 Ok(true.into())
             },
             ClientToLib3h::JoinSpace(data) => {

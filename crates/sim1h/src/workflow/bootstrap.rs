@@ -1,14 +1,14 @@
 use lib3h_protocol::protocol::ClientToLib3hResponse;
 use crate::dht::bbdht::dynamodb::account::describe_limits;
-use lib3h_zombie_actor::GhostResult;
 use crate::dht::bbdht::dynamodb::client::Client;
+use lib3h::error::Lib3hResult;
 use std::error::Error;
-use lib3h_zombie_actor::GhostError;
+use lib3h::error::Lib3hError;
 
-pub fn bootstrap(client: &Client) -> GhostResult<ClientToLib3hResponse> {
+pub fn bootstrap(client: &Client) -> Lib3hResult<ClientToLib3hResponse> {
     match describe_limits(&client) {
         Ok(_) => Ok(ClientToLib3hResponse::BootstrapSuccess),
-        Err(err) => Err(GhostError::from(err.description())),
+        Err(err) => Err(Lib3hError::from(err.description())),
     }
 }
 
@@ -20,8 +20,6 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::dht::bbdht::dynamodb::client::fixture::bad_client;
     use crate::test::setup;
-    use lib3h_zombie_actor::GhostError;
-
 
     #[test]
     fn bootstrap_test() {
@@ -31,10 +29,10 @@ pub mod tests {
         let local_client = local_client();
 
         info!("bootstrap_test bootstrap successful");
-        assert_eq!(
-            Ok(ClientToLib3hResponse::BootstrapSuccess),
-            bootstrap(&local_client),
-        );
+        match bootstrap(&local_client) {
+            Ok(ClientToLib3hResponse::BootstrapSuccess) => { },
+            _ => unreachable!(),
+        }
     }
 
     #[test]
@@ -45,10 +43,15 @@ pub mod tests {
         let bad_client = bad_client();
 
         info!("boostrap_bad_client_test fails");
-        assert_eq!(
-            Err(GhostError::from(String::from("error trying to connect: failed to lookup address information: Name or service not known"))),
-            bootstrap(&bad_client),
-        );
+        match bootstrap(&bad_client) {
+            Err(err) => {
+                assert_eq!(
+                    err.to_string(),
+                    "Unknown error encountered: \'error trying to connect: failed to lookup address information: Name or service not known\'.".to_string(),
+                );
+            },
+            Ok(_) => unreachable!(),
+        };
     }
 
 }
