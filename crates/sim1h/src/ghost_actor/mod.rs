@@ -67,6 +67,7 @@ impl SimGhostActor {
             ClientToLib3h::Bootstrap(data) => {
                 trace!("ClientToLib3h::Bootstrap: {:?}", &data);
                 msg.respond(bootstrap(&self.dbclient))?;
+                // msg.respond(Err(Lib3hError::from("test error")))?;
                 Ok(true.into())
             },
             ClientToLib3h::JoinSpace(data) => {
@@ -150,5 +151,53 @@ impl<'engine>
 
         // Done
         Ok(work_was_done.into())
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    use lib3h_tracing::test_span;
+    use lib3h_zombie_actor::GhostCallbackData;
+    use lib3h_protocol::{
+        data_types::*,
+        Address,
+    };
+
+
+    #[test]
+    fn can_send_bootstrap_message() {
+        let mut engine = SimGhostActor::new(&"invalid-endpoint".to_string());
+
+        let mut parent_endpoint: GhostContextEndpoint<(), _, _, _, _, _> = engine
+            .take_parent_endpoint()
+            .expect("Could not get parent endpoint")
+            .as_context_endpoint_builder()
+            .request_id_prefix("parent")
+            .build();
+
+        let bootstrap_data = BootstrapData {
+            space_address: Address::from(""),
+            bootstrap_uri: Url::parse("http://fake_url").unwrap(),
+        };
+        let (s, r) = crossbeam_channel::unbounded();
+
+        parent_endpoint.request(test_span(""), ClientToLib3h::Bootstrap(bootstrap_data), Box::new(move |_, callback_data| {
+            s.send(callback_data).unwrap();
+            Ok(())
+        })).ok();
+
+        for _ in 0..2 { // process a few times, once isn't enough..
+            parent_endpoint.process(&mut ()).ok();
+            engine.process().ok();
+        }
+
+        let callback_data = r.recv().unwrap();
+
+        match callback_data {
+            GhostCallbackData::Response(Err(_)) => assert!(true),
+            GhostCallbackData::Timeout => panic!("unexpected timeout"),
+            r => panic!("unexpected response: {:?}", r)
+        }
     }
 }
