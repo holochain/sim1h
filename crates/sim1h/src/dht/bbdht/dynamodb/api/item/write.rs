@@ -4,11 +4,11 @@ use rusoto_core::RusotoError;
 use rusoto_dynamodb::DynamoDb;
 use std::collections::HashMap;
 // use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
+use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
+use crate::dht::bbdht::dynamodb::schema::cas::CONTENT_KEY;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use rusoto_dynamodb::PutItemError;
 use rusoto_dynamodb::PutItemInput;
-use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::CONTENT_KEY;
 use rusoto_dynamodb::PutItemOutput;
 
 pub fn put_content(
@@ -38,13 +38,13 @@ pub fn put_content(
 #[cfg(test)]
 pub mod tests {
 
-    use crate::test::setup;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::dht::bbdht::dynamodb::api::item::fixture::content_fresh;
-    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
-    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
-    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
     use crate::dht::bbdht::dynamodb::api::item::write::put_content;
+    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
+    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
+    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
+    use crate::dht::bbdht::dynamodb::client::local::local_client;
+    use crate::test::setup;
 
     #[test]
     fn put_content_test() {

@@ -1,47 +1,45 @@
-use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
-use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
-use rusoto_dynamodb::GetItemError;
-use rusoto_core::RusotoError;
-use holochain_persistence_api::cas::content::Address;
 use crate::dht::bbdht::dynamodb::client::Client;
+use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
+use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
+use holochain_persistence_api::cas::content::Address;
+use rusoto_core::RusotoError;
 use rusoto_dynamodb::DynamoDb;
-use rusoto_dynamodb::GetItemOutput;
+use rusoto_dynamodb::GetItemError;
 use rusoto_dynamodb::GetItemInput;
+use rusoto_dynamodb::GetItemOutput;
 use std::collections::HashMap;
 
 pub fn get_item_by_address(
     client: &Client,
     table_name: &str,
-    address: &Address
+    address: &Address,
 ) -> Result<GetItemOutput, RusotoError<GetItemError>> {
     let mut key = HashMap::new();
     key.insert(
         String::from(ADDRESS_KEY),
-        string_attribute_value(
-            &String::from(
-                address.to_owned()
-            )
-        ),
+        string_attribute_value(&String::from(address.to_owned())),
     );
-    client.get_item(GetItemInput {
-        table_name: table_name.into(),
-        key: key,
-        ..Default::default()
-    }).sync()
+    client
+        .get_item(GetItemInput {
+            table_name: table_name.into(),
+            key: key,
+            ..Default::default()
+        })
+        .sync()
 }
 
 #[cfg(test)]
 pub mod tests {
 
-    use crate::dht::bbdht::dynamodb::api::item::write::put_content;
-    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
-    use holochain_persistence_api::cas::content::AddressableContent;
-    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
     use crate::dht::bbdht::dynamodb::api::item::fixture::content_fresh;
     use crate::dht::bbdht::dynamodb::api::item::read::get_item_by_address;
+    use crate::dht::bbdht::dynamodb::api::item::write::put_content;
+    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
+    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
     use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::test::setup;
+    use holochain_persistence_api::cas::content::AddressableContent;
 
     #[test]
     fn get_item_by_address_test() {
@@ -61,7 +59,10 @@ pub mod tests {
         info!("get_item_by_address_test put content");
         assert!(put_content(&local_client, &table_name, &content).is_ok());
 
-        info!("{:?}", get_item_by_address(&local_client, &table_name, &content.address()));
+        info!(
+            "{:?}",
+            get_item_by_address(&local_client, &table_name, &content.address())
+        );
     }
 
 }
