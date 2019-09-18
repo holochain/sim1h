@@ -44,7 +44,7 @@ pub struct SimGhostActor {
 }
 
 impl SimGhostActor {
-    pub fn new(region: Region) -> Self {
+    pub fn new(endpoint: &String) -> Self {
         let (endpoint_parent, endpoint_self) = create_ghost_channel();
         Self {
             client_endpoint: Some(endpoint_parent),
@@ -54,7 +54,10 @@ impl SimGhostActor {
                     .request_id_prefix(REQUEST_ID_PREFIX)
                     .build(),
             ),
-            dbclient: client(region),
+            dbclient: client(Region::Custom{
+                name: "".to_string(),
+                endpoint: endpoint.to_string()
+            }),
         }
     }
 
