@@ -8,3 +8,4 @@ pub mod dht;
 pub mod protocol_map;
 pub mod test;
 pub mod workflow;
+pub mod ghost_actor;
