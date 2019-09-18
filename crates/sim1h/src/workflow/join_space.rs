@@ -18,7 +18,7 @@ pub fn join_space(
     let table_name = String::from(join_space_data.space_address.clone());
 
     match ensure_cas_table(&log_context, &client, &table_name) {
-        Ok(_) => {}
+        Ok(_) => {},
         Err(err) => return Err(Lib3hError::from(err.to_string())),
     };
     match touch_agent(
@@ -30,4 +30,52 @@ pub fn join_space(
         Ok(_) => Ok(ClientToLib3hResponse::JoinSpaceResult),
         Err(err) => Err(Lib3hError::from(err.to_string())),
     }
+}
+
+#[cfg(test)]
+pub mod tests {
+
+    use crate::dht::bbdht::dynamodb::client::local::local_client;
+    use crate::trace::tracer;
+    use crate::workflow::fixture::space_data_fresh;
+    use crate::workflow::join_space::join_space;
+    use lib3h_protocol::protocol::ClientToLib3hResponse;
+    use crate::dht::bbdht::dynamodb::client::fixture::bad_client;
+
+    #[test]
+    fn join_space_test() {
+        let log_context = "join_space_test";
+
+        tracer(&log_context, "fixtures");
+        let local_client = local_client();
+        let space_data = space_data_fresh();
+
+        tracer(&log_context, "check response");
+
+        match join_space(&log_context, &local_client, &space_data) {
+            Ok(ClientToLib3hResponse::JoinSpaceResult) => { },
+            Ok(result) => {
+                panic!("{:?} {:?}", result, &space_data);
+            },
+            Err(err) => {
+                panic!("{:?} {:?}", err, &space_data);
+            },
+        }
+    }
+
+    #[test]
+    fn join_space_bad_client_test() {
+        let log_context = "join_space_bad_client_test";
+
+        tracer(&log_context, "fixtures");
+        let bad_client = bad_client();
+        let space_data = space_data_fresh();
+
+        tracer(&log_context, "check response");
+        match join_space(&log_context, &bad_client, &space_data) {
+            Err(_) => { },
+            _ => unreachable!(),
+        }
+    }
+
 }

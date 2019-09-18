@@ -65,8 +65,16 @@ pub fn ensure_table(
         Err(RusotoError::Service(DescribeTableError::InternalServerError(err))) => Err(
             RusotoError::Service(CreateTableError::InternalServerError(err)),
         ),
-        // the only other error is resource in use which is false for table exists
-        _ => unreachable!(),
+        // panel beat other errors into "internal server errors
+        Err(RusotoError::HttpDispatch(err)) => Err(RusotoError::HttpDispatch(err)),
+        Err(RusotoError::Credentials(err)) => Err(RusotoError::Credentials(err)),
+        Err(RusotoError::Validation(err)) => Err(RusotoError::Validation(err)),
+        Err(RusotoError::ParseError(err)) => Err(RusotoError::ParseError(err)),
+        Err(RusotoError::Unknown(err)) => Err(RusotoError::Unknown(err)),
+        Err(RusotoError::Service(DescribeTableError::ResourceNotFound(_))) => {
+            // this must be covered by table_exists
+            unreachable!();
+        }
     }
 }
 

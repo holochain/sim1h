@@ -16,6 +16,7 @@ use lib3h_zombie_actor::GhostEndpoint;
 use lib3h_zombie_actor::GhostResult;
 use lib3h_zombie_actor::WorkWasDone;
 use crate::workflow::join_space::join_space;
+use crate::workflow::leave_space::leave_space;
 use rusoto_core::Region;
 use url::Url;
 
@@ -79,7 +80,8 @@ impl SimGhostActor {
                 Ok(true.into())
             }
             ClientToLib3h::LeaveSpace(data) => {
-                trace!("ClientToLib3h::LeaveSpace: {:?}", &data);
+                let log_context = "ClientToLib3h::LeaveSpace";
+                msg.respond(leave_space(&log_context, &self.dbclient,&data))?;
                 Ok(true.into())
             }
             ClientToLib3h::SendDirectMessage(data) => {
