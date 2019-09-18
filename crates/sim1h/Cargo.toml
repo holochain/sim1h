@@ -18,6 +18,7 @@ dynomite = "=0.5"
 futures = "=0.1.21"
 lib3h = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
 lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
+lib3h_tracing = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
 lib3h_zombie_actor = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
 detach = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
 uuid = { version = "=0.4", features = ["v4"] }
@@ -27,3 +28,4 @@ lazy_static = "=1.2.0"
 holochain_persistence_api = "=0.0.8"
 holochain_json_api = "=0.0.17"
 url = "=1.7.2"
+crossbeam-channel = "=0.3.8"

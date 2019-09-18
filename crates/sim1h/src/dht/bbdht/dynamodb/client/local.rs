@@ -5,9 +5,9 @@ use crate::dht::bbdht::dynamodb::client::Client;
 use rusoto_core::region::Region;
 
 /// the region means nothing for a local install
-const LOCAL_REGION: &str = "us-east-1";
+pub const LOCAL_REGION: &str = "us-east-1";
 /// the endpoint needs to be explicitly set to hit the local database
-const LOCAL_ENDPOINT: &str = "http://localhost:8000";
+pub const LOCAL_ENDPOINT: &str = "http://localhost:8000";
 
 pub fn local_region() -> Region {
     Region::Custom {
