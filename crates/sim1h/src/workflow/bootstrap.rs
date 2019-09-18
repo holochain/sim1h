@@ -1,13 +1,13 @@
+use lib3h_protocol::protocol::ClientToLib3hResponse;
 use crate::dht::bbdht::dynamodb::account::describe_limits;
 use lib3h_zombie_actor::GhostResult;
 use crate::dht::bbdht::dynamodb::client::Client;
 use std::error::Error;
-use lib3h_zombie_actor::WorkWasDone;
 use lib3h_zombie_actor::GhostError;
 
-pub fn bootstrap(client: &Client) -> GhostResult<WorkWasDone> {
+pub fn bootstrap(client: &Client) -> GhostResult<ClientToLib3hResponse> {
     match describe_limits(&client) {
-        Ok(_) => Ok(true.into()),
+        Ok(_) => Ok(ClientToLib3hResponse::BootstrapSuccess),
         Err(err) => Err(GhostError::from(err.description())),
     }
 }
@@ -15,6 +15,7 @@ pub fn bootstrap(client: &Client) -> GhostResult<WorkWasDone> {
 #[cfg(test)]
 pub mod tests {
 
+    use super::*;
     use crate::workflow::bootstrap::bootstrap;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::dht::bbdht::dynamodb::client::fixture::bad_client;
@@ -31,7 +32,7 @@ pub mod tests {
 
         info!("bootstrap_test bootstrap successful");
         assert_eq!(
-            Ok(true.into()),
+            Ok(ClientToLib3hResponse::BootstrapSuccess),
             bootstrap(&local_client),
         );
     }
