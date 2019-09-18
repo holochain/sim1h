@@ -9,8 +9,10 @@ use lib3h_zombie_actor::GhostActor;
 use lib3h_zombie_actor::GhostContextEndpoint;
 use lib3h_zombie_actor::GhostEndpoint;
 use lib3h_zombie_actor::GhostResult;
+use lib3h_zombie_actor::GhostCanTrack;
 use lib3h_zombie_actor::WorkWasDone;
 use url::Url;
+use lib3h::engine::engine_actor::ClientToLib3hMessage;
 use lib3h::engine::CanAdvertise;
 
 const REQUEST_ID_PREFIX: &str = "sim";
@@ -51,6 +53,43 @@ impl SimGhostActor {
             // reciever: None,
         }
     }
+
+    pub fn handle_msg_from_client(&mut self, mut msg: ClientToLib3hMessage) -> GhostResult<WorkWasDone> {
+        match msg.take_message().expect("exists") {
+            ClientToLib3h::Bootstrap(data) => {
+                trace!("ClientToLib3h::Bootstrap: {:?}", &data);
+                Ok(true.into())
+            },
+            ClientToLib3h::JoinSpace(data) => {
+                trace!("ClientToLib3h::JoinSpace: {:?}", &data);
+                Ok(true.into())
+            },
+            ClientToLib3h::LeaveSpace(data) => {
+                trace!("ClientToLib3h::LeaveSpace: {:?}", &data);
+                Ok(true.into())
+            },
+            ClientToLib3h::SendDirectMessage(data) => {
+                trace!("ClientToLib3h::SendDirectMessage: {:?}", &data);
+                Ok(true.into())
+            },
+            ClientToLib3h::PublishEntry(data) => {
+                trace!("ClientToLib3h::PublishEntry: {:?}", &data);
+                Ok(true.into())
+            },
+            ClientToLib3h::HoldEntry(data) => {
+                trace!("ClientToLib3h::HoldEntry: {:?}", &data);
+                Ok(true.into())
+            },
+            ClientToLib3h::QueryEntry(data) => {
+                trace!("ClientToLib3h::QueryEntry: {:?}", &data);
+                Ok(true.into())
+            },
+            ClientToLib3h::FetchEntry(data) => {
+                trace!("ClientToLib3h::FetchEntry: {:?}", &data);
+                Ok(true.into())
+            },
+        }
+    }
 }
 
 impl CanAdvertise for SimGhostActor {
@@ -85,16 +124,22 @@ impl<'engine>
         std::mem::replace(&mut self.client_endpoint, None)
     }
 
-    /// our parent will call this process function
-    fn process(&mut self) -> GhostResult<WorkWasDone> {
-        // it would be awesome if this trait level could handle things like:
-        //  `self.endpoint_self.process();`
-        self.process_concrete()
-    }
-
     /// we, as a ghost actor implement this, it will get called from
     /// process after the subconscious process items have run
     fn process_concrete(&mut self) -> GhostResult<WorkWasDone> {
-        Ok(false.into())
+        // always run the endpoint process loop
+        detach_run!(&mut self.lib3h_endpoint, |cs| { cs.process(self) })?;
+
+        let mut work_was_done = false;
+        // process any messages from the client to us
+        for msg in self.lib3h_endpoint.as_mut().drain_messages() {
+            match self.handle_msg_from_client(msg) {
+                Ok(msg_work_was_done) => work_was_done = work_was_done || msg_work_was_done.into(),
+                Err(err) => return Err(err),
+            }
+        }
+
+        // Done
+        Ok(work_was_done.into())
     }
 }

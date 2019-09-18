@@ -1,6 +1,9 @@
 #[macro_use]
 extern crate log;
 
+#[macro_use]
+extern crate detach;
+
 extern crate env_logger;
 extern crate futures;
 
