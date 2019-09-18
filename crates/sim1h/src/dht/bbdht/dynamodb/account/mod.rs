@@ -1,20 +1,26 @@
 use crate::dht::bbdht::dynamodb::client::Client;
-use rusoto_dynamodb::DescribeLimitsOutput;
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::DescribeLimitsError;
+use rusoto_dynamodb::DescribeLimitsOutput;
 use rusoto_dynamodb::DynamoDb;
+use crate::trace::tracer;
+use crate::trace::LogContext;
 
-pub fn describe_limits(client: &Client) -> Result<DescribeLimitsOutput, RusotoError<DescribeLimitsError>> {
+pub fn describe_limits(
+    log_context: &LogContext,
+    client: &Client,
+) -> Result<DescribeLimitsOutput, RusotoError<DescribeLimitsError>> {
+    tracer(&log_context, "describe_limits");
     client.describe_limits().sync()
 }
 
 #[cfg(test)]
 pub mod tests {
 
-    use crate::trace::tracer;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::dht::bbdht::dynamodb::client::fixture::bad_client;
     use crate::dht::bbdht::dynamodb::account::describe_limits;
+    use crate::dht::bbdht::dynamodb::client::fixture::bad_client;
+    use crate::dht::bbdht::dynamodb::client::local::local_client;
+    use crate::trace::tracer;
 
     #[test]
     fn describe_limits_ok_test() {
@@ -24,7 +30,7 @@ pub mod tests {
         let local_client = local_client();
 
         // describe limits
-        assert!(describe_limits(&local_client).is_ok());
+        assert!(describe_limits(&log_context, &local_client).is_ok());
     }
 
     #[test]
@@ -35,7 +41,7 @@ pub mod tests {
         let bad_client = bad_client();
 
         // fail to describe limits
-        assert!(describe_limits(&bad_client).is_err());
+        assert!(describe_limits(&log_context, &bad_client).is_err());
     }
 
 }

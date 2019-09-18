@@ -1,9 +1,9 @@
 use crate::dht::bbdht::dynamodb::api::table::describe::describe_table;
 use crate::dht::bbdht::dynamodb::client::Client;
+use crate::trace::tracer;
+use crate::trace::LogContext;
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::DescribeTableError;
-use crate::trace::LogContext;
-use crate::trace::tracer;
 
 pub fn table_exists(
     log_context: &LogContext,
@@ -31,7 +31,12 @@ pub fn table_exists(
     }
 }
 
-pub fn until_table_exists_or_not(log_context: &LogContext, client: &Client, table_name: &str, exists: bool) {
+pub fn until_table_exists_or_not(
+    log_context: &LogContext,
+    client: &Client,
+    table_name: &str,
+    exists: bool,
+) {
     loop {
         tracer(&log_context, "until_table_exists_or_not");
         match table_exists(log_context, client, table_name) {
@@ -78,7 +83,8 @@ pub mod tests {
         let attribute_definitions = attribute_definitions_a();
 
         // not exists
-        assert!(!table_exists(&log_context, &local_client, &table_name).expect("could not check if table exists"));
+        assert!(!table_exists(&log_context, &local_client, &table_name)
+            .expect("could not check if table exists"));
 
         // create
         assert!(create_table(
@@ -91,13 +97,15 @@ pub mod tests {
         .is_ok());
 
         // exists
-        assert!(table_exists(&log_context, &local_client, &table_name).expect("could not check if table exists"));
+        assert!(table_exists(&log_context, &local_client, &table_name)
+            .expect("could not check if table exists"));
 
         // delete
         assert!(delete_table(&log_context, &local_client, &table_name).is_ok());
 
         // not exists
-        assert!(!table_exists(&log_context, &local_client, &table_name).expect("could not check if table exists"));
+        assert!(!table_exists(&log_context, &local_client, &table_name)
+            .expect("could not check if table exists"));
     }
 
 }

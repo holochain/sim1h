@@ -1,12 +1,12 @@
 use crate::dht::bbdht::dynamodb::api::table::exist::until_table_not_exists;
 use crate::dht::bbdht::dynamodb::client::Client;
+use crate::trace::tracer;
+use crate::trace::LogContext;
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::DeleteTableError;
 use rusoto_dynamodb::DeleteTableInput;
 use rusoto_dynamodb::DeleteTableOutput;
 use rusoto_dynamodb::DynamoDb;
-use crate::trace::tracer;
-use crate::trace::LogContext;
 
 pub fn delete_table(
     log_context: &LogContext,
@@ -46,9 +46,8 @@ pub mod test {
         let attribute_definitions = attribute_definitions_a();
 
         // not exists
-        assert!(
-            !table_exists(&log_context, &local_client, &table_name).expect("could not check that table exists")
-        );
+        assert!(!table_exists(&log_context, &local_client, &table_name)
+            .expect("could not check that table exists"));
 
         // create
         assert!(create_table(
@@ -61,9 +60,8 @@ pub mod test {
         .is_ok());
 
         // exists
-        assert!(
-            table_exists(&log_context, &local_client, &table_name).expect("could not check that table exists")
-        );
+        assert!(table_exists(&log_context, &local_client, &table_name)
+            .expect("could not check that table exists"));
 
         // delete
         assert!(delete_table(&log_context, &local_client, &table_name).is_ok());

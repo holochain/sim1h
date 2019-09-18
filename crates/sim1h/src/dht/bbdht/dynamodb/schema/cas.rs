@@ -123,7 +123,10 @@ pub mod tests {
         let log_context = "attribute_definitions_cas_test";
 
         tracer(&log_context, "compare values");
-        assert_eq!(address_attribute_definition(), attribute_definitions_cas()[0]);
+        assert_eq!(
+            address_attribute_definition(),
+            attribute_definitions_cas()[0]
+        );
     }
 
 }

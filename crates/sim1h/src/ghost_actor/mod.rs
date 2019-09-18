@@ -1,4 +1,8 @@
+use crate::dht::bbdht::dynamodb::client::{client, Client};
+use crate::workflow::bootstrap::bootstrap;
 use detach::Detach;
+use lib3h::engine::engine_actor::ClientToLib3hMessage;
+use lib3h::engine::CanAdvertise;
 use lib3h::error::Lib3hError;
 use lib3h_protocol::protocol::ClientToLib3h;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
@@ -6,17 +10,14 @@ use lib3h_protocol::protocol::Lib3hToClient;
 use lib3h_protocol::protocol::Lib3hToClientResponse;
 use lib3h_zombie_actor::create_ghost_channel;
 use lib3h_zombie_actor::GhostActor;
-use crate::workflow::bootstrap::bootstrap;
+use lib3h_zombie_actor::GhostCanTrack;
 use lib3h_zombie_actor::GhostContextEndpoint;
 use lib3h_zombie_actor::GhostEndpoint;
 use lib3h_zombie_actor::GhostResult;
-use lib3h_zombie_actor::GhostCanTrack;
 use lib3h_zombie_actor::WorkWasDone;
-use url::Url;
-use lib3h::engine::engine_actor::ClientToLib3hMessage;
-use lib3h::engine::CanAdvertise;
+use crate::workflow::join_space::join_space;
 use rusoto_core::Region;
-use crate::dht::bbdht::dynamodb::client::{client, Client};
+use url::Url;
 
 const REQUEST_ID_PREFIX: &str = "sim";
 
@@ -55,59 +56,60 @@ impl SimGhostActor {
                     .request_id_prefix(REQUEST_ID_PREFIX)
                     .build(),
             ),
-            dbclient: client(Region::Custom{
+            dbclient: client(Region::Custom {
                 name: "".to_string(),
-                endpoint: endpoint.to_string()
+                endpoint: endpoint.to_string(),
             }),
         }
     }
 
-    pub fn handle_msg_from_client(&mut self, mut msg: ClientToLib3hMessage) -> GhostResult<WorkWasDone> {
+    pub fn handle_msg_from_client(
+        &mut self,
+        mut msg: ClientToLib3hMessage,
+    ) -> GhostResult<WorkWasDone> {
         match msg.take_message().expect("exists") {
-            ClientToLib3h::Bootstrap(data) => {
-                trace!("ClientToLib3h::Bootstrap: {:?}", &data);
-                msg.respond(bootstrap(&self.dbclient))?;
-                // msg.respond(Err(Lib3hError::from("test error")))?;
+            ClientToLib3h::Bootstrap(_) => {
+                let log_context = "ClientToLib3h::Bootstrap";
+                msg.respond(bootstrap(&log_context, &self.dbclient))?;
                 Ok(true.into())
-            },
+            }
             ClientToLib3h::JoinSpace(data) => {
-                trace!("ClientToLib3h::JoinSpace: {:?}", &data);
+                let log_context = "ClientToLib3h::JoinSpace";
+                msg.respond(join_space(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
-            },
+            }
             ClientToLib3h::LeaveSpace(data) => {
                 trace!("ClientToLib3h::LeaveSpace: {:?}", &data);
                 Ok(true.into())
-            },
+            }
             ClientToLib3h::SendDirectMessage(data) => {
                 trace!("ClientToLib3h::SendDirectMessage: {:?}", &data);
                 Ok(true.into())
-            },
+            }
             ClientToLib3h::PublishEntry(data) => {
                 trace!("ClientToLib3h::PublishEntry: {:?}", &data);
                 Ok(true.into())
-            },
+            }
             ClientToLib3h::HoldEntry(data) => {
                 trace!("ClientToLib3h::HoldEntry: {:?}", &data);
                 Ok(true.into())
-            },
+            }
             ClientToLib3h::QueryEntry(data) => {
                 trace!("ClientToLib3h::QueryEntry: {:?}", &data);
                 Ok(true.into())
-            },
+            }
             ClientToLib3h::FetchEntry(data) => {
                 trace!("ClientToLib3h::FetchEntry: {:?}", &data);
                 Ok(true.into())
-            },
+            }
         }
     }
 }
 
 impl CanAdvertise for SimGhostActor {
-
     fn advertise(&self) -> Url {
         Url::parse("ws://example.com").unwrap()
     }
-
 }
 
 impl<'engine>
@@ -158,14 +160,14 @@ impl<'engine>
 pub mod tests {
     use super::*;
     use crate::dht::bbdht::dynamodb::client::local::LOCAL_ENDPOINT;
+    use lib3h_protocol::{data_types::*, Address};
     use lib3h_tracing::test_span;
     use lib3h_zombie_actor::GhostCallbackData;
-    use lib3h_protocol::{
-        data_types::*,
-        Address,
-    };
 
-    fn get_response_to_request(mut engine: SimGhostActor, request: ClientToLib3h) -> GhostCallbackData<ClientToLib3hResponse, Lib3hError> {
+    fn get_response_to_request(
+        mut engine: SimGhostActor,
+        request: ClientToLib3h,
+    ) -> GhostCallbackData<ClientToLib3hResponse, Lib3hError> {
         let mut parent_endpoint: GhostContextEndpoint<(), _, _, _, _, _> = engine
             .take_parent_endpoint()
             .expect("Could not get parent endpoint")
@@ -175,12 +177,19 @@ pub mod tests {
 
         let (s, r) = crossbeam_channel::unbounded();
 
-        parent_endpoint.request(test_span(""), request, Box::new(move |_, callback_data| {
-            s.send(callback_data).unwrap();
-            Ok(())
-        })).ok();
+        parent_endpoint
+            .request(
+                test_span(""),
+                request,
+                Box::new(move |_, callback_data| {
+                    s.send(callback_data).unwrap();
+                    Ok(())
+                }),
+            )
+            .ok();
 
-        for _ in 0..2 { // process a few times, once isn't enough..
+        for _ in 0..2 {
+            // process a few times, once isn't enough..
             parent_endpoint.process(&mut ()).ok();
             engine.process().ok();
         }
@@ -200,7 +209,7 @@ pub mod tests {
         match get_response_to_request(engine, ClientToLib3h::Bootstrap(bootstrap_data)) {
             GhostCallbackData::Response(Err(_)) => assert!(true),
             GhostCallbackData::Timeout => panic!("unexpected timeout"),
-            r => panic!("unexpected response: {:?}", r)
+            r => panic!("unexpected response: {:?}", r),
         }
     }
 
@@ -214,8 +223,10 @@ pub mod tests {
         };
 
         match get_response_to_request(engine, ClientToLib3h::Bootstrap(bootstrap_data)) {
-            GhostCallbackData::Response(Ok(ClientToLib3hResponse::BootstrapSuccess)) => assert!(true),
-            r => panic!("unexpected response: {:?}", r)
+            GhostCallbackData::Response(Ok(ClientToLib3hResponse::BootstrapSuccess)) => {
+                assert!(true)
+            }
+            r => panic!("unexpected response: {:?}", r),
         }
     }
 
@@ -231,4 +242,5 @@ pub mod tests {
             GhostCallbackData::Response(Ok(ClientToLib3hResponse::JoinSpaceResult)) => assert!(true),
             r => panic!("unexpected response: {:?}", r)
         }
-    }}
+    }
+}

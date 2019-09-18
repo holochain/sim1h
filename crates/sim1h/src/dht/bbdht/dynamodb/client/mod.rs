@@ -1,5 +1,5 @@
-pub mod local;
 pub mod fixture;
+pub mod local;
 
 use dynomite::dynamodb::DynamoDbClient;
 use dynomite::retry::Policy;
@@ -16,8 +16,8 @@ pub fn client(region: Region) -> Client {
 #[cfg(test)]
 pub mod test {
     use crate::dht::bbdht::dynamodb::client::client;
-    use rusoto_core::region::Region;
     use crate::trace::tracer;
+    use rusoto_core::region::Region;
 
     #[test]
     fn client_smoke_test() {

@@ -1,11 +1,11 @@
 use crate::dht::bbdht::dynamodb::client::Client;
+use crate::trace::tracer;
+use crate::trace::LogContext;
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::DescribeTableError;
 use rusoto_dynamodb::DescribeTableInput;
 use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::TableDescription;
-use crate::trace::tracer;
-use crate::trace::LogContext;
 
 pub fn describe_table(
     log_context: &LogContext,
@@ -53,9 +53,8 @@ pub mod test {
         let attribute_definitions = attribute_definitions_a();
 
         // not exists
-        assert!(
-            !table_exists(&log_context, &local_client, &table_name).expect("could not check that table exists")
-        );
+        assert!(!table_exists(&log_context, &local_client, &table_name)
+            .expect("could not check that table exists"));
 
         // create
         assert!(create_table(
@@ -68,9 +67,8 @@ pub mod test {
         .is_ok());
 
         // exists
-        assert!(
-            table_exists(&log_context, &local_client, &table_name).expect("could not check that table exists")
-        );
+        assert!(table_exists(&log_context, &local_client, &table_name)
+            .expect("could not check that table exists"));
 
         // active
         assert_eq!(

@@ -1,11 +1,14 @@
-use lib3h_protocol::protocol::ClientToLib3hResponse;
 use crate::dht::bbdht::dynamodb::account::describe_limits;
 use crate::dht::bbdht::dynamodb::client::Client;
-use lib3h::error::Lib3hResult;
 use lib3h::error::Lib3hError;
+use lib3h::error::Lib3hResult;
+use lib3h_protocol::protocol::ClientToLib3hResponse;
+use crate::trace::tracer;
+use crate::trace::LogContext;
 
-pub fn bootstrap(client: &Client) -> Lib3hResult<ClientToLib3hResponse> {
-    match describe_limits(&client) {
+pub fn bootstrap(log_context: &LogContext, client: &Client) -> Lib3hResult<ClientToLib3hResponse> {
+    tracer(&log_context, "bootstrap");
+    match describe_limits(&log_context, &client) {
         Ok(_) => Ok(ClientToLib3hResponse::BootstrapSuccess),
         Err(err) => Err(Lib3hError::from(err.to_string())),
     }
@@ -15,10 +18,10 @@ pub fn bootstrap(client: &Client) -> Lib3hResult<ClientToLib3hResponse> {
 pub mod tests {
 
     use super::*;
-    use crate::workflow::bootstrap::bootstrap;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::dht::bbdht::dynamodb::client::fixture::bad_client;
+    use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::trace::tracer;
+    use crate::workflow::bootstrap::bootstrap;
 
     #[test]
     fn bootstrap_test() {
@@ -28,8 +31,8 @@ pub mod tests {
         let local_client = local_client();
 
         // success
-        match bootstrap(&local_client) {
-            Ok(ClientToLib3hResponse::BootstrapSuccess) => { },
+        match bootstrap(&log_context, &local_client) {
+            Ok(ClientToLib3hResponse::BootstrapSuccess) => {}
             _ => unreachable!(),
         }
     }
@@ -42,13 +45,13 @@ pub mod tests {
         let bad_client = bad_client();
 
         // fail
-        match bootstrap(&bad_client) {
+        match bootstrap(&log_context, &bad_client) {
             Err(err) => {
                 assert_eq!(
                     err.to_string(),
                     "Unknown error encountered: \'error trying to connect: failed to lookup address information: Name or service not known\'.".to_string(),
                 );
-            },
+            }
             Ok(_) => unreachable!(),
         };
     }

@@ -52,7 +52,8 @@ pub mod tests {
         assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
 
         // cas exists
-        assert!(table_exists(&log_context, &local_client, &table_name).expect("could not check table exists"));
+        assert!(table_exists(&log_context, &local_client, &table_name)
+            .expect("could not check table exists"));
 
         // ensure content
         assert!(ensure_content(&log_context, &local_client, &table_name, &content).is_ok());
