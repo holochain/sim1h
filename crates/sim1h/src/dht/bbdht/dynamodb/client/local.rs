@@ -27,15 +27,15 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::client::local::LOCAL_ENDPOINT;
     use crate::dht::bbdht::dynamodb::client::local::LOCAL_REGION;
 
-    use crate::test::setup;
+    use crate::log::trace;
     use rusoto_core::region::Region;
 
     #[test]
     /// check the value is what we want
     fn local_region_test() {
-        setup();
+        let log_context = "local_region_test";
 
-        info!("local_region_test compare values");
+        trace(&log_context, "compare values");
         let region = local_region();
         assert_eq!(
             Region::Custom {
@@ -48,9 +48,9 @@ pub mod tests {
 
     #[test]
     fn local_client_smoke_test() {
-        setup();
+        let log_context = "local_client_smoke_test";
 
-        info!("build local client");
+        trace(&log_context, "smoke test");
         local_client();
     }
 }

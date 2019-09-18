@@ -30,7 +30,7 @@ with holonix.pkgs;
   export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
   # config file used by aws cli tool
   export AWS_CONFIG_FILE=`pwd`/.aws/config
-  RUST_LOG=sim1h=info
+  RUST_LOG=sim1h=trace
   ''
   holonix.shell.shellHook
   ];

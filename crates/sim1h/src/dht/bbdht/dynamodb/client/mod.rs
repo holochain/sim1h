@@ -17,13 +17,13 @@ pub fn client(region: Region) -> Client {
 pub mod test {
     use crate::dht::bbdht::dynamodb::client::client;
     use rusoto_core::region::Region;
-    use crate::test::setup;
+    use crate::log::trace;
 
     #[test]
     fn client_smoke_test() {
-        setup();
+        let log_context = "client_smoke_test";
 
-        info!("client_smoke_test building client with some config");
+        trace(&log_context, "smoke test");
         client(Region::SaEast1);
     }
 

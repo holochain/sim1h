@@ -14,16 +14,16 @@ pub fn list_tables(client: &Client) -> Result<ListTablesOutput, RusotoError<List
 pub mod test {
     use crate::dht::bbdht::dynamodb::api::table::list::list_tables;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::test::setup;
+    use crate::log::trace;
 
     #[test]
     pub fn list_tables_test() {
-        setup();
+        let log_context = "list_tables_test";
 
-        info!("list_tables_test fixtures");
+        trace(&log_context, "fixtures");
         let local_client = local_client();
 
-        info!("list_tables_test check ok");
+        // list
         assert!(list_tables(&local_client).is_ok());
     }
 

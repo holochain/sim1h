@@ -2,13 +2,12 @@ use lib3h_protocol::protocol::ClientToLib3hResponse;
 use crate::dht::bbdht::dynamodb::account::describe_limits;
 use crate::dht::bbdht::dynamodb::client::Client;
 use lib3h::error::Lib3hResult;
-use std::error::Error;
 use lib3h::error::Lib3hError;
 
 pub fn bootstrap(client: &Client) -> Lib3hResult<ClientToLib3hResponse> {
     match describe_limits(&client) {
         Ok(_) => Ok(ClientToLib3hResponse::BootstrapSuccess),
-        Err(err) => Err(Lib3hError::from(err.description())),
+        Err(err) => Err(Lib3hError::from(err.to_string())),
     }
 }
 
@@ -19,16 +18,16 @@ pub mod tests {
     use crate::workflow::bootstrap::bootstrap;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::dht::bbdht::dynamodb::client::fixture::bad_client;
-    use crate::test::setup;
+    use crate::log::trace;
 
     #[test]
     fn bootstrap_test() {
-        setup();
+        let log_context = "bootstrap_test";
 
-        info!("bootstrap_test fixtures");
+        trace(&log_context, "fixtures");
         let local_client = local_client();
 
-        info!("bootstrap_test bootstrap successful");
+        // success
         match bootstrap(&local_client) {
             Ok(ClientToLib3hResponse::BootstrapSuccess) => { },
             _ => unreachable!(),
@@ -37,12 +36,12 @@ pub mod tests {
 
     #[test]
     fn bootstrap_bad_client_test() {
-        setup();
+        let log_context = "bootstrap_bad_client_test";
 
-        info!("boostrap_bad_client_test fixtures");
+        trace(&log_context, "fixtures");
         let bad_client = bad_client();
 
-        info!("boostrap_bad_client_test fails");
+        // fail
         match bootstrap(&bad_client) {
             Err(err) => {
                 assert_eq!(

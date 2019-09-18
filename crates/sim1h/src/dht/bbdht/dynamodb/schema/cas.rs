@@ -44,90 +44,86 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::schema::cas::key_schema_cas;
     use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
     use crate::dht::bbdht::dynamodb::schema::cas::CONTENT_KEY;
-    use crate::test::setup;
+    use crate::log::trace;
     use rusoto_dynamodb::AttributeDefinition;
     use rusoto_dynamodb::KeySchemaElement;
 
     #[test]
     fn address_key_schema_test() {
-        setup();
+        let log_context = "address_key_schema_test";
 
-        let address_key_schema = address_key_schema();
+        trace(&log_context, "compare values");
         assert_eq!(
             KeySchemaElement {
                 attribute_name: ADDRESS_KEY.to_string(),
                 key_type: "HASH".into(),
             },
-            address_key_schema,
+            address_key_schema(),
         );
     }
 
     #[test]
     fn content_key_schema_test() {
-        setup();
+        let log_context = "context_key_schema_test";
 
-        let content_key_schema = content_key_schema();
+        trace(&log_context, "compare values");
         assert_eq!(
             KeySchemaElement {
                 attribute_name: CONTENT_KEY.to_string(),
                 key_type: "HASH".into(),
             },
-            content_key_schema,
+            content_key_schema(),
         );
     }
 
     #[test]
     fn key_schema_cas_test() {
-        setup();
+        let log_context = "key_schema_cas_test";
 
-        let key_schema_cas = key_schema_cas();
+        trace(&log_context, "compare values");
         assert_eq!(
             vec![KeySchemaElement {
                 attribute_name: ADDRESS_KEY.to_string(),
                 key_type: "HASH".into(),
             }],
-            key_schema_cas
+            key_schema_cas()
         );
     }
 
     #[test]
     fn address_attribute_definition_test() {
-        setup();
+        let log_context = "address_attribute_definition_test";
 
-        let address_attribute_definition = address_attribute_definition();
+        trace(&log_context, "compare values");
         assert_eq!(
             AttributeDefinition {
                 attribute_name: ADDRESS_KEY.to_string(),
                 attribute_type: "S".into(),
             },
-            address_attribute_definition,
+            address_attribute_definition(),
         );
     }
 
     #[test]
     fn content_attribute_definition_test() {
-        setup();
+        let log_context = "content_attribute_definition_test";
 
-        let content_attribute_definition = content_attribute_definition();
+        trace(&log_context, "compare values");
         assert_eq!(
             AttributeDefinition {
                 attribute_name: CONTENT_KEY.to_string(),
                 attribute_type: "S".into(),
             },
-            content_attribute_definition,
+            content_attribute_definition(),
         );
     }
 
     #[test]
     fn attribute_definitions_cas_test() {
-        setup();
+        let log_context = "attribute_definitions_cas_test";
 
-        let attribute_definitions_cas = attribute_definitions_cas();
-        assert_eq!(address_attribute_definition(), attribute_definitions_cas[0],);
-        // assert_eq!(
-        //     content_attribute_definition(),
-        //     attribute_definitions_cas[1],
-        // );
+        trace(&log_context, "compare values");
+        assert_eq!(address_attribute_definition(), attribute_definitions_cas()[0]);
     }
 
 }

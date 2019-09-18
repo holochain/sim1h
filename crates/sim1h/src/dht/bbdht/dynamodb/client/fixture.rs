@@ -27,15 +27,15 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::client::fixture::BAD_ENDPOINT;
     use crate::dht::bbdht::dynamodb::client::fixture::BAD_REGION;
 
-    use crate::test::setup;
+    use crate::log::trace;
     use rusoto_core::region::Region;
 
     #[test]
     /// check the value is what we want
     fn bad_region_test() {
-        setup();
+        let log_context = "bad_region_test";
 
-        info!("bad_region_test compare values");
+        trace(&log_context, "compare values");
         let bad_region = bad_region();
         assert_eq!(
             Region::Custom {
@@ -48,9 +48,9 @@ pub mod tests {
 
     #[test]
     fn bad_client_smoke_test() {
-        setup();
+        let log_context = "bad_client_smoke_test";
 
-        info!("build bad client");
+        trace(&log_context, "smoke test");
         bad_client();
     }
 }

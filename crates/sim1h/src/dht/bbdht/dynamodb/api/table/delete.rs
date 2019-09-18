@@ -5,16 +5,20 @@ use rusoto_dynamodb::DeleteTableError;
 use rusoto_dynamodb::DeleteTableInput;
 use rusoto_dynamodb::DeleteTableOutput;
 use rusoto_dynamodb::DynamoDb;
+use crate::log::trace;
+use crate::log::LogContext;
 
 pub fn delete_table(
+    log_context: &LogContext,
     client: &Client,
     table_name: &str,
 ) -> Result<DeleteTableOutput, RusotoError<DeleteTableError>> {
+    trace(&log_context, "delete_table");
     let delete_table_input = DeleteTableInput {
         table_name: table_name.to_string(),
     };
     let result = client.delete_table(delete_table_input).sync();
-    until_table_not_exists(client, table_name);
+    until_table_not_exists(log_context, client, table_name);
     result
 }
 
@@ -28,25 +32,27 @@ pub mod test {
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::dht::bbdht::dynamodb::schema::fixture::attribute_definitions_a;
     use crate::dht::bbdht::dynamodb::schema::fixture::key_schema_a;
-    use crate::test::setup;
+    use crate::log::trace;
 
     #[test]
     fn delete_table_test() {
-        setup();
+        let log_context = "delete_table_text";
 
-        info!("delete_table_test fixtures");
+        trace(&log_context, "fixtures");
+
         let local_client = local_client();
         let table_name = table_name_fresh();
         let key_schema = key_schema_a();
         let attribute_definitions = attribute_definitions_a();
 
-        info!("delete_table_test check table not exists at init");
+        // not exists
         assert!(
-            !table_exists(&local_client, &table_name).expect("could not check that table exists")
+            !table_exists(&log_context, &local_client, &table_name).expect("could not check that table exists")
         );
 
-        info!("delete_table_test create the table");
+        // create
         assert!(create_table(
+            &log_context,
             &local_client,
             &table_name,
             &key_schema,
@@ -54,16 +60,16 @@ pub mod test {
         )
         .is_ok());
 
-        info!("delete_table_test check table exists");
+        // exists
         assert!(
-            table_exists(&local_client, &table_name).expect("could not check that table exists")
+            table_exists(&log_context, &local_client, &table_name).expect("could not check that table exists")
         );
 
-        info!("delete_table_test delete table");
-        assert!(delete_table(&local_client, &table_name).is_ok());
+        // delete
+        assert!(delete_table(&log_context, &local_client, &table_name).is_ok());
 
-        info!("delete_table_test table deleted");
-        assert!(!table_exists(&local_client, &table_name)
+        // not exists
+        assert!(!table_exists(&log_context, &local_client, &table_name)
             .expect("could not check that the table exists"));
     }
 
