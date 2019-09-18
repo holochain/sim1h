@@ -164,11 +164,8 @@ pub mod tests {
         Address,
     };
 
-
-    #[test]
-    fn can_send_bootstrap_message() {
+    fn get_response_to_request(request: ClientToLib3h) -> GhostCallbackData<ClientToLib3hResponse, Lib3hError> {
         let mut engine = SimGhostActor::new(&"invalid-endpoint".to_string());
-
         let mut parent_endpoint: GhostContextEndpoint<(), _, _, _, _, _> = engine
             .take_parent_endpoint()
             .expect("Could not get parent endpoint")
@@ -176,13 +173,9 @@ pub mod tests {
             .request_id_prefix("parent")
             .build();
 
-        let bootstrap_data = BootstrapData {
-            space_address: Address::from(""),
-            bootstrap_uri: Url::parse("http://fake_url").unwrap(),
-        };
         let (s, r) = crossbeam_channel::unbounded();
 
-        parent_endpoint.request(test_span(""), ClientToLib3h::Bootstrap(bootstrap_data), Box::new(move |_, callback_data| {
+        parent_endpoint.request(test_span(""), request, Box::new(move |_, callback_data| {
             s.send(callback_data).unwrap();
             Ok(())
         })).ok();
@@ -192,9 +185,17 @@ pub mod tests {
             engine.process().ok();
         }
 
-        let callback_data = r.recv().unwrap();
+        r.recv().expect("Could not retrieve result")
+    }
 
-        match callback_data {
+    #[test]
+    fn can_send_bootstrap_message() {
+        let bootstrap_data = BootstrapData {
+            space_address: Address::from(""),
+            bootstrap_uri: Url::parse("http://fake_url").unwrap(),
+        };
+
+        match get_response_to_request(ClientToLib3h::Bootstrap(bootstrap_data)) {
             GhostCallbackData::Response(Err(_)) => assert!(true),
             GhostCallbackData::Timeout => panic!("unexpected timeout"),
             r => panic!("unexpected response: {:?}", r)
