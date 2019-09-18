@@ -11,8 +11,8 @@ use rusoto_dynamodb::PutItemInput;
 use rusoto_dynamodb::PutItemOutput;
 use holochain_persistence_api::cas::content::Address;
 use crate::dht::bbdht::dynamodb::schema::TableName;
-use crate::log::trace;
-use crate::log::LogContext;
+use crate::trace::tracer;
+use crate::trace::LogContext;
 
 pub fn ensure_content(
     log_context: &LogContext,
@@ -20,7 +20,7 @@ pub fn ensure_content(
     table_name: &TableName,
     content: &dyn AddressableContent,
 ) -> Result<PutItemOutput, RusotoError<PutItemError>> {
-    trace(&log_context, "ensure_content");
+    tracer(&log_context, "ensure_content");
     let mut item = HashMap::new();
     item.insert(
         String::from(ADDRESS_KEY),
@@ -41,7 +41,7 @@ pub fn ensure_content(
 }
 
 pub fn touch_agent(log_context: &LogContext, client: &Client, table_name: &TableName, agent_id: &Address) -> Result<PutItemOutput, RusotoError<PutItemError>> {
-    trace(&log_context, "touch_agent");
+    tracer(&log_context, "touch_agent");
 
     let mut item = HashMap::new();
     item.insert(
@@ -67,13 +67,13 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::api::item::write::ensure_content;
     use crate::agent::fixture::agent_id_fresh;
     use crate::dht::bbdht::dynamodb::api::item::write::touch_agent;
-    use crate::log::trace;
+    use crate::trace::tracer;
 
     #[test]
     fn ensure_content_test() {
         let log_context = "ensure_content_test";
 
-        trace(&log_context, "fixtures");
+        tracer(&log_context, "fixtures");
         let local_client = local_client();
         let table_name = table_name_fresh();
         let content = content_fresh();
@@ -97,7 +97,7 @@ pub mod tests {
     fn touch_agent_test() {
         let log_context = "touch_agent_test";
 
-        trace(&log_context, "fixtures");
+        tracer(&log_context, "fixtures");
         let local_client = local_client();
         let table_name = table_name_fresh();
         let agent_id = agent_id_fresh();

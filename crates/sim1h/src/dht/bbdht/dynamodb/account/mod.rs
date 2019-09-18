@@ -11,7 +11,7 @@ pub fn describe_limits(client: &Client) -> Result<DescribeLimitsOutput, RusotoEr
 #[cfg(test)]
 pub mod tests {
 
-    use crate::log::trace;
+    use crate::trace::tracer;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::dht::bbdht::dynamodb::client::fixture::bad_client;
     use crate::dht::bbdht::dynamodb::account::describe_limits;
@@ -20,7 +20,7 @@ pub mod tests {
     fn describe_limits_ok_test() {
         let log_context = "describe_limits_ok_test";
 
-        trace(&log_context, "fixtures");
+        tracer(&log_context, "fixtures");
         let local_client = local_client();
 
         // describe limits
@@ -31,7 +31,7 @@ pub mod tests {
     fn describe_limits_bad_test() {
         let log_context = "describe_limits_bad_test";
 
-        trace(&log_context, "fixtures");
+        tracer(&log_context, "fixtures");
         let bad_client = bad_client();
 
         // fail to describe limits

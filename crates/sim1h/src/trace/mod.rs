@@ -2,7 +2,8 @@ pub fn setup() {
     let _ = env_logger::builder().is_test(true).try_init();
 }
 
-pub fn trace(log_context: &LogContext, msg: &str) {
+pub fn tracer(log_context: &LogContext, msg: &str) {
+    setup();
     trace!("{}: {}", log_context, msg);
 }
 

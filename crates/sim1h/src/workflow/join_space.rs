@@ -5,11 +5,11 @@ use lib3h::error::Lib3hResult;
 use lib3h::error::Lib3hError;
 use lib3h_protocol::data_types::SpaceData;
 use crate::dht::bbdht::dynamodb::client::Client;
-use crate::log::trace;
-use crate::log::LogContext;
+use crate::trace::tracer;
+use crate::trace::LogContext;
 
 pub fn join_space(log_context: &LogContext, client: &Client, join_space_data: &SpaceData) -> Lib3hResult<ClientToLib3hResponse> {
-    trace(&log_context, "join_space");
+    tracer(&log_context, "join_space");
 
     let table_name = String::from(join_space_data.space_address.clone());
 

@@ -37,13 +37,13 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
     use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::log::trace;
+    use crate::trace::tracer;
 
     #[test]
     fn get_item_by_address_test() {
         let log_context = "get_item_by_address_test";
 
-        trace(&log_context, "fixtures");
+        tracer(&log_context, "fixtures");
         let local_client = local_client();
         let table_name = table_name_fresh();
         let content = content_fresh();

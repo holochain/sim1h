@@ -5,15 +5,15 @@ use rusoto_dynamodb::DeleteTableError;
 use rusoto_dynamodb::DeleteTableInput;
 use rusoto_dynamodb::DeleteTableOutput;
 use rusoto_dynamodb::DynamoDb;
-use crate::log::trace;
-use crate::log::LogContext;
+use crate::trace::tracer;
+use crate::trace::LogContext;
 
 pub fn delete_table(
     log_context: &LogContext,
     client: &Client,
     table_name: &str,
 ) -> Result<DeleteTableOutput, RusotoError<DeleteTableError>> {
-    trace(&log_context, "delete_table");
+    tracer(&log_context, "delete_table");
     let delete_table_input = DeleteTableInput {
         table_name: table_name.to_string(),
     };
@@ -32,13 +32,13 @@ pub mod test {
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::dht::bbdht::dynamodb::schema::fixture::attribute_definitions_a;
     use crate::dht::bbdht::dynamodb::schema::fixture::key_schema_a;
-    use crate::log::trace;
+    use crate::trace::tracer;
 
     #[test]
     fn delete_table_test() {
         let log_context = "delete_table_text";
 
-        trace(&log_context, "fixtures");
+        tracer(&log_context, "fixtures");
 
         let local_client = local_client();
         let table_name = table_name_fresh();

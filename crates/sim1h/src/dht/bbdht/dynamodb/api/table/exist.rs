@@ -2,15 +2,15 @@ use crate::dht::bbdht::dynamodb::api::table::describe::describe_table;
 use crate::dht::bbdht::dynamodb::client::Client;
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::DescribeTableError;
-use crate::log::LogContext;
-use crate::log::trace;
+use crate::trace::LogContext;
+use crate::trace::tracer;
 
 pub fn table_exists(
     log_context: &LogContext,
     client: &Client,
     table_name: &str,
 ) -> Result<bool, RusotoError<DescribeTableError>> {
-    trace(&log_context, "table_exist");
+    tracer(&log_context, "table_exist");
 
     let table_description_result = describe_table(log_context, client, table_name);
     match table_description_result {
@@ -33,7 +33,7 @@ pub fn table_exists(
 
 pub fn until_table_exists_or_not(log_context: &LogContext, client: &Client, table_name: &str, exists: bool) {
     loop {
-        trace(log_context, "until_table_exists_or_not");
+        tracer(&log_context, "until_table_exists_or_not");
         match table_exists(log_context, client, table_name) {
             Ok(does_exist) => {
                 if exists == does_exist {
@@ -65,13 +65,13 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::dht::bbdht::dynamodb::schema::fixture::attribute_definitions_a;
     use crate::dht::bbdht::dynamodb::schema::fixture::key_schema_a;
-    use crate::log::trace;
+    use crate::trace::tracer;
 
     #[test]
     fn table_exists_test() {
         let log_context = "table_exists_test";
 
-        trace(&log_context, "fixtures");
+        tracer(&log_context, "fixtures");
         let local_client = local_client();
         let table_name = table_name_fresh();
         let key_schema = key_schema_a();

@@ -10,8 +10,8 @@ use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::KeySchemaElement;
 use rusoto_dynamodb::ProvisionedThroughput;
 use rusoto_dynamodb::TableDescription;
-use crate::log::LogContext;
-use crate::log::trace;
+use crate::trace::LogContext;
+use crate::trace::tracer;
 
 pub fn create_table(
     log_context: &LogContext,
@@ -20,7 +20,7 @@ pub fn create_table(
     key_schema: &Vec<KeySchemaElement>,
     attribute_definitions: &Vec<AttributeDefinition>,
 ) -> Result<Option<TableDescription>, RusotoError<CreateTableError>> {
-    trace(&log_context, "create_table");
+    tracer(&log_context, "create_table");
 
     let create_table_input = CreateTableInput {
         table_name: table_name.to_string(),
@@ -45,7 +45,7 @@ pub fn ensure_table(
     key_schema: &Vec<KeySchemaElement>,
     attribute_definitions: &Vec<AttributeDefinition>,
 ) -> Result<Option<TableDescription>, RusotoError<CreateTableError>> {
-    trace(log_context, "create_table");
+    tracer(log_context, "create_table");
 
     // well in reality we end up with concurrency issues if we do a list or describe
     // there is a specific error returned for a table that already exists so we defuse to None
@@ -69,7 +69,7 @@ pub fn ensure_cas_table(
     client: &Client,
     table_name: &str,
 ) -> Result<Option<TableDescription>, RusotoError<CreateTableError>> {
-    trace(&log_context, "ensure_cas_table");
+    tracer(&log_context, "ensure_cas_table");
 
     ensure_table(
         log_context,
@@ -94,13 +94,13 @@ pub mod test {
     use crate::dht::bbdht::dynamodb::schema::cas::key_schema_cas;
     use crate::dht::bbdht::dynamodb::schema::fixture::attribute_definitions_a;
     use crate::dht::bbdht::dynamodb::schema::fixture::key_schema_a;
-    use crate::log::trace;
+    use crate::trace::tracer;
 
     #[test]
     fn create_table_test() {
         let log_context = "create_table_test";
 
-        trace(&log_context, "fixtures");
+        tracer(&log_context, "fixtures");
         let local_client = local_client();
         let table_name = table_name_fresh();
         let key_schema = key_schema_a();
@@ -131,7 +131,7 @@ pub mod test {
     fn ensure_table_test() {
         let log_context = "ensure_table_test";
 
-        trace(&log_context, "fixtures");
+        tracer(&log_context, "fixtures");
         let local_client = local_client();
         let table_name = table_name_fresh();
         let key_schema = key_schema_a();
@@ -174,7 +174,7 @@ pub mod test {
     fn ensure_cas_table_test() {
         let log_context = "ensure_cas_table_test";
 
-        trace(&log_context, "fixtures");
+        tracer(&log_context, "fixtures");
         let local_client = local_client();
         let table_name = table_name_fresh();
 

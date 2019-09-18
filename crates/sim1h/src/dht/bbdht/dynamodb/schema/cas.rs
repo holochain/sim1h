@@ -44,7 +44,7 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::schema::cas::key_schema_cas;
     use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
     use crate::dht::bbdht::dynamodb::schema::cas::CONTENT_KEY;
-    use crate::log::trace;
+    use crate::trace::tracer;
     use rusoto_dynamodb::AttributeDefinition;
     use rusoto_dynamodb::KeySchemaElement;
 
@@ -52,7 +52,7 @@ pub mod tests {
     fn address_key_schema_test() {
         let log_context = "address_key_schema_test";
 
-        trace(&log_context, "compare values");
+        tracer(&log_context, "compare values");
         assert_eq!(
             KeySchemaElement {
                 attribute_name: ADDRESS_KEY.to_string(),
@@ -66,7 +66,7 @@ pub mod tests {
     fn content_key_schema_test() {
         let log_context = "context_key_schema_test";
 
-        trace(&log_context, "compare values");
+        tracer(&log_context, "compare values");
         assert_eq!(
             KeySchemaElement {
                 attribute_name: CONTENT_KEY.to_string(),
@@ -80,7 +80,7 @@ pub mod tests {
     fn key_schema_cas_test() {
         let log_context = "key_schema_cas_test";
 
-        trace(&log_context, "compare values");
+        tracer(&log_context, "compare values");
         assert_eq!(
             vec![KeySchemaElement {
                 attribute_name: ADDRESS_KEY.to_string(),
@@ -94,7 +94,7 @@ pub mod tests {
     fn address_attribute_definition_test() {
         let log_context = "address_attribute_definition_test";
 
-        trace(&log_context, "compare values");
+        tracer(&log_context, "compare values");
         assert_eq!(
             AttributeDefinition {
                 attribute_name: ADDRESS_KEY.to_string(),
@@ -108,7 +108,7 @@ pub mod tests {
     fn content_attribute_definition_test() {
         let log_context = "content_attribute_definition_test";
 
-        trace(&log_context, "compare values");
+        tracer(&log_context, "compare values");
         assert_eq!(
             AttributeDefinition {
                 attribute_name: CONTENT_KEY.to_string(),
@@ -122,7 +122,7 @@ pub mod tests {
     fn attribute_definitions_cas_test() {
         let log_context = "attribute_definitions_cas_test";
 
-        trace(&log_context, "compare values");
+        tracer(&log_context, "compare values");
         assert_eq!(address_attribute_definition(), attribute_definitions_cas()[0]);
     }
 

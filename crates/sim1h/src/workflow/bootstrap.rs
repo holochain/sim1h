@@ -18,13 +18,13 @@ pub mod tests {
     use crate::workflow::bootstrap::bootstrap;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::dht::bbdht::dynamodb::client::fixture::bad_client;
-    use crate::log::trace;
+    use crate::trace::tracer;
 
     #[test]
     fn bootstrap_test() {
         let log_context = "bootstrap_test";
 
-        trace(&log_context, "fixtures");
+        tracer(&log_context, "fixtures");
         let local_client = local_client();
 
         // success
@@ -38,7 +38,7 @@ pub mod tests {
     fn bootstrap_bad_client_test() {
         let log_context = "bootstrap_bad_client_test";
 
-        trace(&log_context, "fixtures");
+        tracer(&log_context, "fixtures");
         let bad_client = bad_client();
 
         // fail

@@ -4,15 +4,15 @@ use rusoto_dynamodb::DescribeTableError;
 use rusoto_dynamodb::DescribeTableInput;
 use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::TableDescription;
-use crate::log::trace;
-use crate::log::LogContext;
+use crate::trace::tracer;
+use crate::trace::LogContext;
 
 pub fn describe_table(
     log_context: &LogContext,
     client: &Client,
     table_name: &str,
 ) -> Result<TableDescription, RusotoError<DescribeTableError>> {
-    trace(&log_context, "describe_table");
+    tracer(&log_context, "describe_table");
     match client
         .describe_table(DescribeTableInput {
             table_name: table_name.to_string(),
@@ -37,7 +37,7 @@ pub mod test {
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::dht::bbdht::dynamodb::schema::fixture::attribute_definitions_a;
     use crate::dht::bbdht::dynamodb::schema::fixture::key_schema_a;
-    use crate::log::trace;
+    use crate::trace::tracer;
 
     use rusoto_core::RusotoError;
     use rusoto_dynamodb::DescribeTableError;
@@ -46,7 +46,7 @@ pub mod test {
     fn describe_table_test() {
         let log_context = "describe_table_test";
 
-        trace(&log_context, "describe_table_test");
+        tracer(&log_context, "describe_table_test");
         let local_client = local_client();
         let table_name = table_name_fresh();
         let key_schema = key_schema_a();
@@ -85,7 +85,7 @@ pub mod test {
     fn describe_table_missing_test() {
         let log_context = "describe_table_missing_test";
 
-        trace(&log_context, "fixtures");
+        tracer(&log_context, "fixtures");
         let local_client = local_client();
         let table_name = table_name_fresh();
 
