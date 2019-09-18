@@ -14,6 +14,8 @@ use lib3h_zombie_actor::WorkWasDone;
 use url::Url;
 use lib3h::engine::engine_actor::ClientToLib3hMessage;
 use lib3h::engine::CanAdvertise;
+use rusoto_core::Region;
+use crate::dht::bbdht::dynamodb::client::{client, Client};
 
 const REQUEST_ID_PREFIX: &str = "sim";
 
@@ -37,10 +39,12 @@ pub struct SimGhostActor {
             Lib3hError,
         >,
     >,
+    #[allow(dead_code)]
+    dbclient: Client,
 }
 
 impl SimGhostActor {
-    pub fn new(_netname: String) -> Self {
+    pub fn new(region: Region) -> Self {
         let (endpoint_parent, endpoint_self) = create_ghost_channel();
         Self {
             client_endpoint: Some(endpoint_parent),
@@ -50,7 +54,7 @@ impl SimGhostActor {
                     .request_id_prefix(REQUEST_ID_PREFIX)
                     .build(),
             ),
-            // reciever: None,
+            dbclient: client(region),
         }
     }
 
