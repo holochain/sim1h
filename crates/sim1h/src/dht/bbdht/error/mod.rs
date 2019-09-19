@@ -2,6 +2,7 @@ use rusoto_core::RusotoError;
 use rusoto_dynamodb::DescribeTableError;
 use rusoto_dynamodb::GetItemError;
 use std::num::ParseIntError;
+use lib3h::error::Lib3hError;
 
 #[derive(Debug)]
 pub enum BbDhtError {
@@ -20,11 +21,35 @@ pub enum BbDhtError {
     CorruptData(String),
 }
 
+impl ToString for BbDhtError {
+    fn to_string(&self) -> String {
+        match self {
+            BbDhtError::InternalServerError(s) => s,
+            BbDhtError::ProvisionedThroughputExceeded(s) => s,
+            BbDhtError::RequestLimitExceeded(s) => s,
+            BbDhtError::ResourceNotFound(s) => s,
+            BbDhtError::HttpDispatch(s) => s,
+            BbDhtError::Credentials(s) => s,
+            BbDhtError::Validation(s) => s,
+            BbDhtError::ParseError(s) => s,
+            BbDhtError::Unknown(s) => s,
+            BbDhtError::MissingData(s) => s,
+            BbDhtError::CorruptData(s) => s,
+        }.to_string()
+    }
+}
+
 pub type BbDhtResult<T> = Result<T, BbDhtError>;
 
 impl From<ParseIntError> for BbDhtError {
     fn from(int_error: ParseIntError) -> Self {
         BbDhtError::CorruptData(int_error.to_string())
+    }
+}
+
+impl From<BbDhtError> for Lib3hError {
+    fn from(bb_dht_error: BbDhtError) -> Self {
+        Lib3hError::from(bb_dht_error.to_string())
     }
 }
 

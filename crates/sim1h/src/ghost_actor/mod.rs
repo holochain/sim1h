@@ -10,6 +10,7 @@ use lib3h::engine::engine_actor::ClientToLib3hMessage;
 use lib3h::engine::CanAdvertise;
 use lib3h::error::Lib3hError;
 use lib3h_protocol::protocol::ClientToLib3h;
+use crate::workflow::query_entry::query_entry;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
 use lib3h_protocol::protocol::Lib3hToClient;
 use lib3h_protocol::protocol::Lib3hToClientResponse;
@@ -125,7 +126,8 @@ impl SimGhostActor {
             // do some kind of filter based on the non-opaque query struct
             // familiar to rehydrate the opaque query struct
             ClientToLib3h::QueryEntry(data) => {
-                trace!("ClientToLib3h::QueryEntry: {:?}", &data);
+                let log_context = "ClientToLib3h::QueryEntry";
+                query_entry(&log_context, &self.dbclient, &data)?;
                 Ok(true.into())
             }
             // specced
