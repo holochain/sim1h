@@ -5,7 +5,7 @@ use rusoto_dynamodb::KeySchemaElement;
 
 pub const ADDRESS_KEY: &str = "address";
 pub const CONTENT_KEY: &str = "content";
-pub const ASPECT_LIST: &str = "aspect_list";
+pub const ASPECT_LIST_KEY: &str = "aspect_list";
 
 pub fn address_key_schema() -> KeySchemaElement {
     hash_key(ADDRESS_KEY)

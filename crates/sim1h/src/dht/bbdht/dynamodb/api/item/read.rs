@@ -8,12 +8,17 @@ use rusoto_dynamodb::GetItemError;
 use rusoto_dynamodb::GetItemInput;
 use rusoto_dynamodb::GetItemOutput;
 use std::collections::HashMap;
+use crate::trace::tracer;
+use crate::trace::LogContext;
 
 pub fn get_item_by_address(
+    log_context: &LogContext,
     client: &Client,
     table_name: &str,
     address: &Address,
 ) -> Result<GetItemOutput, RusotoError<GetItemError>> {
+    tracer(&log_context, "get_item_by_address");
+
     let mut key = HashMap::new();
     key.insert(
         String::from(ADDRESS_KEY),
