@@ -18,10 +18,10 @@ pub fn leave_space(
 #[cfg(test)]
 pub mod tests {
 
-    use crate::workflow::leave_space::leave_space;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::trace::tracer;
     use crate::workflow::fixture::space_data_fresh;
+    use crate::workflow::leave_space::leave_space;
     use lib3h_protocol::protocol::ClientToLib3hResponse;
 
     #[test]
@@ -34,7 +34,7 @@ pub mod tests {
 
         tracer(&log_context, "check response");
         match leave_space(&log_context, &local_client, &space_data) {
-            Ok(ClientToLib3hResponse::LeaveSpaceResult) => { },
+            Ok(ClientToLib3hResponse::LeaveSpaceResult) => {}
             _ => unreachable!(),
         }
     }

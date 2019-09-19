@@ -1,5 +1,7 @@
 use crate::dht::bbdht::dynamodb::client::{client, Client};
 use crate::workflow::bootstrap::bootstrap;
+use crate::workflow::join_space::join_space;
+use crate::workflow::leave_space::leave_space;
 use detach::Detach;
 use lib3h::engine::engine_actor::ClientToLib3hMessage;
 use lib3h::engine::CanAdvertise;
@@ -15,8 +17,6 @@ use lib3h_zombie_actor::GhostContextEndpoint;
 use lib3h_zombie_actor::GhostEndpoint;
 use lib3h_zombie_actor::GhostResult;
 use lib3h_zombie_actor::WorkWasDone;
-use crate::workflow::join_space::join_space;
-use crate::workflow::leave_space::leave_space;
 use rusoto_core::Region;
 use url::Url;
 
@@ -69,37 +69,55 @@ impl SimGhostActor {
         mut msg: ClientToLib3hMessage,
     ) -> GhostResult<WorkWasDone> {
         match msg.take_message().expect("exists") {
+            // MVP
             ClientToLib3h::Bootstrap(_) => {
                 let log_context = "ClientToLib3h::Bootstrap";
                 msg.respond(bootstrap(&log_context, &self.dbclient))?;
                 Ok(true.into())
             }
+            // MVP
             ClientToLib3h::JoinSpace(data) => {
                 let log_context = "ClientToLib3h::JoinSpace";
                 msg.respond(join_space(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
+            // MVP
             ClientToLib3h::LeaveSpace(data) => {
                 let log_context = "ClientToLib3h::LeaveSpace";
-                msg.respond(leave_space(&log_context, &self.dbclient,&data))?;
+                msg.respond(leave_space(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
+            // specced
+            // A: append message to inbox in database
+            // B: drain messages from inbox in database
             ClientToLib3h::SendDirectMessage(data) => {
                 trace!("ClientToLib3h::SendDirectMessage: {:?}", &data);
                 Ok(true.into())
             }
-            ClientToLib3h::PublishEntry(data) => {
-                trace!("ClientToLib3h::PublishEntry: {:?}", &data);
+            // specced
+            // append list of aspect addresses to entry address
+            // drop all aspects into database under each of their addresses
+            // make all this in a transaction
+            ClientToLib3h::PublishEntry(_data) => {
+                let _log_context = "ClientToLib3h::PublishEntry";
+                // msg.respond(publish_entry(&log_context, self.dbclient, &data))?;
                 Ok(true.into())
             }
+            // specced
+            // this is a no-op
             ClientToLib3h::HoldEntry(data) => {
                 trace!("ClientToLib3h::HoldEntry: {:?}", &data);
                 Ok(true.into())
             }
+            // specced
+            // fetch all entry aspects from entry address
+            // do some kind of filter based on the non-opaque query struct
             ClientToLib3h::QueryEntry(data) => {
                 trace!("ClientToLib3h::QueryEntry: {:?}", &data);
                 Ok(true.into())
             }
+            // specced
+            // query entry but hardcoded to entry query right?
             ClientToLib3h::FetchEntry(data) => {
                 trace!("ClientToLib3h::FetchEntry: {:?}", &data);
                 Ok(true.into())
@@ -241,8 +259,10 @@ pub mod tests {
             agent_id: Address::from("an-agent"),
         };
         match get_response_to_request(engine, ClientToLib3h::JoinSpace(space_data)) {
-            GhostCallbackData::Response(Ok(ClientToLib3hResponse::JoinSpaceResult)) => assert!(true),
-            r => panic!("unexpected response: {:?}", r)
+            GhostCallbackData::Response(Ok(ClientToLib3hResponse::JoinSpaceResult)) => {
+                assert!(true)
+            }
+            r => panic!("unexpected response: {:?}", r),
         }
     }
 }

@@ -1,10 +1,10 @@
 use crate::dht::bbdht::dynamodb::account::describe_limits;
 use crate::dht::bbdht::dynamodb::client::Client;
+use crate::trace::tracer;
+use crate::trace::LogContext;
 use lib3h::error::Lib3hError;
 use lib3h::error::Lib3hResult;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
-use crate::trace::tracer;
-use crate::trace::LogContext;
 
 pub fn bootstrap(log_context: &LogContext, client: &Client) -> Lib3hResult<ClientToLib3hResponse> {
     tracer(&log_context, "bootstrap");
