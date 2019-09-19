@@ -2,8 +2,8 @@ use crate::dht::bbdht::dynamodb::client::Client;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use lib3h::error::Lib3hResult;
-use lib3h_protocol::protocol::ClientToLib3hResponse;
 use lib3h_protocol::data_types::ProvidedEntryData;
+use lib3h_protocol::protocol::ClientToLib3hResponse;
 
 pub fn hold_entry(
     log_context: &LogContext,
@@ -20,9 +20,9 @@ pub mod tests {
 
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::trace::tracer;
+    use crate::workflow::fixture::provided_entry_data_fresh;
     use crate::workflow::hold_entry::hold_entry;
     use lib3h_protocol::protocol::ClientToLib3hResponse;
-    use crate::workflow::fixture::provided_entry_data_fresh;
 
     #[test]
     fn hold_entry_test() {
@@ -37,10 +37,10 @@ pub mod tests {
             Ok(ClientToLib3hResponse::BootstrapSuccess) => {}
             Ok(o) => {
                 panic!("bad ok {:?}", o);
-            },
+            }
             Err(e) => {
                 panic!("bad error {:?}", e);
-            },
+            }
         }
     }
 

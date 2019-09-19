@@ -1,5 +1,6 @@
 use crate::dht::bbdht::dynamodb::client::{client, Client};
 use crate::workflow::bootstrap::bootstrap;
+use crate::workflow::hold_entry::hold_entry;
 use crate::workflow::join_space::join_space;
 use crate::workflow::leave_space::leave_space;
 use detach::Detach;
@@ -17,7 +18,6 @@ use lib3h_zombie_actor::GhostContextEndpoint;
 use lib3h_zombie_actor::GhostEndpoint;
 use lib3h_zombie_actor::GhostResult;
 use lib3h_zombie_actor::WorkWasDone;
-use crate::workflow::hold_entry::hold_entry;
 use rusoto_core::Region;
 use url::Url;
 
