@@ -17,6 +17,7 @@ use lib3h_zombie_actor::GhostContextEndpoint;
 use lib3h_zombie_actor::GhostEndpoint;
 use lib3h_zombie_actor::GhostResult;
 use lib3h_zombie_actor::WorkWasDone;
+use crate::workflow::hold_entry::hold_entry;
 use rusoto_core::Region;
 use url::Url;
 
@@ -103,15 +104,17 @@ impl SimGhostActor {
                 // msg.respond(publish_entry(&log_context, self.dbclient, &data))?;
                 Ok(true.into())
             }
-            // specced
+            // MVP
             // this is a no-op
             ClientToLib3h::HoldEntry(data) => {
-                trace!("ClientToLib3h::HoldEntry: {:?}", &data);
+                let log_context = "ClientToLib3h::HoldEntry";
+                msg.respond(hold_entry(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
             // specced
             // fetch all entry aspects from entry address
             // do some kind of filter based on the non-opaque query struct
+            // familiar to rehydrate the opaque query struct
             ClientToLib3h::QueryEntry(data) => {
                 trace!("ClientToLib3h::QueryEntry: {:?}", &data);
                 Ok(true.into())
