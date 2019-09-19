@@ -1,5 +1,6 @@
 use crate::dht::bbdht::dynamodb::client::Client;
 use dynomite::dynamodb::{DynamoDb, ListTablesError, ListTablesInput, ListTablesOutput};
+use futures::Future;
 use rusoto_core::RusotoError;
 
 pub fn list_tables(client: &Client) -> Result<ListTablesOutput, RusotoError<ListTablesError>> {
@@ -7,7 +8,7 @@ pub fn list_tables(client: &Client) -> Result<ListTablesOutput, RusotoError<List
         .list_tables(ListTablesInput {
             ..Default::default()
         })
-        .sync()
+        .wait()
 }
 
 #[cfg(test)]

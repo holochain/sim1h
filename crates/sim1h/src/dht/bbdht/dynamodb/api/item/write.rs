@@ -6,6 +6,7 @@ use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::trace::tracer;
 use crate::trace::LogContext;
+use futures::Future;
 use holochain_persistence_api::cas::content::Address;
 use holochain_persistence_api::cas::content::AddressableContent;
 use rusoto_core::RusotoError;
@@ -41,7 +42,29 @@ pub fn ensure_content(
             table_name: table_name.to_string(),
             ..Default::default()
         })
-        .sync()
+        .wait()
+}
+
+pub fn touch_agent(
+    log_context: &LogContext,
+    client: &Client,
+    table_name: &TableName,
+    agent_id: &Address,
+) -> Result<PutItemOutput, RusotoError<PutItemError>> {
+    tracer(&log_context, "touch_agent");
+
+    let mut item = HashMap::new();
+    item.insert(
+        String::from(ADDRESS_KEY),
+        string_attribute_value(&String::from(agent_id.to_owned())),
+    );
+    client
+        .put_item(PutItemInput {
+            item: item,
+            table_name: table_name.to_string(),
+            ..Default::default()
+        })
+        .wait()
 }
 
 pub fn append_agent_message(
@@ -72,7 +95,7 @@ pub fn append_agent_message(
         ..Default::default()
     };
 
-    client.update_item(inbox_update).sync()
+    client.update_item(inbox_update).wait()
 }
 
 #[cfg(test)]

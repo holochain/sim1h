@@ -6,6 +6,7 @@ use crate::dht::bbdht::dynamodb::schema::cas::key_schema_cas;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use dynomite::dynamodb::{CreateTableError, CreateTableInput, DescribeTableError};
+use futures::Future;
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::AttributeDefinition;
 use rusoto_dynamodb::DynamoDb;
@@ -33,7 +34,7 @@ pub fn create_table(
         ..Default::default()
     };
 
-    let output = match client.create_table(create_table_input).sync() {
+    let output = match client.create_table(create_table_input).wait() {
         Ok(v) => v,
         Err(err) => {
             tracer(&log_context, "create_table error");
