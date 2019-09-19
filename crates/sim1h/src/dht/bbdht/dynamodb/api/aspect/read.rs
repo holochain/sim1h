@@ -27,9 +27,9 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_ADDRESS_KEY;
     use crate::workflow::fixture::entry_aspect_data_fresh;
     use crate::dht::bbdht::dynamodb::api::aspect::write::put_aspect;
-    use holochain_persistence_api::cas::content::Address;
     use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
     use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_KEY;
+    use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_PUBLISH_TS_KEY;
 
     #[test]
     fn read_aspect_test() {
@@ -54,12 +54,12 @@ pub mod tests {
             Ok(v) => {
                 println!("{:#?}", v);
                 assert_eq!(
-                    Address::from(v.clone().item.unwrap()[ADDRESS_KEY].clone().s.unwrap()),
-                    entry_aspect_data.aspect_address,
+                    v.clone().item.unwrap()[ADDRESS_KEY].clone().s.unwrap(),
+                    String::from(entry_aspect_data.aspect_address.clone()),
                 );
                 assert_eq!(
-                    Address::from(v.clone().item.unwrap()[ASPECT_ADDRESS_KEY].clone().s.unwrap()),
-                    entry_aspect_data.aspect_address,
+                    v.clone().item.unwrap()[ASPECT_ADDRESS_KEY].clone().s.unwrap(),
+                    String::from(entry_aspect_data.aspect_address.clone()),
                 );
                 assert_eq!(
                     v.clone().item.unwrap()[ASPECT_TYPE_HINT_KEY].clone().s.unwrap(),
@@ -68,6 +68,10 @@ pub mod tests {
                 assert_eq!(
                     v.clone().item.unwrap()[ASPECT_KEY].clone().b.unwrap(),
                     entry_aspect_data.aspect.as_slice(),
+                );
+                assert_eq!(
+                    v.clone().item.unwrap()[ASPECT_PUBLISH_TS_KEY].clone().n.unwrap(),
+                    entry_aspect_data.publish_ts.to_string(),
                 );
             },
             Err(err) => {
