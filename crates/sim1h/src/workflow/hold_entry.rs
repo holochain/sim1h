@@ -3,16 +3,18 @@ use crate::trace::tracer;
 use crate::trace::LogContext;
 use lib3h::error::Lib3hResult;
 use lib3h_protocol::data_types::ProvidedEntryData;
-use lib3h_protocol::protocol::ClientToLib3hResponse;
 
 pub fn hold_entry(
     log_context: &LogContext,
     _client: &Client,
     _provided_entry_data: &ProvidedEntryData,
-) -> Lib3hResult<ClientToLib3hResponse> {
+) -> Lib3hResult<()> {
     tracer(&log_context, "hold_entry");
-    // TODO: this seems like a dumb response
-    Ok(ClientToLib3hResponse::BootstrapSuccess)
+
+    // it is valid for the provided_agent_id to not have joined the network
+    // it is a remote client and they may be "offline"
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -23,7 +25,6 @@ pub mod tests {
     use crate::workflow::fixture::provided_entry_data_fresh;
     use crate::workflow::hold_entry::hold_entry;
     use crate::workflow::fixture::space_data_fresh;
-    use lib3h_protocol::protocol::ClientToLib3hResponse;
 
     #[test]
     fn hold_entry_test() {
@@ -36,10 +37,7 @@ pub mod tests {
 
         tracer(&log_context, "check response");
         match hold_entry(&log_context, &local_client, &provided_entry_data) {
-            Ok(ClientToLib3hResponse::BootstrapSuccess) => {}
-            Ok(o) => {
-                panic!("bad ok {:?}", o);
-            }
+            Ok(()) => {}
             Err(e) => {
                 panic!("bad error {:?}", e);
             }
@@ -57,11 +55,8 @@ pub mod tests {
 
         tracer(&log_context, "check response");
         match hold_entry(&log_context, &local_client, &provided_entry_data) {
-            Ok(ClientToLib3hResponse::BootstrapSuccess) => {
+            Ok(()) => {
                 tracer(&log_context, "👌");
-            }
-            Ok(o) => {
-                panic!("bad ok {:?}", o);
             }
             Err(e) => {
                 panic!("bad error {:?}", e);
