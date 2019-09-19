@@ -34,8 +34,15 @@ pub mod tests {
 
         tracer(&log_context, "check response");
         match leave_space(&log_context, &local_client, &space_data) {
-            Ok(ClientToLib3hResponse::LeaveSpaceResult) => {}
-            _ => unreachable!(),
+            Ok(ClientToLib3hResponse::LeaveSpaceResult) => {
+                tracer(&log_context, "👌");
+            }
+            Ok(v) => {
+                panic!("bad Ok {:?}", v);
+            }
+            Err(err) => {
+                panic!("Err {:?}", err);
+            }
         }
     }
 

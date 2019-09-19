@@ -77,8 +77,12 @@ pub mod tests {
 
         tracer(&log_context, "check response");
         match join_space(&log_context, &bad_client, &space_data) {
-            Err(_) => {}
-            _ => unreachable!(),
+            Err(_) => {
+                tracer(&log_context, "👌");
+            }
+            Ok(v) => {
+                panic!("bad Ok {:?}", v);
+            }
         }
     }
 

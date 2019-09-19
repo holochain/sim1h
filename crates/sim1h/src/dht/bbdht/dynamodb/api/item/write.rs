@@ -1,6 +1,6 @@
 use crate::dht::bbdht::dynamodb::client::Client;
+use crate::dht::bbdht::dynamodb::schema::cas::inbox_key;
 use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_LIST_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::CONTENT_KEY;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::TableName;
@@ -8,9 +8,6 @@ use crate::trace::tracer;
 use crate::trace::LogContext;
 use holochain_persistence_api::cas::content::Address;
 use holochain_persistence_api::cas::content::AddressableContent;
-use rusoto_dynamodb::AttributeValue;
-use crate::dht::bbdht::dynamodb::schema::string_set_attribute_value;
-use lib3h_protocol::data_types::EntryAspectData;
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::PutItemError;
@@ -69,55 +66,35 @@ pub fn touch_agent(
         .sync()
 }
 
-pub fn aspect_list_to_attribute(aspect_list: &Vec<EntryAspectData>) -> AttributeValue {
-    string_set_attribute_value(
-    aspect_list
-        .iter()
-        .map(|aspect| aspect.aspect_address.to_string())
-        .collect())
-}
-
-pub fn append_aspects(
+pub fn append_agent_message(
     log_context: &LogContext,
     client: &Client,
     table_name: &TableName,
-    entry_address: &Address,
-    aspect_list: &Vec<EntryAspectData>,
+    _request_id: &String,
+    _from: &Address,
+    to: &Address,
+    _content: &Vec<u8>,
 ) -> Result<UpdateItemOutput, RusotoError<UpdateItemError>> {
-    tracer(&log_context, "append_aspects");
+    tracer(&log_context, "append_agent_message");
 
-    // the aspect addressses live under the entry address
-    let mut aspect_addresses_key = HashMap::new();
-    aspect_addresses_key.insert(
-        String::from(ADDRESS_KEY),
-        string_attribute_value(&String::from(entry_address.to_owned())),
+    // the recipient is the key address
+    let mut inbox_address_key = HashMap::new();
+    inbox_address_key.insert(
+        String::from(inbox_key(to)),
+        string_attribute_value(&String::from(to.to_owned())),
     );
 
-    let mut expression_attribute_values = HashMap::new();
-    expression_attribute_values.insert(
-        ":aspects".to_string(),
-        aspect_list_to_attribute(&aspect_list),
-    );
+    // inbox_address_key.insert
 
-    let mut expression_attribute_names = HashMap::new();
-    expression_attribute_names.insert(
-        "#aspect_list".to_string(),
-        ASPECT_LIST_KEY.to_string(),
-    );
-
-    let update_expression = "ADD #aspect_list :aspects";
-
-    let aspect_list_update = UpdateItemInput {
+    // TODO
+    let inbox_update = UpdateItemInput {
         table_name: table_name.to_string(),
-        key: aspect_addresses_key,
-        // https://stackoverflow.com/questions/31288085/how-to-append-a-value-to-list-attribute-on-aws-dynamodb
-        update_expression: Some(update_expression.to_string()),
-        expression_attribute_names: Some(expression_attribute_names),
-        expression_attribute_values: Some(expression_attribute_values),
+        key: inbox_address_key,
+        // update_expression: Some("".to_string()),
         ..Default::default()
     };
 
-    client.update_item(aspect_list_update).sync()
+    client.update_item(inbox_update).sync()
 }
 
 #[cfg(test)]
@@ -126,21 +103,12 @@ pub mod tests {
     use crate::agent::fixture::agent_id_fresh;
     use crate::dht::bbdht::dynamodb::api::item::fixture::content_fresh;
     use crate::dht::bbdht::dynamodb::api::item::write::ensure_content;
-    use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
-    use crate::dht::bbdht::dynamodb::api::item::write::append_aspects;
     use crate::dht::bbdht::dynamodb::api::item::write::touch_agent;
-    use crate::workflow::fixture::aspect_list_fresh;
     use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
-    use crate::workflow::fixture::entry_address_fresh;
     use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
-    use crate::dht::bbdht::dynamodb::api::item::read::get_item_by_address;
     use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::trace::tracer;
-    use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_LIST_KEY;
-    use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
-    use crate::dht::bbdht::dynamodb::api::item::write::aspect_list_to_attribute;
-    use std::collections::HashMap;
 
     #[test]
     fn ensure_content_test() {
@@ -184,68 +152,6 @@ pub mod tests {
 
         // touch agent
         assert!(touch_agent(&log_context, &local_client, &table_name, &agent_id).is_ok());
-    }
-
-    #[test]
-    fn append_aspects_test() {
-        let log_context = "append_aspects_test";
-
-        tracer(&log_context, "fixtures");
-        let local_client = local_client();
-        let table_name = table_name_fresh();
-        let entry_address = entry_address_fresh();
-        let aspect_list = aspect_list_fresh();
-
-        let mut expected = HashMap::new();
-        expected.insert(
-            ASPECT_LIST_KEY.to_string(),
-            aspect_list_to_attribute(&aspect_list),
-        );
-        expected.insert(
-            ADDRESS_KEY.to_string(),
-            string_attribute_value(&String::from(entry_address.clone())),
-        );
-
-        // ensure cas
-        assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
-
-        // cas exists
-        assert!(table_exists(&log_context, &local_client, &table_name).is_ok());
-
-        // idempotency loop
-        for _ in 0..3 {
-
-            // append aspects
-            assert!(append_aspects(&log_context, &local_client, &table_name, &entry_address, &aspect_list).is_ok());
-
-            // get matches
-            match get_item_by_address(&log_context, &local_client, &table_name, &entry_address) {
-                Ok(get_item_output) => {
-                    match get_item_output.item {
-                        Some(item) => {
-                            assert_eq!(
-                                expected["address"],
-                                item["address"],
-                            );
-                            assert_eq!(
-                                expected["aspect_list"].ss.iter().count(),
-                                item["aspect_list"].ss.iter().count(),
-                            );
-                        },
-                        None => {
-                            tracer(&log_context, "get matches None");
-                            panic!("None");
-                        }
-                    }
-                },
-                Err(err) => {
-                    tracer(&log_context, "get matches err");
-                    panic!("{:?}", err);
-                },
-            }
-
-        }
-
     }
 
 }

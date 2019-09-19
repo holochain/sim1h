@@ -22,6 +22,7 @@ pub mod tests {
     use crate::trace::tracer;
     use crate::workflow::fixture::provided_entry_data_fresh;
     use crate::workflow::hold_entry::hold_entry;
+    use crate::workflow::fixture::space_data_fresh;
     use lib3h_protocol::protocol::ClientToLib3hResponse;
 
     #[test]
@@ -30,7 +31,8 @@ pub mod tests {
 
         tracer(&log_context, "fixtures");
         let local_client = local_client();
-        let provided_entry_data = provided_entry_data_fresh();
+        let space_data = space_data_fresh();
+        let provided_entry_data = provided_entry_data_fresh(&space_data);
 
         tracer(&log_context, "check response");
         match hold_entry(&log_context, &local_client, &provided_entry_data) {

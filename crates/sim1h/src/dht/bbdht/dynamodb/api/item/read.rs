@@ -1,6 +1,8 @@
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
+use crate::trace::tracer;
+use crate::trace::LogContext;
 use holochain_persistence_api::cas::content::Address;
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::DynamoDb;
@@ -8,8 +10,6 @@ use rusoto_dynamodb::GetItemError;
 use rusoto_dynamodb::GetItemInput;
 use rusoto_dynamodb::GetItemOutput;
 use std::collections::HashMap;
-use crate::trace::tracer;
-use crate::trace::LogContext;
 
 pub fn get_item_by_address(
     log_context: &LogContext,
