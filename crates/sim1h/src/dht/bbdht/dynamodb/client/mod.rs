@@ -6,11 +6,12 @@ use dynomite::retry::Policy;
 use dynomite::retry::RetryingDynamoDb;
 use dynomite::Retries;
 use rusoto_core::Region;
+use std::time::Duration;
 
 pub type Client = RetryingDynamoDb<DynamoDbClient>;
 
 pub fn client(region: Region) -> Client {
-    DynamoDbClient::new(region).with_retries(Policy::default())
+    DynamoDbClient::new(region).with_retries(Policy::Exponential(10, Duration::from_millis(100)))
 }
 
 #[cfg(test)]
