@@ -7,6 +7,7 @@ use detach::Detach;
 use lib3h::engine::engine_actor::ClientToLib3hMessage;
 use lib3h::engine::CanAdvertise;
 use lib3h::error::Lib3hError;
+use crate::workflow::send_direct_message::send_direct_message;
 use lib3h_protocol::protocol::ClientToLib3h;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
 use lib3h_protocol::protocol::Lib3hToClient;
@@ -71,18 +72,22 @@ impl SimGhostActor {
     ) -> GhostResult<WorkWasDone> {
         match msg.take_message().expect("exists") {
             // MVP
+            // check database connection
             ClientToLib3h::Bootstrap(_) => {
                 let log_context = "ClientToLib3h::Bootstrap";
                 msg.respond(bootstrap(&log_context, &self.dbclient))?;
                 Ok(true.into())
             }
             // MVP
+            // create space if not exists
+            // touch agent
             ClientToLib3h::JoinSpace(data) => {
                 let log_context = "ClientToLib3h::JoinSpace";
                 msg.respond(join_space(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
             // MVP
+            // no-op
             ClientToLib3h::LeaveSpace(data) => {
                 let log_context = "ClientToLib3h::LeaveSpace";
                 msg.respond(leave_space(&log_context, &self.dbclient, &data))?;
@@ -92,7 +97,8 @@ impl SimGhostActor {
             // A: append message to inbox in database
             // B: drain messages from inbox in database
             ClientToLib3h::SendDirectMessage(data) => {
-                trace!("ClientToLib3h::SendDirectMessage: {:?}", &data);
+                let log_context = "ClientToLib3h::SendDirectMessage";
+                msg.respond(send_direct_message(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
             // specced

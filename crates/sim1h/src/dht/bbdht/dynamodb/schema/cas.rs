@@ -2,10 +2,16 @@ use crate::dht::bbdht::dynamodb::schema::hash_key;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_definition;
 use rusoto_dynamodb::AttributeDefinition;
 use rusoto_dynamodb::KeySchemaElement;
+use holochain_persistence_api::cas::content::Address;
 
 pub const ADDRESS_KEY: &str = "address";
 pub const CONTENT_KEY: &str = "content";
 pub const ASPECT_LIST_KEY: &str = "aspect_list";
+pub const INBOX_KEY_PREFIX: &str = "inbox_";
+
+pub fn inbox_key(agent_id: &Address) -> String {
+    format!("{}{}", INBOX_KEY_PREFIX, agent_id)
+}
 
 pub fn address_key_schema() -> KeySchemaElement {
     hash_key(ADDRESS_KEY)
