@@ -13,7 +13,9 @@ use rusoto_dynamodb::UpdateItemError;
 use crate::trace::tracer;
 use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
+use crate::dht::bbdht::dynamodb::schema::blob_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_ADDRESS_KEY;
+use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_LIST_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_TYPE_HINT_KEY;
 use rusoto_dynamodb::UpdateItemInput;
@@ -46,7 +48,12 @@ pub fn put_aspect(log_context: &LogContext, client: &Client, table_name: &TableN
 
     aspect_item.insert(
         String::from(ASPECT_TYPE_HINT_KEY),
-        string_attribute_value(&aspect.type_hint.to_string()),
+        string_attribute_value(&aspect.type_hint),
+    );
+
+    aspect_item.insert(
+        String::from(ASPECT_KEY),
+        blob_attribute_value(&aspect.aspect),
     );
 
     match client.put_item(PutItemInput {

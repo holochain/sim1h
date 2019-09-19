@@ -29,6 +29,7 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::api::aspect::write::put_aspect;
     use holochain_persistence_api::cas::content::Address;
     use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
+    use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_KEY;
 
     #[test]
     fn read_aspect_test() {
@@ -63,6 +64,10 @@ pub mod tests {
                 assert_eq!(
                     v.clone().item.unwrap()[ASPECT_TYPE_HINT_KEY].clone().s.unwrap(),
                     entry_aspect_data.type_hint,
+                );
+                assert_eq!(
+                    v.clone().item.unwrap()[ASPECT_KEY].clone().b.unwrap(),
+                    entry_aspect_data.aspect.as_slice(),
                 );
             },
             Err(err) => {

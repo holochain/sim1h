@@ -28,6 +28,13 @@ pub fn string_attribute_value(value: &str) -> AttributeValue {
     }
 }
 
+pub fn blob_attribute_value(value: &Vec<u8>) -> AttributeValue {
+    AttributeValue {
+        b: Some(value.as_slice().into()),
+        ..Default::default()
+    }
+}
+
 pub fn string_set_attribute_value(value: Vec<String>) -> AttributeValue {
     AttributeValue {
         ss: Some(value),
