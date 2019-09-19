@@ -1,10 +1,10 @@
+use crate::dht::bbdht::dynamodb::api::item::write::append_agent_message;
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use lib3h::error::Lib3hResult;
 use lib3h_protocol::data_types::DirectMessageData;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
-use crate::dht::bbdht::dynamodb::api::item::write::append_agent_message;
 
 pub fn send_direct_message(
     log_context: &LogContext,
@@ -21,10 +21,8 @@ pub fn send_direct_message(
         &direct_message_data.to_agent_id,
         &direct_message_data.content,
     ) {
-        _ => {
-                Ok(ClientToLib3hResponse::SendDirectMessageResult(
-                    direct_message_data.clone(),
-                ))
-            }
+        _ => Ok(ClientToLib3hResponse::SendDirectMessageResult(
+            direct_message_data.clone(),
+        )),
     }
 }

@@ -1,8 +1,8 @@
 use crate::dht::bbdht::dynamodb::schema::hash_key;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_definition;
+use holochain_persistence_api::cas::content::Address;
 use rusoto_dynamodb::AttributeDefinition;
 use rusoto_dynamodb::KeySchemaElement;
-use holochain_persistence_api::cas::content::Address;
 
 pub const ADDRESS_KEY: &str = "address";
 pub const CONTENT_KEY: &str = "content";

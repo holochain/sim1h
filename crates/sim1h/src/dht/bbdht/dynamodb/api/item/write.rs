@@ -1,5 +1,5 @@
-
 use crate::dht::bbdht::dynamodb::client::Client;
+use crate::dht::bbdht::dynamodb::schema::cas::inbox_key;
 use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::CONTENT_KEY;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
@@ -7,7 +7,6 @@ use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use holochain_persistence_api::cas::content::Address;
-use crate::dht::bbdht::dynamodb::schema::cas::inbox_key;
 use holochain_persistence_api::cas::content::AddressableContent;
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::DynamoDb;
