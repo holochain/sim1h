@@ -33,7 +33,12 @@ pub mod tests {
         // success
         match bootstrap(&log_context, &local_client) {
             Ok(ClientToLib3hResponse::BootstrapSuccess) => {}
-            _ => unreachable!(),
+            Ok(v) => {
+                panic!("Bad Ok {:?}", v);
+            }
+            Err(err) => {
+                panic!("Err {:?}", err);
+            }
         }
     }
 
@@ -52,7 +57,9 @@ pub mod tests {
                     "Unknown error encountered: \'error trying to connect: failed to lookup address information: Name or service not known\'.".to_string(),
                 );
             }
-            Ok(_) => unreachable!(),
+            Ok(v) => {
+                panic!("bad Ok {:?}", v);
+            }
         };
     }
 

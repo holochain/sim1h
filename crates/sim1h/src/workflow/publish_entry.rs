@@ -64,6 +64,28 @@ pub mod tests {
     }
 
     #[test]
+    // publishing an entry before joining a space is an error
+    fn publish_entry_no_join_test() {
+        let log_context = "publish_entry_test";
+
+        tracer(&log_context, "fixtures");
+        let local_client = local_client();
+        let space_data = space_data_fresh();
+        let provided_entry_data = provided_entry_data_fresh(&space_data);
+
+        tracer(&log_context, "check response");
+
+        match publish_entry(&log_context, &local_client, &provided_entry_data) {
+            Ok(v) => {
+                panic!("bad Ok {:?}", v);
+            }
+            Err(_) => {
+                tracer(&log_context, "👌");
+            }
+        }
+    }
+
+    #[test]
     fn publish_entry_bad_client_test() {
         let log_context = "publish_entry_bad_client_test";
 

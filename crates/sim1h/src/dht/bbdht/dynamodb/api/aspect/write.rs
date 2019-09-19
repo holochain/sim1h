@@ -81,8 +81,33 @@ pub fn put_aspect(
         // TODO do not brute force failures
         // use transactions upstream instead
         Err(RusotoError::Service(err)) => {
-            tracer(&log_context, &format!("put_aspect Service {:?}", err));
-            put_aspect(&log_context, &client, &table_name, &aspect)
+            match err {
+                PutItemError::ResourceNotFound(err) => {
+                    return Err(RusotoError::Service(PutItemError::ResourceNotFound(err)));
+                }
+                PutItemError::ConditionalCheckFailed(err) => {
+                    return Err(RusotoError::Service(PutItemError::ConditionalCheckFailed(err)));
+                }
+                PutItemError::ItemCollectionSizeLimitExceeded(err) => {
+                    return Err(RusotoError::Service(PutItemError::ItemCollectionSizeLimitExceeded(err)));
+                }
+                PutItemError::InternalServerError(err) => {
+                        tracer(&log_context, &format!("put_aspect Service InternalServerError {:?}", err));
+                        put_aspect(&log_context, &client, &table_name, &aspect)
+                }
+                PutItemError::ProvisionedThroughputExceeded(err) => {
+                        tracer(&log_context, &format!("put_aspect Service ProvisionedThroughputExceeded {:?}", err));
+                        put_aspect(&log_context, &client, &table_name, &aspect)
+                }
+                PutItemError::RequestLimitExceeded(err) => {
+                        tracer(&log_context, &format!("put_aspect Service RequestLimitExceeded {:?}", err));
+                        put_aspect(&log_context, &client, &table_name, &aspect)
+                }
+                PutItemError::TransactionConflict(err) => {
+                        tracer(&log_context, &format!("put_aspect Service TransactionConflict {:?}", err));
+                        put_aspect(&log_context, &client, &table_name, &aspect)
+                }
+            }
         },
         Err(RusotoError::Unknown(err)) => {
             tracer(&log_context, &format!("put_aspect Unknown {:?}", err));
@@ -123,8 +148,6 @@ pub fn append_aspect_list(
             Ok(_) => {
                 // all g
             }
-            // all errors should convert to UpdateItemError and bail
-            // retryable errors are already being brute force by put_aspect internally
             Err(RusotoError::HttpDispatch(err)) => {
                 return Err(RusotoError::HttpDispatch(err));
             }
@@ -137,11 +160,33 @@ pub fn append_aspect_list(
             Err(RusotoError::ParseError(err)) => {
                 return Err(RusotoError::ParseError(err));
             }
-            Err(RusotoError::Service(_)) => {
-                unreachable!();
+            Err(RusotoError::Unknown(err)) => {
+                return Err(RusotoError::Unknown(err));
             }
-            Err(RusotoError::Unknown(_)) => {
-                unreachable!();
+            Err(RusotoError::Service(err)) => {
+                match err {
+                    PutItemError::ResourceNotFound(err) => {
+                        return Err(RusotoError::Service(UpdateItemError::ResourceNotFound(err)));
+                    }
+                    PutItemError::ConditionalCheckFailed(err) => {
+                        return Err(RusotoError::Service(UpdateItemError::ConditionalCheckFailed(err)));
+                    }
+                    PutItemError::InternalServerError(err) => {
+                        return Err(RusotoError::Service(UpdateItemError::InternalServerError(err)));
+                    }
+                    PutItemError::ItemCollectionSizeLimitExceeded(err) => {
+                        return Err(RusotoError::Service(UpdateItemError::ItemCollectionSizeLimitExceeded(err)));
+                    }
+                    PutItemError::ProvisionedThroughputExceeded(err) => {
+                        return Err(RusotoError::Service(UpdateItemError::ProvisionedThroughputExceeded(err)));
+                    }
+                    PutItemError::RequestLimitExceeded(err) => {
+                        return Err(RusotoError::Service(UpdateItemError::RequestLimitExceeded(err)));
+                    }
+                    PutItemError::TransactionConflict(err) => {
+                        return Err(RusotoError::Service(UpdateItemError::TransactionConflict(err)));
+                    }
+                }
             }
         }
     }
