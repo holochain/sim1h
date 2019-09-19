@@ -1,5 +1,9 @@
 use crate::dht::bbdht::dynamodb::client::{client, Client};
 use crate::workflow::bootstrap::bootstrap;
+use crate::workflow::hold_entry::hold_entry;
+use crate::workflow::join_space::join_space;
+use crate::workflow::leave_space::leave_space;
+use crate::workflow::send_direct_message::send_direct_message;
 use detach::Detach;
 use lib3h::engine::engine_actor::ClientToLib3hMessage;
 use lib3h::engine::CanAdvertise;
@@ -11,11 +15,11 @@ use lib3h_protocol::protocol::Lib3hToClientResponse;
 use lib3h_zombie_actor::create_ghost_channel;
 use lib3h_zombie_actor::GhostActor;
 use lib3h_zombie_actor::GhostCanTrack;
+use crate::workflow::publish_entry::publish_entry;
 use lib3h_zombie_actor::GhostContextEndpoint;
 use lib3h_zombie_actor::GhostEndpoint;
 use lib3h_zombie_actor::GhostResult;
 use lib3h_zombie_actor::WorkWasDone;
-use crate::workflow::join_space::join_space;
 use rusoto_core::Region;
 use url::Url;
 
@@ -68,36 +72,64 @@ impl SimGhostActor {
         mut msg: ClientToLib3hMessage,
     ) -> GhostResult<WorkWasDone> {
         match msg.take_message().expect("exists") {
+            // MVP
+            // check database connection
             ClientToLib3h::Bootstrap(_) => {
                 let log_context = "ClientToLib3h::Bootstrap";
                 msg.respond(bootstrap(&log_context, &self.dbclient))?;
                 Ok(true.into())
             }
+            // MVP
+            // create space if not exists
+            // touch agent
             ClientToLib3h::JoinSpace(data) => {
                 let log_context = "ClientToLib3h::JoinSpace";
                 msg.respond(join_space(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
+            // MVP
+            // no-op
             ClientToLib3h::LeaveSpace(data) => {
-                trace!("ClientToLib3h::LeaveSpace: {:?}", &data);
+                let log_context = "ClientToLib3h::LeaveSpace";
+                msg.respond(leave_space(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
+            // specced
+            // A: append message to inbox in database
+            // B: drain messages from inbox in database
             ClientToLib3h::SendDirectMessage(data) => {
-                trace!("ClientToLib3h::SendDirectMessage: {:?}", &data);
+                let log_context = "ClientToLib3h::SendDirectMessage";
+                msg.respond(send_direct_message(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
+            // MVP
+            // append list of aspect addresses to entry address
+            // drop all aspects into database under each of their addresses
+            //
+            // later:
+            // make all this in a transaction
             ClientToLib3h::PublishEntry(data) => {
-                trace!("ClientToLib3h::PublishEntry: {:?}", &data);
+                let log_context = "ClientToLib3h::PublishEntry";
+                msg.respond(publish_entry(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
+            // MVP
+            // this is a no-op
             ClientToLib3h::HoldEntry(data) => {
-                trace!("ClientToLib3h::HoldEntry: {:?}", &data);
+                let log_context = "ClientToLib3h::HoldEntry";
+                msg.respond(hold_entry(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
+            // specced
+            // fetch all entry aspects from entry address
+            // do some kind of filter based on the non-opaque query struct
+            // familiar to rehydrate the opaque query struct
             ClientToLib3h::QueryEntry(data) => {
                 trace!("ClientToLib3h::QueryEntry: {:?}", &data);
                 Ok(true.into())
             }
+            // specced
+            // query entry but hardcoded to entry query right?
             ClientToLib3h::FetchEntry(data) => {
                 trace!("ClientToLib3h::FetchEntry: {:?}", &data);
                 Ok(true.into())
@@ -239,8 +271,10 @@ pub mod tests {
             agent_id: Address::from("an-agent"),
         };
         match get_response_to_request(engine, ClientToLib3h::JoinSpace(space_data)) {
-            GhostCallbackData::Response(Ok(ClientToLib3hResponse::JoinSpaceResult)) => assert!(true),
-            r => panic!("unexpected response: {:?}", r)
+            GhostCallbackData::Response(Ok(ClientToLib3hResponse::JoinSpaceResult)) => {
+                assert!(true)
+            }
+            r => panic!("unexpected response: {:?}", r),
         }
     }
 }

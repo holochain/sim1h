@@ -10,7 +10,7 @@ pub fn table_exists(
     client: &Client,
     table_name: &str,
 ) -> Result<bool, RusotoError<DescribeTableError>> {
-    tracer(&log_context, "table_exist");
+    tracer(&log_context, &format!("table_exists {}", &table_name));
 
     let table_description_result = describe_table(log_context, client, table_name);
     match table_description_result {

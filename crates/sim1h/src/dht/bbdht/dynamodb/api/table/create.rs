@@ -20,7 +20,7 @@ pub fn create_table(
     key_schema: &Vec<KeySchemaElement>,
     attribute_definitions: &Vec<AttributeDefinition>,
 ) -> Result<Option<TableDescription>, RusotoError<CreateTableError>> {
-    tracer(&log_context, "create_table");
+    tracer(&log_context, &format!("create_table {}", table_name));
 
     let create_table_input = CreateTableInput {
         table_name: table_name.to_string(),
@@ -33,7 +33,13 @@ pub fn create_table(
         ..Default::default()
     };
 
-    let output = client.create_table(create_table_input).sync()?;
+    let output = match client.create_table(create_table_input).sync() {
+        Ok(v) => v,
+        Err(err) => {
+            tracer(&log_context, "create_table error");
+            return Err(err);
+        }
+    };
     until_table_exists(log_context, client, table_name);
     Ok(output.table_description)
 }
@@ -45,7 +51,7 @@ pub fn ensure_table(
     key_schema: &Vec<KeySchemaElement>,
     attribute_definitions: &Vec<AttributeDefinition>,
 ) -> Result<Option<TableDescription>, RusotoError<CreateTableError>> {
-    tracer(log_context, "create_table");
+    tracer(log_context, &format!("ensure_table {}", &table_name));
 
     // well in reality we end up with concurrency issues if we do a list or describe
     // there is a specific error returned for a table that already exists so we defuse to None
@@ -58,15 +64,71 @@ pub fn ensure_table(
             attribute_definitions,
         ) {
             Ok(created) => Ok(created),
-            Err(RusotoError::Service(CreateTableError::ResourceInUse(_))) => Ok(None),
-            Err(err) => Err(err),
+            Err(RusotoError::Service(CreateTableError::ResourceInUse(_))) => {
+                tracer(&log_context, "ensure_table ResourceInUse");
+                Ok(None)
+            }
+            Err(_err) => {
+                tracer(&log_context, "ensure_table failed to create table. retry.");
+                ensure_table(
+                    &log_context,
+                    &client,
+                    &table_name,
+                    &key_schema,
+                    &attribute_definitions,
+                )
+            }
         },
         Ok(true) => Ok(None),
-        Err(RusotoError::Service(DescribeTableError::InternalServerError(err))) => Err(
-            RusotoError::Service(CreateTableError::InternalServerError(err)),
-        ),
-        // the only other error is resource in use which is false for table exists
-        _ => unreachable!(),
+        Err(RusotoError::Service(DescribeTableError::InternalServerError(_err))) => {
+            tracer(&log_context, "ensure_table InternalServerError");
+            // RusotoError::Service(CreateTableError::InternalServerError(err)),
+            ensure_table(
+                &log_context,
+                &client,
+                &table_name,
+                &key_schema,
+                &attribute_definitions,
+            )
+        }
+        // panel beat other errors into "internal server errors
+        Err(RusotoError::HttpDispatch(err)) => {
+            tracer(&log_context, "ensure_table HttpDispatch");
+            Err(RusotoError::HttpDispatch(err))
+        }
+        Err(RusotoError::Credentials(err)) => {
+            tracer(&log_context, "ensure_table Credentials");
+            Err(RusotoError::Credentials(err))
+        }
+        Err(RusotoError::Validation(err)) => {
+            tracer(&log_context, "ensure_table Validation");
+            Err(RusotoError::Validation(err))
+        }
+        Err(RusotoError::ParseError(err)) => {
+            tracer(&log_context, "ensure_table ParseError");
+            Err(RusotoError::ParseError(err))
+        }
+        Err(RusotoError::Unknown(_err)) => {
+            tracer(&log_context, "ensure_table Unknown");
+            ensure_table(
+                &log_context,
+                &client,
+                &table_name,
+                &key_schema,
+                &attribute_definitions,
+            )
+        }
+        Err(RusotoError::Service(DescribeTableError::ResourceNotFound(_))) => {
+            // this must be covered by table_exists
+            tracer(&log_context, "ensure_table ResourceNotFound");
+            ensure_table(
+                &log_context,
+                &client,
+                &table_name,
+                &key_schema,
+                &attribute_definitions,
+            )
+        }
     }
 }
 
@@ -75,7 +137,7 @@ pub fn ensure_cas_table(
     client: &Client,
     table_name: &str,
 ) -> Result<Option<TableDescription>, RusotoError<CreateTableError>> {
-    tracer(&log_context, "ensure_cas_table");
+    tracer(&log_context, &format!("ensure_cas_table {}", &table_name));
 
     ensure_table(
         log_context,

@@ -1,4 +1,5 @@
 use crate::dht::bbdht::dynamodb::client::Client;
+use crate::dht::bbdht::dynamodb::schema::cas::inbox_key;
 use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::CONTENT_KEY;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
@@ -12,6 +13,9 @@ use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::PutItemError;
 use rusoto_dynamodb::PutItemInput;
 use rusoto_dynamodb::PutItemOutput;
+use rusoto_dynamodb::UpdateItemError;
+use rusoto_dynamodb::UpdateItemInput;
+use rusoto_dynamodb::UpdateItemOutput;
 use std::collections::HashMap;
 
 pub fn ensure_content(
@@ -60,6 +64,37 @@ pub fn touch_agent(
             ..Default::default()
         })
         .sync()
+}
+
+pub fn append_agent_message(
+    log_context: &LogContext,
+    client: &Client,
+    table_name: &TableName,
+    _request_id: &String,
+    _from: &Address,
+    to: &Address,
+    _content: &Vec<u8>,
+) -> Result<UpdateItemOutput, RusotoError<UpdateItemError>> {
+    tracer(&log_context, "append_agent_message");
+
+    // the recipient is the key address
+    let mut inbox_address_key = HashMap::new();
+    inbox_address_key.insert(
+        String::from(inbox_key(to)),
+        string_attribute_value(&String::from(to.to_owned())),
+    );
+
+    // inbox_address_key.insert
+
+    // TODO
+    let inbox_update = UpdateItemInput {
+        table_name: table_name.to_string(),
+        key: inbox_address_key,
+        // update_expression: Some("".to_string()),
+        ..Default::default()
+    };
+
+    client.update_item(inbox_update).sync()
 }
 
 #[cfg(test)]
