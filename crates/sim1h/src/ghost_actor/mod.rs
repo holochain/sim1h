@@ -161,7 +161,7 @@ pub mod tests {
     use super::*;
     use crate::dht::bbdht::dynamodb::client::local::LOCAL_ENDPOINT;
     use lib3h_protocol::{data_types::*, Address};
-    use lib3h_tracing::test_span;
+    use holochain_tracing::test_span;
     use lib3h_zombie_actor::GhostCallbackData;
 
     fn get_response_to_request(
