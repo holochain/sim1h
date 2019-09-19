@@ -77,12 +77,34 @@ pub fn put_aspect(
         .sync()
     {
         Ok(v) => Ok(v),
-        Err(e) => {
-            // brute force failures
-            // TODO do not brute force failures
-            tracer(&log_context, &format!("{:?}", e));
+        // brute force retryable failures
+        // TODO do not brute force failures
+        // use transactions upstream instead
+        Err(RusotoError::Service(err)) => {
+            tracer(&log_context, &format!("put_aspect Service {:?}", err));
             put_aspect(&log_context, &client, &table_name, &aspect)
-        }
+        },
+        Err(RusotoError::Unknown(err)) => {
+            tracer(&log_context, &format!("put_aspect Unknown {:?}", err));
+            put_aspect(&log_context, &client, &table_name, &aspect)
+        },
+        // these things should not be retried
+        Err(RusotoError::HttpDispatch(err)) => {
+            tracer(&log_context, &format!("put_aspect HttpDispatch {:?}", err));
+            return Err(RusotoError::HttpDispatch(err));
+        },
+        Err(RusotoError::Credentials(err)) => {
+            tracer(&log_context, &format!("put_aspect Credentials {:?}", err));
+            return Err(RusotoError::Credentials(err));
+        },
+        Err(RusotoError::Validation(err)) => {
+            tracer(&log_context, &format!("put_aspect Validation {:?}", err));
+            return Err(RusotoError::Validation(err));
+        },
+        Err(RusotoError::ParseError(err)) => {
+            tracer(&log_context, &format!("put_aspect ParseError {:?}", err));
+            return Err(RusotoError::ParseError(err));
+        },
     }
 }
 
@@ -101,8 +123,24 @@ pub fn append_aspect_list(
             Ok(_) => {
                 // all g
             }
-            Err(_) => {
-                // put_aspect brute forces all errors internally
+            // all errors should convert to UpdateItemError and bail
+            // retryable errors are already being brute force by put_aspect internally
+            Err(RusotoError::HttpDispatch(err)) => {
+                return Err(RusotoError::HttpDispatch(err));
+            }
+            Err(RusotoError::Credentials(err)) => {
+                return Err(RusotoError::Credentials(err));
+            }
+            Err(RusotoError::Validation(err)) => {
+                return Err(RusotoError::Validation(err));
+            }
+            Err(RusotoError::ParseError(err)) => {
+                return Err(RusotoError::ParseError(err));
+            }
+            Err(RusotoError::Service(_)) => {
+                unreachable!();
+            }
+            Err(RusotoError::Unknown(_)) => {
                 unreachable!();
             }
         }

@@ -69,9 +69,9 @@ pub fn space_data_fresh() -> SpaceData {
     }
 }
 
-pub fn provided_entry_data_fresh() -> ProvidedEntryData {
+pub fn provided_entry_data_fresh(space_data: &SpaceData) -> ProvidedEntryData {
     ProvidedEntryData {
-        space_address: space_address_fresh(),
+        space_address: space_data.space_address.clone(),
         provider_agent_id: agent_id_fresh(),
         entry: entry_data_fresh(),
     }
