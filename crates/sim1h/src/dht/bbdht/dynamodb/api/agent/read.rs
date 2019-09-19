@@ -1,20 +1,26 @@
+use crate::dht::bbdht::dynamodb::api::item::read::get_item_by_address;
+use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::dht::bbdht::dynamodb::schema::TableName;
-use holochain_persistence_api::cas::content::Address;
 use crate::dht::bbdht::error::BbDhtError;
 use crate::trace::tracer;
-use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
-use crate::dht::bbdht::dynamodb::api::item::read::get_item_by_address;
 use crate::trace::LogContext;
+use holochain_persistence_api::cas::content::Address;
 
-pub fn agent_exists(log_context: &LogContext, client: &Client, table_name: &TableName, agent_id: &Address) -> Result<bool, BbDhtError> {
+pub fn agent_exists(
+    log_context: &LogContext,
+    client: &Client,
+    table_name: &TableName,
+    agent_id: &Address,
+) -> Result<bool, BbDhtError> {
     tracer(&log_context, "agent_exists");
 
     // agent only exists in the space if the space exists
     Ok(if table_exists(log_context, client, table_name)? {
-        get_item_by_address(log_context, client, table_name, agent_id)?.item.is_some()
-    }
-    else {
+        get_item_by_address(log_context, client, table_name, agent_id)?
+            .item
+            .is_some()
+    } else {
         false
     })
 }
@@ -22,13 +28,13 @@ pub fn agent_exists(log_context: &LogContext, client: &Client, table_name: &Tabl
 #[cfg(test)]
 pub mod tests {
 
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::trace::tracer;
-    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
     use crate::agent::fixture::agent_id_fresh;
-    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
     use crate::dht::bbdht::dynamodb::api::agent::read::agent_exists;
     use crate::dht::bbdht::dynamodb::api::agent::write::touch_agent;
+    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
+    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
+    use crate::dht::bbdht::dynamodb::client::local::local_client;
+    use crate::trace::tracer;
 
     #[test]
     fn agent_exists_test() {
@@ -43,10 +49,10 @@ pub mod tests {
         match agent_exists(&log_context, &local_client, &table_name, &agent_id) {
             Ok(false) => {
                 tracer(&log_context, "👌");
-            },
+            }
             Ok(true) => {
                 panic!("apparently agent exists before the space does");
-            },
+            }
             Err(err) => {
                 panic!("{:?}", err);
             }
@@ -62,7 +68,7 @@ pub mod tests {
             }
             Ok(true) => {
                 panic!("agent exists before join");
-            },
+            }
             Err(err) => {
                 panic!("{:?}", err);
             }
@@ -78,12 +84,11 @@ pub mod tests {
             }
             Ok(true) => {
                 tracer(&log_context, "👌");
-            },
+            }
             Err(err) => {
                 panic!("{:?}", err);
             }
         }
-
     }
 
 }

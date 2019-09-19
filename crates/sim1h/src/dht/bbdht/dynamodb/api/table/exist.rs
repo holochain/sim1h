@@ -92,9 +92,9 @@ pub mod tests {
             &local_client,
             &table_name,
             &key_schema,
-            &attribute_definitions
+            &attribute_definitions,
         ) {
-            Ok(_) => { },
+            Ok(_) => {}
             Err(err) => panic!("{:?}", err),
         };
 

@@ -1,6 +1,6 @@
 use rusoto_core::RusotoError;
-use rusoto_dynamodb::GetItemError;
 use rusoto_dynamodb::DescribeTableError;
+use rusoto_dynamodb::GetItemError;
 use std::num::ParseIntError;
 
 #[derive(Debug)]
@@ -29,16 +29,15 @@ impl From<ParseIntError> for BbDhtError {
 }
 
 impl From<RusotoError<GetItemError>> for BbDhtError {
-
     fn from(rusoto_error: RusotoError<GetItemError>) -> Self {
         match rusoto_error {
-            RusotoError::Service(service_error) => {
-                match service_error {
-                    GetItemError::InternalServerError(err) => BbDhtError::InternalServerError(err),
-                    GetItemError::RequestLimitExceeded(err) => BbDhtError::RequestLimitExceeded(err),
-                    GetItemError::ProvisionedThroughputExceeded(err) => BbDhtError::ProvisionedThroughputExceeded(err),
-                    GetItemError::ResourceNotFound(err) => BbDhtError::ResourceNotFound(err),
+            RusotoError::Service(service_error) => match service_error {
+                GetItemError::InternalServerError(err) => BbDhtError::InternalServerError(err),
+                GetItemError::RequestLimitExceeded(err) => BbDhtError::RequestLimitExceeded(err),
+                GetItemError::ProvisionedThroughputExceeded(err) => {
+                    BbDhtError::ProvisionedThroughputExceeded(err)
                 }
+                GetItemError::ResourceNotFound(err) => BbDhtError::ResourceNotFound(err),
             },
             RusotoError::HttpDispatch(err) => BbDhtError::HttpDispatch(err.to_string()),
             RusotoError::Credentials(err) => BbDhtError::Credentials(err.to_string()),
@@ -50,14 +49,13 @@ impl From<RusotoError<GetItemError>> for BbDhtError {
 }
 
 impl From<RusotoError<DescribeTableError>> for BbDhtError {
-
     fn from(rusoto_error: RusotoError<DescribeTableError>) -> Self {
         match rusoto_error {
-            RusotoError::Service(service_error) => {
-                match service_error {
-                    DescribeTableError::InternalServerError(err) => BbDhtError::InternalServerError(err),
-                    DescribeTableError::ResourceNotFound(err) => BbDhtError::ResourceNotFound(err),
+            RusotoError::Service(service_error) => match service_error {
+                DescribeTableError::InternalServerError(err) => {
+                    BbDhtError::InternalServerError(err)
                 }
+                DescribeTableError::ResourceNotFound(err) => BbDhtError::ResourceNotFound(err),
             },
             RusotoError::HttpDispatch(err) => BbDhtError::HttpDispatch(err.to_string()),
             RusotoError::Credentials(err) => BbDhtError::Credentials(err.to_string()),

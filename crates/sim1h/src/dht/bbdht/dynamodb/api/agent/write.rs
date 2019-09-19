@@ -1,15 +1,15 @@
-use rusoto_dynamodb::PutItemInput;
-use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
-use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
-use crate::trace::tracer;
-use rusoto_dynamodb::PutItemError;
-use rusoto_core::RusotoError;
-use rusoto_dynamodb::PutItemOutput;
-use holochain_persistence_api::cas::content::Address;
-use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::dht::bbdht::dynamodb::client::Client;
-use rusoto_dynamodb::DynamoDb;
+use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
+use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
+use crate::dht::bbdht::dynamodb::schema::TableName;
+use crate::trace::tracer;
 use crate::trace::LogContext;
+use holochain_persistence_api::cas::content::Address;
+use rusoto_core::RusotoError;
+use rusoto_dynamodb::DynamoDb;
+use rusoto_dynamodb::PutItemError;
+use rusoto_dynamodb::PutItemInput;
+use rusoto_dynamodb::PutItemOutput;
 use std::collections::HashMap;
 
 pub fn touch_agent(
@@ -37,13 +37,13 @@ pub fn touch_agent(
 #[cfg(test)]
 pub mod tests {
 
-    use crate::dht::bbdht::dynamodb::api::agent::write::touch_agent;
-    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
-    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
     use crate::agent::fixture::agent_id_fresh;
+    use crate::dht::bbdht::dynamodb::api::agent::write::touch_agent;
+    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
+    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
     use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
+    use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::trace::tracer;
-     use crate::dht::bbdht::dynamodb::client::local::local_client;
 
     #[test]
     fn touch_agent_test() {

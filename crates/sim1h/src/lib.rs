@@ -11,5 +11,6 @@ pub mod agent;
 pub mod dht;
 pub mod ghost_actor;
 pub mod protocol_map;
+pub mod test;
 pub mod trace;
 pub mod workflow;
