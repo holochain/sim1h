@@ -57,9 +57,9 @@ pub fn aspect_list_fresh() -> Vec<EntryAspectData> {
     aspects.into()
 }
 
-pub fn entry_data_fresh() -> EntryData {
+pub fn entry_data_fresh(entry_address: &Address) -> EntryData {
     EntryData {
-        entry_address: entry_address_fresh(),
+        entry_address: entry_address.clone(),
         aspect_list: aspect_list_fresh(),
     }
 }
@@ -72,11 +72,11 @@ pub fn space_data_fresh() -> SpaceData {
     }
 }
 
-pub fn provided_entry_data_fresh(space_data: &SpaceData) -> ProvidedEntryData {
+pub fn provided_entry_data_fresh(space_data: &SpaceData, entry_address: &Address) -> ProvidedEntryData {
     ProvidedEntryData {
         space_address: space_data.space_address.clone(),
         provider_agent_id: agent_id_fresh(),
-        entry: entry_data_fresh(),
+        entry: entry_data_fresh(entry_address),
     }
 }
 
