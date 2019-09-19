@@ -1,9 +1,11 @@
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::GetItemError;
 use rusoto_dynamodb::DescribeTableError;
+use std::num::ParseIntError;
 
 #[derive(Debug)]
 pub enum BbDhtError {
+    // Rusoto mappings
     InternalServerError(String),
     ProvisionedThroughputExceeded(String),
     RequestLimitExceeded(String),
@@ -13,6 +15,17 @@ pub enum BbDhtError {
     Validation(String),
     ParseError(String),
     Unknown(String),
+    // data handling
+    MissingData(String),
+    CorruptData(String),
+}
+
+pub type BbDhtResult<T> = Result<T, BbDhtError>;
+
+impl From<ParseIntError> for BbDhtError {
+    fn from(int_error: ParseIntError) -> Self {
+        BbDhtError::CorruptData(int_error.to_string())
+    }
 }
 
 impl From<RusotoError<GetItemError>> for BbDhtError {
