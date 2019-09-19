@@ -28,6 +28,20 @@ pub fn string_attribute_value(value: &str) -> AttributeValue {
     }
 }
 
+pub fn string_set_attribute_value(value: Vec<String>) -> AttributeValue {
+    AttributeValue {
+        ss: Some(value),
+        ..Default::default()
+    }
+}
+
+pub fn list_attribute_value(value: Vec<AttributeValue>) -> AttributeValue {
+    AttributeValue {
+        l: Some(value),
+        ..Default::default()
+    }
+}
+
 #[cfg(test)]
 pub mod test {
 

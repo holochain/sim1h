@@ -21,7 +21,7 @@ pub fn join_space(
         Ok(_) => {}
         Err(err) => {
             tracer(&log_context, "join_space ensure_cas_table error");
-            return Err(Lib3hError::from(err.to_string()))
+            return Err(Lib3hError::from(err.to_string()));
         }
     };
     match touch_agent(

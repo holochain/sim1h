@@ -1,11 +1,11 @@
 use crate::agent::fixture::agent_id_fresh;
 use holochain_persistence_api::cas::content::Address;
-use lib3h_protocol::data_types::SpaceData;
-use uuid::Uuid;
-use lib3h_protocol::data_types::ProvidedEntryData;
 use lib3h_protocol::data_types::EntryAspectData;
 use lib3h_protocol::data_types::EntryData;
 use lib3h_protocol::data_types::Opaque;
+use lib3h_protocol::data_types::ProvidedEntryData;
+use lib3h_protocol::data_types::SpaceData;
+use uuid::Uuid;
 
 pub fn request_id_fresh() -> String {
     Uuid::new_v4().to_string()

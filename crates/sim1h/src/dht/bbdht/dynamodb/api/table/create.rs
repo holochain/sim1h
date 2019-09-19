@@ -38,7 +38,7 @@ pub fn create_table(
         Err(err) => {
             tracer(&log_context, "create_table error");
             return Err(err);
-        },
+        }
     };
     until_table_exists(log_context, client, table_name);
     Ok(output.table_description)
@@ -67,27 +67,39 @@ pub fn ensure_table(
             Err(RusotoError::Service(CreateTableError::ResourceInUse(_))) => {
                 tracer(&log_context, "ensure_table ResourceInUse");
                 Ok(None)
-            },
+            }
             Err(_err) => {
                 tracer(&log_context, "ensure_table failed to create table. retry.");
-                ensure_table(&log_context, &client, &table_name, &key_schema, &attribute_definitions)
-            },
+                ensure_table(
+                    &log_context,
+                    &client,
+                    &table_name,
+                    &key_schema,
+                    &attribute_definitions,
+                )
+            }
         },
         Ok(true) => Ok(None),
         Err(RusotoError::Service(DescribeTableError::InternalServerError(_err))) => {
             tracer(&log_context, "ensure_table InternalServerError");
             // RusotoError::Service(CreateTableError::InternalServerError(err)),
-            ensure_table(&log_context, &client, &table_name, &key_schema, &attribute_definitions)
-        },
+            ensure_table(
+                &log_context,
+                &client,
+                &table_name,
+                &key_schema,
+                &attribute_definitions,
+            )
+        }
         // panel beat other errors into "internal server errors
         Err(RusotoError::HttpDispatch(err)) => {
             tracer(&log_context, "ensure_table HttpDispatch");
             Err(RusotoError::HttpDispatch(err))
-        },
+        }
         Err(RusotoError::Credentials(err)) => {
             tracer(&log_context, "ensure_table Credentials");
             Err(RusotoError::Credentials(err))
-        },
+        }
         Err(RusotoError::Validation(err)) => {
             tracer(&log_context, "ensure_table Validation");
             Err(RusotoError::Validation(err))
@@ -98,12 +110,24 @@ pub fn ensure_table(
         }
         Err(RusotoError::Unknown(_err)) => {
             tracer(&log_context, "ensure_table Unknown");
-            ensure_table(&log_context, &client, &table_name, &key_schema, &attribute_definitions)
-        },
+            ensure_table(
+                &log_context,
+                &client,
+                &table_name,
+                &key_schema,
+                &attribute_definitions,
+            )
+        }
         Err(RusotoError::Service(DescribeTableError::ResourceNotFound(_))) => {
             // this must be covered by table_exists
             tracer(&log_context, "ensure_table ResourceNotFound");
-            ensure_table(&log_context, &client, &table_name, &key_schema, &attribute_definitions)
+            ensure_table(
+                &log_context,
+                &client,
+                &table_name,
+                &key_schema,
+                &attribute_definitions,
+            )
         }
     }
 }
