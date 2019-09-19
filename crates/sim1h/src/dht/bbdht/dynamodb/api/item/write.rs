@@ -86,8 +86,6 @@ pub fn append_aspects(
 ) -> Result<UpdateItemOutput, RusotoError<UpdateItemError>> {
     tracer(&log_context, "append_aspects");
 
-    // let mut transact_items = Vec::new();
-
     // the aspect addressses live under the entry address
     let mut aspect_addresses_key = HashMap::new();
     aspect_addresses_key.insert(
