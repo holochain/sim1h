@@ -66,7 +66,7 @@ pub mod tests {
     #[test]
     // publishing an entry before joining a space is an error
     fn publish_entry_no_join_test() {
-        let log_context = "publish_entry_test";
+        let log_context = "publish_entry_no_join_test";
 
         tracer(&log_context, "fixtures");
         let local_client = local_client();

@@ -46,4 +46,27 @@ pub mod tests {
         }
     }
 
+    #[test]
+    fn hold_entry_no_join_test() {
+        let log_context = "hold_entry_no_join_test";
+
+        tracer(&log_context, "fixtures");
+        let local_client = local_client();
+        let space_data = space_data_fresh();
+        let provided_entry_data = provided_entry_data_fresh(&space_data);
+
+        tracer(&log_context, "check response");
+        match hold_entry(&log_context, &local_client, &provided_entry_data) {
+            Ok(ClientToLib3hResponse::BootstrapSuccess) => {
+                tracer(&log_context, "👌");
+            }
+            Ok(o) => {
+                panic!("bad ok {:?}", o);
+            }
+            Err(e) => {
+                panic!("bad error {:?}", e);
+            }
+        }
+    }
+
 }
