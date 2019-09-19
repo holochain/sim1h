@@ -22,6 +22,7 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
     use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
     use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
+    use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_TYPE_HINT_KEY;
     use crate::dht::bbdht::dynamodb::api::aspect::read::get_aspect;
     use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_ADDRESS_KEY;
     use crate::workflow::fixture::entry_aspect_data_fresh;
@@ -58,6 +59,10 @@ pub mod tests {
                 assert_eq!(
                     Address::from(v.clone().item.unwrap()[ASPECT_ADDRESS_KEY].clone().s.unwrap()),
                     entry_aspect_data.aspect_address,
+                );
+                assert_eq!(
+                    v.clone().item.unwrap()[ASPECT_TYPE_HINT_KEY].clone().s.unwrap(),
+                    entry_aspect_data.type_hint,
                 );
             },
             Err(err) => {
