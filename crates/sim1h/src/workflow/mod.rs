@@ -3,3 +3,4 @@ pub mod bootstrap;
 pub mod fixture;
 pub mod join_space;
 pub mod leave_space;
+pub mod hold_entry;
