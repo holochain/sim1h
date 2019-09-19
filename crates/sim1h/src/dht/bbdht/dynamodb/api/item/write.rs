@@ -187,7 +187,9 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
     use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
     use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
+    use crate::workflow::fixture::entry_aspect_data_fresh;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
+    use crate::dht::bbdht::dynamodb::api::item::write::put_aspect;
     use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
     use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_LIST_KEY;
     use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
@@ -241,6 +243,25 @@ pub mod tests {
     }
 
     #[test]
+    fn put_aspect_test() {
+        let log_context = "put_aspect_test";
+
+        tracer(&log_context, "fixtures");
+        let local_client = local_client();
+        let table_name = table_name_fresh();
+        let entry_aspect = entry_aspect_data_fresh();
+
+        // ensure cas
+        assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
+
+        // cas exists
+        assert!(table_exists(&log_context, &local_client, &table_name).is_ok());
+
+        // put aspect
+        println!("{:#?}", put_aspect(&log_context, &local_client, &table_name, &entry_aspect).is_ok());
+    }
+
+    #[test]
     fn append_aspects_test() {
         let log_context = "append_aspects_test";
 
@@ -266,8 +287,8 @@ pub mod tests {
         // cas exists
         assert!(table_exists(&log_context, &local_client, &table_name).is_ok());
 
-        // idempotency loop
-        for _ in 0..3 {
+        // trash/idempotency loop
+        for _ in 0..100 {
             // append aspects
             assert!(append_aspects(
                 &log_context,
