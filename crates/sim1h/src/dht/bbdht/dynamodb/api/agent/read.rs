@@ -12,8 +12,7 @@ pub fn agent_exists(log_context: &LogContext, client: &Client, table_name: &Tabl
 
     // agent only exists in the space if the space exists
     Ok(if table_exists(log_context, client, table_name)? {
-        get_item_by_address(log_context, client, table_name, agent_id)?;
-        true
+        get_item_by_address(log_context, client, table_name, agent_id)?.item.is_some()
     }
     else {
         false
@@ -29,6 +28,7 @@ pub mod tests {
     use crate::agent::fixture::agent_id_fresh;
     use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
     use crate::dht::bbdht::dynamodb::api::agent::read::agent_exists;
+    use crate::dht::bbdht::dynamodb::api::agent::write::touch_agent;
 
     #[test]
     fn agent_exists_test() {
@@ -53,7 +53,36 @@ pub mod tests {
         };
 
         // ensure cas
-        println!("{:?}", ensure_cas_table(&log_context, &local_client, &table_name));
+        assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
+
+        // agent not exists if not join space
+        match agent_exists(&log_context, &local_client, &table_name, &agent_id) {
+            Ok(false) => {
+                tracer(&log_context, "👌");
+            }
+            Ok(true) => {
+                panic!("agent exists before join");
+            },
+            Err(err) => {
+                panic!("{:?}", err);
+            }
+        };
+
+        // join
+        assert!(touch_agent(&log_context, &local_client, &table_name, &agent_id).is_ok());
+
+        // agent exists now
+        match agent_exists(&log_context, &local_client, &table_name, &agent_id) {
+            Ok(false) => {
+                panic!("agent not exists after join");
+            }
+            Ok(true) => {
+                tracer(&log_context, "👌");
+            },
+            Err(err) => {
+                panic!("{:?}", err);
+            }
+        }
 
     }
 
