@@ -89,7 +89,7 @@ pub fn append_aspects(
     );
     let aspect_addresses_attributes = aspect_list
         .iter()
-        .map(|aspect| string_attribute_value(&aspect.aspect_address.to_string()))
+        .map(|aspect| &aspect.aspect_address.to_string())
         .collect();
 
     let mut expression_attribute_values = HashMap::new();
