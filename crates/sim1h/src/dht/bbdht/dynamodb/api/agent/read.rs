@@ -27,6 +27,7 @@ pub mod tests {
     use crate::trace::tracer;
     use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
     use crate::agent::fixture::agent_id_fresh;
+    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
     use crate::dht::bbdht::dynamodb::api::agent::read::agent_exists;
 
     #[test]
@@ -50,6 +51,9 @@ pub mod tests {
                 panic!("{:?}", err);
             }
         };
+
+        // ensure cas
+        println!("{:?}", ensure_cas_table(&log_context, &local_client, &table_name));
 
     }
 

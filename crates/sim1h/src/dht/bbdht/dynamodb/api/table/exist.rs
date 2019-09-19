@@ -63,7 +63,7 @@ pub fn until_table_not_exists(log_context: &LogContext, client: &Client, table_n
 #[cfg(test)]
 pub mod tests {
 
-    use crate::dht::bbdht::dynamodb::api::table::create::create_table;
+    use crate::dht::bbdht::dynamodb::api::table::create::ensure_table;
     use crate::dht::bbdht::dynamodb::api::table::delete::delete_table;
     use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
     use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
@@ -86,15 +86,17 @@ pub mod tests {
         assert!(!table_exists(&log_context, &local_client, &table_name)
             .expect("could not check if table exists"));
 
-        // create
-        assert!(create_table(
+        // ensure table
+        match ensure_table(
             &log_context,
             &local_client,
             &table_name,
             &key_schema,
             &attribute_definitions
-        )
-        .is_ok());
+        ) {
+            Ok(_) => { },
+            Err(err) => panic!("{:?}", err),
+        };
 
         // exists
         assert!(table_exists(&log_context, &local_client, &table_name)
