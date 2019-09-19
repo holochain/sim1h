@@ -44,28 +44,6 @@ pub fn ensure_content(
         .sync()
 }
 
-pub fn touch_agent(
-    log_context: &LogContext,
-    client: &Client,
-    table_name: &TableName,
-    agent_id: &Address,
-) -> Result<PutItemOutput, RusotoError<PutItemError>> {
-    tracer(&log_context, "touch_agent");
-
-    let mut item = HashMap::new();
-    item.insert(
-        String::from(ADDRESS_KEY),
-        string_attribute_value(&String::from(agent_id.to_owned())),
-    );
-    client
-        .put_item(PutItemInput {
-            item: item,
-            table_name: table_name.to_string(),
-            ..Default::default()
-        })
-        .sync()
-}
-
 pub fn append_agent_message(
     log_context: &LogContext,
     client: &Client,
@@ -100,10 +78,8 @@ pub fn append_agent_message(
 #[cfg(test)]
 pub mod tests {
 
-    use crate::agent::fixture::agent_id_fresh;
     use crate::dht::bbdht::dynamodb::api::item::fixture::content_fresh;
     use crate::dht::bbdht::dynamodb::api::item::write::ensure_content;
-    use crate::dht::bbdht::dynamodb::api::item::write::touch_agent;
     use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
     use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
     use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
@@ -135,23 +111,6 @@ pub mod tests {
         }
     }
 
-    #[test]
-    fn touch_agent_test() {
-        let log_context = "touch_agent_test";
 
-        tracer(&log_context, "fixtures");
-        let local_client = local_client();
-        let table_name = table_name_fresh();
-        let agent_id = agent_id_fresh();
-
-        // ensure cas
-        assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
-
-        // cas exists
-        assert!(table_exists(&log_context, &local_client, &table_name).is_ok());
-
-        // touch agent
-        assert!(touch_agent(&log_context, &local_client, &table_name, &agent_id).is_ok());
-    }
 
 }

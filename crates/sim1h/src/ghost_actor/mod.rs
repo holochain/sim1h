@@ -117,7 +117,7 @@ impl SimGhostActor {
             // this is a no-op
             ClientToLib3h::HoldEntry(data) => {
                 let log_context = "ClientToLib3h::HoldEntry";
-                msg.respond(hold_entry(&log_context, &self.dbclient, &data))?;
+                hold_entry(&log_context, &self.dbclient, &data)?;
                 Ok(true.into())
             }
             // specced

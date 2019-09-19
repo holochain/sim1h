@@ -30,7 +30,7 @@ pub fn describe_table(
 #[cfg(test)]
 pub mod test {
 
-    use crate::dht::bbdht::dynamodb::api::table::create::create_table;
+    use crate::dht::bbdht::dynamodb::api::table::create::ensure_table;
     use crate::dht::bbdht::dynamodb::api::table::describe::describe_table;
     use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
     use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
@@ -56,8 +56,8 @@ pub mod test {
         assert!(!table_exists(&log_context, &local_client, &table_name)
             .expect("could not check that table exists"));
 
-        // create
-        assert!(create_table(
+        // ensure table
+        assert!(ensure_table(
             &log_context,
             &local_client,
             &table_name,

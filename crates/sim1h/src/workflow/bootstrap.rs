@@ -51,11 +51,8 @@ pub mod tests {
 
         // fail
         match bootstrap(&log_context, &bad_client) {
-            Err(err) => {
-                assert_eq!(
-                    err.to_string(),
-                    "Unknown error encountered: \'error trying to connect: failed to lookup address information: Name or service not known\'.".to_string(),
-                );
+            Err(_) => {
+                tracer(&log_context, "👌");
             }
             Ok(v) => {
                 panic!("bad Ok {:?}", v);

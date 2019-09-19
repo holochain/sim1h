@@ -133,7 +133,7 @@ pub fn put_aspect(
     }
 }
 
-pub fn append_aspect_list(
+pub fn append_aspect_list_to_entry(
     log_context: &LogContext,
     client: &Client,
     table_name: &TableName,
@@ -225,7 +225,7 @@ pub fn append_aspect_list(
 #[cfg(test)]
 pub mod tests {
 
-    use crate::dht::bbdht::dynamodb::api::aspect::write::append_aspect_list;
+    use crate::dht::bbdht::dynamodb::api::aspect::write::append_aspect_list_to_entry;
     use crate::dht::bbdht::dynamodb::api::aspect::write::aspect_list_to_attribute;
     use crate::dht::bbdht::dynamodb::api::aspect::write::put_aspect;
     use crate::dht::bbdht::dynamodb::api::item::read::get_item_by_address;
@@ -262,8 +262,8 @@ pub mod tests {
     }
 
     #[test]
-    fn append_aspects_test() {
-        let log_context = "append_aspects_test";
+    fn append_aspects_to_entry_test() {
+        let log_context = "append_aspects_to_entry_test";
 
         tracer(&log_context, "fixtures");
         let local_client = local_client();
@@ -290,7 +290,7 @@ pub mod tests {
         // trash/idempotency loop
         for _ in 0..3 {
             // append aspects
-            assert!(append_aspect_list(
+            assert!(append_aspect_list_to_entry(
                 &log_context,
                 &local_client,
                 &table_name,

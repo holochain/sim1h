@@ -1,4 +1,4 @@
-use crate::dht::bbdht::dynamodb::api::item::write::touch_agent;
+use crate::dht::bbdht::dynamodb::api::agent::write::touch_agent;
 use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::trace::tracer;
