@@ -82,7 +82,30 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::trace::tracer;
+    use crate::workflow::fixture::aspect_list_fresh;
     use crate::workflow::fixture::entry_aspect_data_fresh;
+    use crate::workflow::fixture::entry_address_fresh;
+    use crate::dht::bbdht::dynamodb::api::aspect::write::append_aspect_list_to_entry;
+
+    #[test]
+    fn get_entry_aspects_test() {
+        let log_context = "get_entry_aspects_test";
+
+        tracer(&log_context, "fixtures");
+        let local_client = local_client();
+        let table_name = table_name_fresh();
+        let entry_address = entry_address_fresh();
+        let aspect_list = aspect_list_fresh();
+
+        // ensure cas
+        assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
+
+        // cas exists
+        assert!(table_exists(&log_context, &local_client, &table_name).is_ok());
+
+        // put aspect list
+        assert!(append_aspect_list_to_entry(&log_context, &local_client, &table_name, &entry_address, &aspect_list).is_ok());
+    }
 
     #[test]
     fn read_aspect_test() {

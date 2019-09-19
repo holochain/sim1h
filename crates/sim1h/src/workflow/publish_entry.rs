@@ -1,4 +1,4 @@
-use crate::dht::bbdht::dynamodb::api::aspect::write::append_aspect_list;
+use crate::dht::bbdht::dynamodb::api::aspect::write::append_aspect_list_to_entry;
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::trace::tracer;
 use crate::trace::LogContext;
@@ -14,7 +14,7 @@ pub fn publish_entry(
 ) -> Lib3hResult<ClientToLib3hResponse> {
     tracer(&log_context, "publish_entry");
 
-    match append_aspect_list(
+    match append_aspect_list_to_entry(
         &log_context,
         &client,
         &provided_entry_data.space_address.to_string(),
