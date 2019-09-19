@@ -13,6 +13,7 @@ use rusoto_dynamodb::UpdateItemError;
 use crate::trace::tracer;
 use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
+use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_LIST_KEY;
 use rusoto_dynamodb::UpdateItemInput;
 use rusoto_dynamodb::PutItemOutput;
@@ -28,7 +29,36 @@ pub fn aspect_list_to_attribute(aspect_list: &Vec<EntryAspectData>) -> Attribute
     )
 }
 
-pub fn append_aspects(
+pub fn put_aspect(log_context: &LogContext, client: &Client, table_name: &TableName, aspect: &EntryAspectData) -> Result<PutItemOutput, RusotoError<PutItemError>> {
+    tracer(&log_context, "put_aspect");
+
+    let mut aspect_item = HashMap::new();
+    aspect_item.insert(
+        String::from(ADDRESS_KEY),
+        string_attribute_value(&aspect.aspect_address.to_string()),
+    );
+
+    aspect_item.insert(
+        String::from(ASPECT_ADDRESS_KEY),
+        string_attribute_value(&aspect.aspect_address.to_string()),
+    );
+
+    match client.put_item(PutItemInput {
+        table_name: table_name.to_string(),
+        item: aspect_item,
+        ..Default::default()
+    }).sync() {
+        Ok(v) => Ok(v),
+        Err(e) => {
+            // brute force failures
+            // TODO do not brute force failures
+            tracer(&log_context, &format!("{:?}", e));
+            put_aspect(&log_context, &client, &table_name, &aspect)
+        }
+    }
+}
+
+pub fn append_aspect_list(
     log_context: &LogContext,
     client: &Client,
     table_name: &TableName,
@@ -36,6 +66,19 @@ pub fn append_aspects(
     aspect_list: &Vec<EntryAspectData>,
 ) -> Result<UpdateItemOutput, RusotoError<UpdateItemError>> {
     tracer(&log_context, "append_aspects");
+
+    // need to append all the aspects before making them discoverable under the entry
+    for aspect in aspect_list {
+        match put_aspect(&log_context, &client, &table_name, &aspect) {
+            Ok(_) => {
+                // all g
+            },
+            Err(_) => {
+                // put_aspect brute forces all errors internally
+                unreachable!();
+            },
+        }
+    }
 
     // the aspect addressses live under the entry address
     let mut aspect_addresses_key = HashMap::new();
@@ -68,29 +111,6 @@ pub fn append_aspects(
     client.update_item(aspect_list_update).sync()
 }
 
-pub fn put_aspect(log_context: &LogContext, client: &Client, table_name: &TableName, aspect: &EntryAspectData) -> Result<PutItemOutput, RusotoError<PutItemError>> {
-    tracer(&log_context, "put_aspect");
-
-    let mut aspect_item = HashMap::new();
-    aspect_item.insert(
-        String::from(ADDRESS_KEY),
-        string_attribute_value(&aspect.aspect_address.to_string()),
-    );
-
-    match client.put_item(PutItemInput {
-        table_name: table_name.to_string(),
-        item: aspect_item,
-        ..Default::default()
-    }).sync() {
-        Ok(v) => Ok(v),
-        Err(e) => {
-            // brute force failures
-            tracer(&log_context, &format!("{:?}", e));
-            put_aspect(&log_context, &client, &table_name, &aspect)
-        }
-    }
-}
-
 #[cfg(test)]
 pub mod tests {
 
@@ -107,7 +127,7 @@ pub mod tests {
     use crate::workflow::fixture::aspect_list_fresh;
     use crate::dht::bbdht::dynamodb::api::aspect::write::put_aspect;
     use crate::dht::bbdht::dynamodb::api::aspect::write::aspect_list_to_attribute;
-    use crate::dht::bbdht::dynamodb::api::aspect::write::append_aspects;
+    use crate::dht::bbdht::dynamodb::api::aspect::write::append_aspect_list;
     use crate::workflow::fixture::entry_address_fresh;
     use std::collections::HashMap;
 
@@ -157,9 +177,9 @@ pub mod tests {
         assert!(table_exists(&log_context, &local_client, &table_name).is_ok());
 
         // trash/idempotency loop
-        for _ in 0..100 {
+        for _ in 0..3 {
             // append aspects
-            assert!(append_aspects(
+            assert!(append_aspect_list(
                 &log_context,
                 &local_client,
                 &table_name,

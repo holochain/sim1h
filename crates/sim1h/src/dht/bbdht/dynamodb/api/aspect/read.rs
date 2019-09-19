@@ -23,9 +23,11 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
     use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
     use crate::dht::bbdht::dynamodb::api::aspect::read::get_aspect;
+    use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_ADDRESS_KEY;
     use crate::workflow::fixture::entry_aspect_data_fresh;
     use crate::dht::bbdht::dynamodb::api::aspect::write::put_aspect;
     use holochain_persistence_api::cas::content::Address;
+    use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 
     #[test]
     fn read_aspect_test() {
@@ -50,8 +52,12 @@ pub mod tests {
             Ok(v) => {
                 println!("{:#?}", v);
                 assert_eq!(
-                    Address::from(v.item.unwrap()["address"].clone().s.unwrap()),
-                    entry_aspect_data.aspect_address
+                    Address::from(v.clone().item.unwrap()[ADDRESS_KEY].clone().s.unwrap()),
+                    entry_aspect_data.aspect_address,
+                );
+                assert_eq!(
+                    Address::from(v.clone().item.unwrap()[ASPECT_ADDRESS_KEY].clone().s.unwrap()),
+                    entry_aspect_data.aspect_address,
                 );
             },
             Err(err) => {
