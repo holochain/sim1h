@@ -12,7 +12,7 @@ pub fn describe_table(
     client: &Client,
     table_name: &str,
 ) -> Result<TableDescription, RusotoError<DescribeTableError>> {
-    tracer(&log_context, "describe_table");
+    tracer(&log_context, &format!("describe_table {}", &table_name));
     match client
         .describe_table(DescribeTableInput {
             table_name: table_name.to_string(),

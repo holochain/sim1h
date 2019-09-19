@@ -19,7 +19,10 @@ pub fn join_space(
 
     match ensure_cas_table(&log_context, &client, &table_name) {
         Ok(_) => {}
-        Err(err) => return Err(Lib3hError::from(err.to_string())),
+        Err(err) => {
+            tracer(&log_context, "join_space ensure_cas_table error");
+            return Err(Lib3hError::from(err.to_string()))
+        }
     };
     match touch_agent(
         &log_context,
@@ -55,9 +58,10 @@ pub mod tests {
         match join_space(&log_context, &local_client, &space_data) {
             Ok(ClientToLib3hResponse::JoinSpaceResult) => {}
             Ok(result) => {
-                panic!("{:?} {:?}", result, &space_data);
+                panic!("test OK panic: {:?} {:?}", result, &space_data);
             }
             Err(err) => {
+                tracer(&log_context, "join_space_test Err panic");
                 panic!("{:?} {:?}", err, &space_data);
             }
         }
