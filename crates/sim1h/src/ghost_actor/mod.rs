@@ -6,6 +6,7 @@ use crate::workflow::from_client::leave_space::leave_space;
 use crate::workflow::from_client::query_entry::query_entry;
 use crate::workflow::to_client::handle_store_entry_aspect::handle_store_entry_aspect;
 use crate::workflow::to_client::handle_fetch_entry::handle_fetch_entry;
+use crate::workflow::to_client::disconnected::disconnected;
 use detach::Detach;
 use crate::workflow::to_client::handle_query_entry::handle_query_entry;
 use lib3h::engine::engine_actor::ClientToLib3hMessage;
@@ -84,11 +85,9 @@ impl SimGhostActor {
                 // specced
                 // no-op
             }
-            Lib3hToClient::Disconnected(_disconnected_data) => {
-                // Notification of disconnection from a network
-
-                // specced
-                // no-op
+            Lib3hToClient::Disconnected(disconnected_data) => {
+                let log_context = "Lib3hToClient::Disconnected";
+                disconnected(&log_context, &disconnected_data);
             }
             Lib3hToClient::SendDirectMessageResult(_direct_message_data) => {
                 // -- Direct Messaging -- //
