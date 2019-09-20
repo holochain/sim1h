@@ -10,6 +10,8 @@ use crate::workflow::from_client::query_entry::query_entry_aspects;
 use holochain_core_types::network::query::NetworkQuery;
 use lib3h_protocol::data_types::EntryData;
 
+/// MVP (needs tests, wrapping query atm)
+/// query entry but hardcoded to entry query right?
 pub fn fetch_entry(log_context: &LogContext, client: &Client, fetch_entry_data: &FetchEntryData)
 -> Lib3hResult<ClientToLib3hResponse> {
     let query_entry_data = QueryEntryData{

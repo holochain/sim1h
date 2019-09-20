@@ -7,6 +7,9 @@ use lib3h::error::Lib3hResult;
 use lib3h_protocol::data_types::SpaceData;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
 
+/// MVP
+/// create space if not exists
+/// touch agent
 pub fn join_space(
     log_context: &LogContext,
     client: &Client,

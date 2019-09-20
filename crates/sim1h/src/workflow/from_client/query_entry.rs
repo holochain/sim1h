@@ -70,6 +70,10 @@ pub fn aspects_to_opaque(aspects: &Vec<EntryAspectData>) -> Opaque {
     json.to_bytes().into()
 }
 
+/// 90% (need query logic to be finalised)
+/// fetch all entry aspects from entry address
+/// do some kind of filter based on the non-opaque query struct
+/// familiar to rehydrate the opaque query struct
 pub fn query_entry(
     log_context: &LogContext,
     client: &Client,

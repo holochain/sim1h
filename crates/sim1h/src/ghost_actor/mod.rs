@@ -175,68 +175,43 @@ impl SimGhostActor {
         mut msg: ClientToLib3hMessage,
     ) -> GhostResult<WorkWasDone> {
         match msg.take_message().expect("exists") {
-            // MVP
-            // check database connection
-            // optional
             ClientToLib3h::Bootstrap(_) => {
                 let log_context = "ClientToLib3h::Bootstrap";
                 msg.respond(bootstrap(&log_context, &self.dbclient))?;
                 Ok(true.into())
             }
-            // MVP
-            // create space if not exists
-            // touch agent
             ClientToLib3h::JoinSpace(data) => {
                 let log_context = "ClientToLib3h::JoinSpace";
                 msg.respond(join_space(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
-            // MVP
-            // no-op
             ClientToLib3h::LeaveSpace(data) => {
                 let log_context = "ClientToLib3h::LeaveSpace";
                 msg.respond(leave_space(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
-            // 30%
-            // A: append message to inbox in database
-            // B: drain messages from inbox in database
             ClientToLib3h::SendDirectMessage(data) => {
                 let log_context = "ClientToLib3h::SendDirectMessage";
                 msg.respond(send_direct_message(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
-            // MVP
-            // append list of aspect addresses to entry address
-            // drop all aspects into database under each of their addresses
-            //
-            // later:
-            // make all this in a transaction
             ClientToLib3h::PublishEntry(data) => {
                 let log_context = "ClientToLib3h::PublishEntry";
                 // no response message for publish entry
                 publish_entry(&log_context, &self.dbclient, &data)?;
                 Ok(true.into())
             }
-            // MVP
-            // this is a no-op
             ClientToLib3h::HoldEntry(data) => {
                 let log_context = "ClientToLib3h::HoldEntry";
                 // no response message for hold entry
                 hold_entry(&log_context, &self.dbclient, &data)?;
                 Ok(true.into())
             }
-            // 90% (need query logic to be finalised)
-            // fetch all entry aspects from entry address
-            // do some kind of filter based on the non-opaque query struct
-            // familiar to rehydrate the opaque query struct
             ClientToLib3h::QueryEntry(data) => {
                 let log_context = "ClientToLib3h::QueryEntry";
                 msg.respond(query_entry(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
-            // MVP (needs tests, wrapping query atm)
-            // query entry but hardcoded to entry query right?
             ClientToLib3h::FetchEntry(data) => {
                 let log_context = "ClientToLib3h::FetchEntry";
                 msg.respond(fetch_entry(&log_context, &self.dbclient, &data))?;

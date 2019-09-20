@@ -4,6 +4,8 @@ use crate::trace::LogContext;
 use lib3h::error::Lib3hResult;
 use lib3h_protocol::data_types::ProvidedEntryData;
 
+/// MVP
+/// this is a no-op
 pub fn hold_entry(
     log_context: &LogContext,
     _client: &Client,

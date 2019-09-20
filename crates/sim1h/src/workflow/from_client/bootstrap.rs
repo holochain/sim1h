@@ -5,6 +5,9 @@ use crate::trace::LogContext;
 use lib3h::error::Lib3hResult;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
 
+/// MVP
+/// check database connection
+/// optional
 pub fn bootstrap(log_context: &LogContext, client: &Client) -> Lib3hResult<ClientToLib3hResponse> {
     tracer(&log_context, "bootstrap");
     // touch the database to check our connection is good
