@@ -12,10 +12,9 @@ use crate::trace::tracer;
 use crate::trace::LogContext;
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::EntryAspectData;
-use rusoto_dynamodb::AttributeValue;
-use std::collections::HashMap;
+use crate::dht::bbdht::dynamodb::api::item::Item;
 
-fn try_aspect_from_item(item: HashMap<String, AttributeValue>) -> BbDhtResult<EntryAspectData> {
+fn try_aspect_from_item(item: Item) -> BbDhtResult<EntryAspectData> {
     let aspect_address = match item[ASPECT_ADDRESS_KEY].s.clone() {
         Some(address) => Address::from(address),
         None => {
@@ -65,7 +64,7 @@ fn try_aspect_from_item(item: HashMap<String, AttributeValue>) -> BbDhtResult<En
 }
 
 pub fn try_aspect_list_from_item(
-    item: HashMap<String, AttributeValue>,
+    item: Item,
 ) -> BbDhtResult<Vec<Address>> {
     let addresses = match item[ASPECT_LIST_KEY].ss.clone() {
         Some(addresses) => addresses.iter().map(|s| Address::from(s.clone())).collect(),

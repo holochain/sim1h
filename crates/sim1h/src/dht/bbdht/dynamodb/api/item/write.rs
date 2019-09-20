@@ -1,29 +1,22 @@
 use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::dynamodb::schema::cas::inbox_key;
 use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::CONTENT_KEY;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use holochain_persistence_api::cas::content::Address;
 use holochain_persistence_api::cas::content::AddressableContent;
-use rusoto_core::RusotoError;
 use rusoto_dynamodb::DynamoDb;
-use rusoto_dynamodb::PutItemError;
 use rusoto_dynamodb::PutItemInput;
-use rusoto_dynamodb::PutItemOutput;
-use rusoto_dynamodb::UpdateItemError;
-use rusoto_dynamodb::UpdateItemInput;
-use rusoto_dynamodb::UpdateItemOutput;
 use std::collections::HashMap;
+use crate::dht::bbdht::error::BbDhtResult;
 
 pub fn ensure_content(
     log_context: &LogContext,
     client: &Client,
     table_name: &TableName,
     content: &dyn AddressableContent,
-) -> Result<PutItemOutput, RusotoError<PutItemError>> {
+) -> BbDhtResult<()> {
     tracer(&log_context, "ensure_content");
     let mut item = HashMap::new();
     item.insert(
@@ -41,60 +34,8 @@ pub fn ensure_content(
             table_name: table_name.to_string(),
             ..Default::default()
         })
-        .sync()
-}
-
-pub fn touch_agent(
-    log_context: &LogContext,
-    client: &Client,
-    table_name: &TableName,
-    agent_id: &Address,
-) -> Result<PutItemOutput, RusotoError<PutItemError>> {
-    tracer(&log_context, "touch_agent");
-
-    let mut item = HashMap::new();
-    item.insert(
-        String::from(ADDRESS_KEY),
-        string_attribute_value(&String::from(agent_id.to_owned())),
-    );
-    client
-        .put_item(PutItemInput {
-            item: item,
-            table_name: table_name.to_string(),
-            ..Default::default()
-        })
-        .sync()
-}
-
-pub fn append_agent_message(
-    log_context: &LogContext,
-    client: &Client,
-    table_name: &TableName,
-    _request_id: &String,
-    _from: &Address,
-    to: &Address,
-    _content: &Vec<u8>,
-) -> Result<UpdateItemOutput, RusotoError<UpdateItemError>> {
-    tracer(&log_context, "append_agent_message");
-
-    // the recipient is the key address
-    let mut inbox_address_key = HashMap::new();
-    inbox_address_key.insert(
-        String::from(inbox_key(to)),
-        string_attribute_value(&String::from(to.to_owned())),
-    );
-
-    // inbox_address_key.insert
-
-    // TODO
-    let inbox_update = UpdateItemInput {
-        table_name: table_name.to_string(),
-        key: inbox_address_key,
-        // update_expression: Some("".to_string()),
-        ..Default::default()
-    };
-
-    client.update_item(inbox_update).sync()
+        .sync()?;
+    Ok(())
 }
 
 #[cfg(test)]

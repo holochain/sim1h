@@ -2,24 +2,22 @@ use crate::dht::bbdht::dynamodb::api::table::exist::until_table_not_exists;
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use rusoto_core::RusotoError;
-use rusoto_dynamodb::DeleteTableError;
 use rusoto_dynamodb::DeleteTableInput;
-use rusoto_dynamodb::DeleteTableOutput;
 use rusoto_dynamodb::DynamoDb;
+use crate::dht::bbdht::error::BbDhtResult;
 
 pub fn delete_table(
     log_context: &LogContext,
     client: &Client,
     table_name: &str,
-) -> Result<DeleteTableOutput, RusotoError<DeleteTableError>> {
+) -> BbDhtResult<()> {
     tracer(&log_context, "delete_table");
     let delete_table_input = DeleteTableInput {
         table_name: table_name.to_string(),
     };
-    let result = client.delete_table(delete_table_input).sync();
+    client.delete_table(delete_table_input).sync()?;
     until_table_not_exists(log_context, client, table_name);
-    result
+    Ok(())
 }
 
 #[cfg(test)]

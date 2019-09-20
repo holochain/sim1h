@@ -2,14 +2,14 @@ use crate::dht::bbdht::dynamodb::api::table::describe::describe_table;
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use rusoto_core::RusotoError;
-use rusoto_dynamodb::DescribeTableError;
+use crate::dht::bbdht::error::BbDhtResult;
+use crate::dht::bbdht::error::BbDhtError;
 
 pub fn table_exists(
     log_context: &LogContext,
     client: &Client,
     table_name: &str,
-) -> Result<bool, RusotoError<DescribeTableError>> {
+) -> BbDhtResult<bool> {
     tracer(&log_context, &format!("table_exists {}", &table_name));
 
     let table_description_result = describe_table(log_context, client, table_name);
@@ -25,7 +25,7 @@ pub fn table_exists(
             _ => false,
         }),
         Err(err) => match err {
-            RusotoError::Service(DescribeTableError::ResourceNotFound(_)) => Ok(false),
+            BbDhtError::ResourceNotFound(_) => Ok(false),
             _ => Err(err),
         },
     }
@@ -46,7 +46,7 @@ pub fn until_table_exists_or_not(
                 }
             }
             Err(err) => {
-                error!("list error while waiting for table to exist: {}", err);
+                error!("list error while waiting for table to exist: {:?}", err);
             }
         }
     }

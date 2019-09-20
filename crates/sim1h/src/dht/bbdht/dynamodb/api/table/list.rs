@@ -1,13 +1,14 @@
 use crate::dht::bbdht::dynamodb::client::Client;
-use dynomite::dynamodb::{DynamoDb, ListTablesError, ListTablesInput, ListTablesOutput};
-use rusoto_core::RusotoError;
+use dynomite::dynamodb::{DynamoDb, ListTablesInput};
+use crate::dht::bbdht::error::BbDhtResult;
+use crate::dht::bbdht::dynamodb::schema::TableName;
 
-pub fn list_tables(client: &Client) -> Result<ListTablesOutput, RusotoError<ListTablesError>> {
-    client
+pub fn list_tables(client: &Client) -> BbDhtResult<Option<Vec<TableName>>> {
+    Ok(client
         .list_tables(ListTablesInput {
             ..Default::default()
         })
-        .sync()
+        .sync()?.table_names)
 }
 
 #[cfg(test)]

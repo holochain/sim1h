@@ -1,4 +1,4 @@
-use crate::dht::bbdht::dynamodb::api::item::write::append_agent_message;
+use crate::dht::bbdht::dynamodb::api::agent::inbox::send_to_agent_inbox;
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::trace::tracer;
 use crate::trace::LogContext;
@@ -12,7 +12,7 @@ pub fn send_direct_message(
     direct_message_data: &DirectMessageData,
 ) -> Lib3hResult<ClientToLib3hResponse> {
     tracer(&log_context, "send_direct_message");
-    match append_agent_message(
+    match send_to_agent_inbox(
         &log_context,
         &client,
         &direct_message_data.space_address.to_string(),

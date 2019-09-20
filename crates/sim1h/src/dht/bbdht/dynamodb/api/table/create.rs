@@ -5,13 +5,14 @@ use crate::dht::bbdht::dynamodb::schema::cas::attribute_definitions_cas;
 use crate::dht::bbdht::dynamodb::schema::cas::key_schema_cas;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use dynomite::dynamodb::{CreateTableError, CreateTableInput, DescribeTableError};
-use rusoto_core::RusotoError;
+use dynomite::dynamodb::{CreateTableInput};
 use rusoto_dynamodb::AttributeDefinition;
 use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::KeySchemaElement;
 use rusoto_dynamodb::ProvisionedThroughput;
 use rusoto_dynamodb::TableDescription;
+use crate::dht::bbdht::error::BbDhtResult;
+use crate::dht::bbdht::error::BbDhtError;
 
 pub fn create_table(
     log_context: &LogContext,
@@ -19,7 +20,7 @@ pub fn create_table(
     table_name: &str,
     key_schema: &Vec<KeySchemaElement>,
     attribute_definitions: &Vec<AttributeDefinition>,
-) -> Result<Option<TableDescription>, RusotoError<CreateTableError>> {
+) -> BbDhtResult<Option<TableDescription>> {
     tracer(&log_context, &format!("create_table {}", table_name));
 
     let create_table_input = CreateTableInput {
@@ -33,13 +34,7 @@ pub fn create_table(
         ..Default::default()
     };
 
-    let output = match client.create_table(create_table_input).sync() {
-        Ok(v) => v,
-        Err(err) => {
-            tracer(&log_context, "create_table error");
-            return Err(err);
-        }
-    };
+    let output = client.create_table(create_table_input).sync()?;
     until_table_exists(log_context, client, table_name);
     Ok(output.table_description)
 }
@@ -50,7 +45,7 @@ pub fn ensure_table(
     table_name: &str,
     key_schema: &Vec<KeySchemaElement>,
     attribute_definitions: &Vec<AttributeDefinition>,
-) -> Result<Option<TableDescription>, RusotoError<CreateTableError>> {
+) -> BbDhtResult<Option<TableDescription>> {
     tracer(log_context, &format!("ensure_table {}", &table_name));
 
     // well in reality we end up with concurrency issues if we do a list or describe
@@ -64,7 +59,7 @@ pub fn ensure_table(
             attribute_definitions,
         ) {
             Ok(created) => Ok(created),
-            Err(RusotoError::Service(CreateTableError::ResourceInUse(_))) => {
+            Err(BbDhtError::ResourceInUse(_)) => {
                 tracer(&log_context, "ensure_table ResourceInUse");
                 Ok(None)
             }
@@ -80,8 +75,8 @@ pub fn ensure_table(
             }
         },
         Ok(true) => Ok(None),
-        Err(RusotoError::Service(DescribeTableError::InternalServerError(_err))) => {
-            tracer(&log_context, "ensure_table InternalServerError");
+        Err(BbDhtError::InternalServerError(_)) => {
+            tracer(&log_context, "retry ensure_table InternalServerError");
             // RusotoError::Service(CreateTableError::InternalServerError(err)),
             ensure_table(
                 &log_context,
@@ -90,26 +85,9 @@ pub fn ensure_table(
                 &key_schema,
                 &attribute_definitions,
             )
-        }
-        // panel beat other errors into "internal server errors
-        Err(RusotoError::HttpDispatch(err)) => {
-            tracer(&log_context, "ensure_table HttpDispatch");
-            Err(RusotoError::HttpDispatch(err))
-        }
-        Err(RusotoError::Credentials(err)) => {
-            tracer(&log_context, "ensure_table Credentials");
-            Err(RusotoError::Credentials(err))
-        }
-        Err(RusotoError::Validation(err)) => {
-            tracer(&log_context, "ensure_table Validation");
-            Err(RusotoError::Validation(err))
-        }
-        Err(RusotoError::ParseError(err)) => {
-            tracer(&log_context, "ensure_table ParseError");
-            Err(RusotoError::ParseError(err))
-        }
-        Err(RusotoError::Unknown(_err)) => {
-            tracer(&log_context, "ensure_table Unknown");
+        },
+        Err(BbDhtError::Unknown(_)) => {
+            tracer(&log_context, "retry ensure_table Unknown");
             ensure_table(
                 &log_context,
                 &client,
@@ -117,10 +95,10 @@ pub fn ensure_table(
                 &key_schema,
                 &attribute_definitions,
             )
-        }
-        Err(RusotoError::Service(DescribeTableError::ResourceNotFound(_))) => {
+        },
+        Err(BbDhtError::ResourceNotFound(_)) => {
             // this must be covered by table_exists
-            tracer(&log_context, "ensure_table ResourceNotFound");
+            tracer(&log_context, "retry ensure_table ResourceNotFound");
             ensure_table(
                 &log_context,
                 &client,
@@ -128,7 +106,8 @@ pub fn ensure_table(
                 &key_schema,
                 &attribute_definitions,
             )
-        }
+        },
+        Err(err) => Err(err.into()),
     }
 }
 
@@ -136,7 +115,7 @@ pub fn ensure_cas_table(
     log_context: &LogContext,
     client: &Client,
     table_name: &str,
-) -> Result<Option<TableDescription>, RusotoError<CreateTableError>> {
+) -> BbDhtResult<Option<TableDescription>> {
     tracer(&log_context, &format!("ensure_cas_table {}", &table_name));
 
     ensure_table(
@@ -248,14 +227,18 @@ pub mod test {
         assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
 
         // check cas schema
-        let table_description = describe_table(&log_context, &local_client, &table_name)
-            .expect("could not describe table");
-
-        assert_eq!(Some(key_schema_cas()), table_description.key_schema);
-        assert_eq!(
-            Some(attribute_definitions_cas()),
-            table_description.attribute_definitions
-        );
+        match describe_table(&log_context, &local_client, &table_name) {
+            Ok(table_description) => {
+                assert_eq!(Some(key_schema_cas()), table_description.key_schema);
+                assert_eq!(
+                    Some(attribute_definitions_cas()),
+                    table_description.attribute_definitions
+                );
+            }
+            Err(err) => {
+                panic!("{:?}", err);
+            }
+        }
 
         // thrash
         for _ in 0..100 {
