@@ -1,14 +1,14 @@
 use crate::agent::fixture::agent_id_fresh;
+use holochain_core_types::network::query::NetworkQuery;
+use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::EntryAspectData;
 use lib3h_protocol::data_types::EntryData;
 use lib3h_protocol::data_types::Opaque;
 use lib3h_protocol::data_types::ProvidedEntryData;
+use lib3h_protocol::data_types::QueryEntryData;
 use lib3h_protocol::data_types::SpaceData;
 use uuid::Uuid;
-use lib3h_protocol::data_types::QueryEntryData;
-use holochain_json_api::json::JsonString;
-use holochain_core_types::network::query::NetworkQuery;
 
 pub fn request_id_fresh() -> String {
     Uuid::new_v4().to_string()
@@ -72,7 +72,10 @@ pub fn space_data_fresh() -> SpaceData {
     }
 }
 
-pub fn provided_entry_data_fresh(space_data: &SpaceData, entry_address: &Address) -> ProvidedEntryData {
+pub fn provided_entry_data_fresh(
+    space_data: &SpaceData,
+    entry_address: &Address,
+) -> ProvidedEntryData {
     ProvidedEntryData {
         space_address: space_data.space_address.clone(),
         provider_agent_id: agent_id_fresh(),

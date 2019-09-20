@@ -10,6 +10,7 @@ use crate::dht::bbdht::dynamodb::schema::number_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::string_set_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::TableName;
+use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use holochain_persistence_api::cas::content::Address;
@@ -19,10 +20,7 @@ use rusoto_dynamodb::AttributeValue;
 use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::PutItemError;
 use rusoto_dynamodb::PutItemInput;
-use rusoto_dynamodb::PutItemOutput;
-use rusoto_dynamodb::UpdateItemError;
 use rusoto_dynamodb::UpdateItemInput;
-use rusoto_dynamodb::UpdateItemOutput;
 use std::collections::HashMap;
 
 pub fn aspect_list_to_attribute(aspect_list: &Vec<EntryAspectData>) -> AttributeValue {
@@ -39,7 +37,7 @@ pub fn put_aspect(
     client: &Client,
     table_name: &TableName,
     aspect: &EntryAspectData,
-) -> Result<PutItemOutput, RusotoError<PutItemError>> {
+) -> BbDhtResult<()> {
     tracer(&log_context, "put_aspect");
 
     let mut aspect_item = HashMap::new();
@@ -76,74 +74,49 @@ pub fn put_aspect(
         })
         .sync()
     {
-        Ok(v) => Ok(v),
+        Ok(_) => Ok(()),
         // brute force retryable failures
         // TODO do not brute force failures
         // use transactions upstream instead
         Err(RusotoError::Service(err)) => match err {
-            PutItemError::ResourceNotFound(err) => {
-                return Err(RusotoError::Service(PutItemError::ResourceNotFound(err)));
-            }
-            PutItemError::ConditionalCheckFailed(err) => {
-                return Err(RusotoError::Service(PutItemError::ConditionalCheckFailed(
-                    err,
-                )));
-            }
-            PutItemError::ItemCollectionSizeLimitExceeded(err) => {
-                return Err(RusotoError::Service(
-                    PutItemError::ItemCollectionSizeLimitExceeded(err),
-                ));
-            }
             PutItemError::InternalServerError(err) => {
                 tracer(
                     &log_context,
-                    &format!("put_aspect Service InternalServerError {:?}", err),
+                    &format!("retry put_aspect Service InternalServerError {:?}", err),
                 );
                 put_aspect(&log_context, &client, &table_name, &aspect)
             }
             PutItemError::ProvisionedThroughputExceeded(err) => {
                 tracer(
                     &log_context,
-                    &format!("put_aspect Service ProvisionedThroughputExceeded {:?}", err),
+                    &format!(
+                        "retry put_aspect Service ProvisionedThroughputExceeded {:?}",
+                        err
+                    ),
                 );
                 put_aspect(&log_context, &client, &table_name, &aspect)
             }
             PutItemError::RequestLimitExceeded(err) => {
                 tracer(
                     &log_context,
-                    &format!("put_aspect Service RequestLimitExceeded {:?}", err),
+                    &format!("retry put_aspect Service RequestLimitExceeded {:?}", err),
                 );
                 put_aspect(&log_context, &client, &table_name, &aspect)
             }
             PutItemError::TransactionConflict(err) => {
                 tracer(
                     &log_context,
-                    &format!("put_aspect Service TransactionConflict {:?}", err),
+                    &format!("retry put_aspect Service TransactionConflict {:?}", err),
                 );
                 put_aspect(&log_context, &client, &table_name, &aspect)
             }
+            _ => Err(err.into()),
         },
         Err(RusotoError::Unknown(err)) => {
-            tracer(&log_context, &format!("put_aspect Unknown {:?}", err));
+            tracer(&log_context, &format!("retry put_aspect Unknown {:?}", err));
             put_aspect(&log_context, &client, &table_name, &aspect)
         }
-        // these things should not be retried
-        Err(RusotoError::HttpDispatch(err)) => {
-            tracer(&log_context, &format!("put_aspect HttpDispatch {:?}", err));
-            return Err(RusotoError::HttpDispatch(err));
-        }
-        Err(RusotoError::Credentials(err)) => {
-            tracer(&log_context, &format!("put_aspect Credentials {:?}", err));
-            return Err(RusotoError::Credentials(err));
-        }
-        Err(RusotoError::Validation(err)) => {
-            tracer(&log_context, &format!("put_aspect Validation {:?}", err));
-            return Err(RusotoError::Validation(err));
-        }
-        Err(RusotoError::ParseError(err)) => {
-            tracer(&log_context, &format!("put_aspect ParseError {:?}", err));
-            return Err(RusotoError::ParseError(err));
-        }
+        Err(err) => Err(err.into()),
     }
 }
 
@@ -153,66 +126,12 @@ pub fn append_aspect_list_to_entry(
     table_name: &TableName,
     entry_address: &Address,
     aspect_list: &Vec<EntryAspectData>,
-) -> Result<UpdateItemOutput, RusotoError<UpdateItemError>> {
+) -> BbDhtResult<()> {
     tracer(&log_context, "append_aspects");
 
     // need to append all the aspects before making them discoverable under the entry
     for aspect in aspect_list {
-        match put_aspect(&log_context, &client, &table_name, &aspect) {
-            Ok(_) => {
-                // all g
-            }
-            Err(RusotoError::HttpDispatch(err)) => {
-                return Err(RusotoError::HttpDispatch(err));
-            }
-            Err(RusotoError::Credentials(err)) => {
-                return Err(RusotoError::Credentials(err));
-            }
-            Err(RusotoError::Validation(err)) => {
-                return Err(RusotoError::Validation(err));
-            }
-            Err(RusotoError::ParseError(err)) => {
-                return Err(RusotoError::ParseError(err));
-            }
-            Err(RusotoError::Unknown(err)) => {
-                return Err(RusotoError::Unknown(err));
-            }
-            Err(RusotoError::Service(err)) => match err {
-                PutItemError::ResourceNotFound(err) => {
-                    return Err(RusotoError::Service(UpdateItemError::ResourceNotFound(err)));
-                }
-                PutItemError::ConditionalCheckFailed(err) => {
-                    return Err(RusotoError::Service(
-                        UpdateItemError::ConditionalCheckFailed(err),
-                    ));
-                }
-                PutItemError::InternalServerError(err) => {
-                    return Err(RusotoError::Service(UpdateItemError::InternalServerError(
-                        err,
-                    )));
-                }
-                PutItemError::ItemCollectionSizeLimitExceeded(err) => {
-                    return Err(RusotoError::Service(
-                        UpdateItemError::ItemCollectionSizeLimitExceeded(err),
-                    ));
-                }
-                PutItemError::ProvisionedThroughputExceeded(err) => {
-                    return Err(RusotoError::Service(
-                        UpdateItemError::ProvisionedThroughputExceeded(err),
-                    ));
-                }
-                PutItemError::RequestLimitExceeded(err) => {
-                    return Err(RusotoError::Service(UpdateItemError::RequestLimitExceeded(
-                        err,
-                    )));
-                }
-                PutItemError::TransactionConflict(err) => {
-                    return Err(RusotoError::Service(UpdateItemError::TransactionConflict(
-                        err,
-                    )));
-                }
-            },
-        }
+        put_aspect(&log_context, &client, &table_name, &aspect)?;
     }
 
     // the aspect addressses live under the entry address
@@ -243,7 +162,8 @@ pub fn append_aspect_list_to_entry(
         ..Default::default()
     };
 
-    client.update_item(aspect_list_update).sync()
+    client.update_item(aspect_list_update).sync()?;
+    Ok(())
 }
 
 #[cfg(test)]

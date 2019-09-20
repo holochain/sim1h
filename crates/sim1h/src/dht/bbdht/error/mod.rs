@@ -1,9 +1,10 @@
+use lib3h::error::Lib3hError;
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::DescribeTableError;
 use rusoto_dynamodb::GetItemError;
 use rusoto_dynamodb::PutItemError;
+use rusoto_dynamodb::UpdateItemError;
 use std::num::ParseIntError;
-use lib3h::error::Lib3hError;
 
 #[derive(Debug)]
 pub enum BbDhtError {
@@ -42,7 +43,8 @@ impl ToString for BbDhtError {
             BbDhtError::Unknown(s) => s,
             BbDhtError::MissingData(s) => s,
             BbDhtError::CorruptData(s) => s,
-        }.to_string()
+        }
+        .to_string()
     }
 }
 
@@ -90,9 +92,46 @@ impl From<RusotoError<PutItemError>> for BbDhtError {
                     BbDhtError::ProvisionedThroughputExceeded(err)
                 }
                 PutItemError::ResourceNotFound(err) => BbDhtError::ResourceNotFound(err),
-                PutItemError::ConditionalCheckFailed(err) => BbDhtError::ConditionalCheckFailed(err),
+                PutItemError::ConditionalCheckFailed(err) => {
+                    BbDhtError::ConditionalCheckFailed(err)
+                }
                 PutItemError::TransactionConflict(err) => BbDhtError::TransactionConflict(err),
-                PutItemError::ItemCollectionSizeLimitExceeded(err) => BbDhtError::ItemCollectionSizeLimitExceeded(err),
+                PutItemError::ItemCollectionSizeLimitExceeded(err) => {
+                    BbDhtError::ItemCollectionSizeLimitExceeded(err)
+                }
+            },
+            RusotoError::HttpDispatch(err) => BbDhtError::HttpDispatch(err.to_string()),
+            RusotoError::Credentials(err) => BbDhtError::Credentials(err.to_string()),
+            RusotoError::Validation(err) => BbDhtError::Validation(err.to_string()),
+            RusotoError::ParseError(err) => BbDhtError::ParseError(err.to_string()),
+            RusotoError::Unknown(err) => BbDhtError::Unknown(format!("{:?}", err)),
+        }
+    }
+}
+
+impl From<PutItemError> for BbDhtError {
+    fn from(put_item_error: PutItemError) -> BbDhtError {
+        BbDhtError::from(RusotoError::Service(put_item_error))
+    }
+}
+
+impl From<RusotoError<UpdateItemError>> for BbDhtError {
+    fn from(rusoto_error: RusotoError<UpdateItemError>) -> Self {
+        match rusoto_error {
+            RusotoError::Service(service_error) => match service_error {
+                UpdateItemError::InternalServerError(err) => BbDhtError::InternalServerError(err),
+                UpdateItemError::RequestLimitExceeded(err) => BbDhtError::RequestLimitExceeded(err),
+                UpdateItemError::ProvisionedThroughputExceeded(err) => {
+                    BbDhtError::ProvisionedThroughputExceeded(err)
+                }
+                UpdateItemError::ResourceNotFound(err) => BbDhtError::ResourceNotFound(err),
+                UpdateItemError::ConditionalCheckFailed(err) => {
+                    BbDhtError::ConditionalCheckFailed(err)
+                }
+                UpdateItemError::TransactionConflict(err) => BbDhtError::TransactionConflict(err),
+                UpdateItemError::ItemCollectionSizeLimitExceeded(err) => {
+                    BbDhtError::ItemCollectionSizeLimitExceeded(err)
+                }
             },
             RusotoError::HttpDispatch(err) => BbDhtError::HttpDispatch(err.to_string()),
             RusotoError::Credentials(err) => BbDhtError::Credentials(err.to_string()),

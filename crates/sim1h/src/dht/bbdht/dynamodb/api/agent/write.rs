@@ -2,11 +2,11 @@ use crate::dht::bbdht::dynamodb::client::Client;
 use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::TableName;
+use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use holochain_persistence_api::cas::content::Address;
 use rusoto_dynamodb::DynamoDb;
-use crate::dht::bbdht::error::BbDhtResult;
 use rusoto_dynamodb::PutItemInput;
 use std::collections::HashMap;
 
