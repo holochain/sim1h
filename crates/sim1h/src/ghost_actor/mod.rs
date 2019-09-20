@@ -187,7 +187,7 @@ impl SimGhostActor {
                 msg.respond(leave_space(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
-            // TODO
+            // TODO - tests
             ClientToLib3h::SendDirectMessage(data) => {
                 let log_context = "ClientToLib3h::SendDirectMessage";
                 msg.respond(send_direct_message(&log_context, &self.dbclient, &data))?;

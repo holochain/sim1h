@@ -6,9 +6,7 @@ use lib3h::error::Lib3hResult;
 use lib3h_protocol::data_types::DirectMessageData;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
 
-/// 30%
 /// A: append message to inbox in database
-/// B: drain messages from inbox in database
 pub fn send_direct_message(
     log_context: &LogContext,
     client: &Client,
