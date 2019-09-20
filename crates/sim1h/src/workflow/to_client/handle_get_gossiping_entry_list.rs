@@ -6,6 +6,6 @@ use crate::trace::tracer;
 /// MVP
 /// database stored everything
 /// no-op
-pub fn handle_get_gossiping_entry_list(log_context: &LogContext, _get_list_data: &GetListData) {
-    tracer(&log_context, "handle_get_gossiping_entry_list");
+pub fn handle_get_gossiping_entry_list(log_context: &LogContext, get_list_data: &GetListData) {
+    tracer(&log_context, &format!("handle_get_gossiping_entry_list {:?}", get_list_data));
 }

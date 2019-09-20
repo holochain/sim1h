@@ -8,6 +8,7 @@ use detach::Detach;
 use lib3h::engine::engine_actor::ClientToLib3hMessage;
 use lib3h::engine::CanAdvertise;
 use lib3h::error::Lib3hError;
+use crate::workflow::to_client::handle_get_authoring_entry_list::handle_get_authoring_entry_list;
 use crate::workflow::from_client::fetch_entry::fetch_entry;
 use lib3h_protocol::protocol::ClientToLib3h;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
@@ -130,12 +131,9 @@ impl SimGhostActor {
                 // queries are simulated on the outgoing side
                 // no-op
             }
-            Lib3hToClient::HandleGetAuthoringEntryList(_get_list_data) => {
-                // -- Entry lists -- //
-
-                // specced
-                // database stored everything
-                // no-op
+            Lib3hToClient::HandleGetAuthoringEntryList(get_list_data) => {
+                let log_context = "Lib3hToClient::HandleGetAuthoringEntryList";
+                handle_get_authoring_entry_list(&log_context, &get_list_data);
             }
             Lib3hToClient::HandleGetGossipingEntryList(get_list_data) => {
                 let log_context = "Lib3hToClient::HandleGetGossipingEntryList";
