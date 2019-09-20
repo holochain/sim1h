@@ -13,6 +13,11 @@ use lib3h_protocol::data_types::Opaque;
 use std::convert::TryFrom;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
 
+pub fn get_entry_aspect_filter_fn(aspect: &EntryAspectData) -> bool {
+    let keep = vec!["content".to_string(), "header".to_string()];
+    keep.contains(&aspect.type_hint)
+}
+
 pub fn query_entry_aspects(
     log_context: &LogContext,
     client: &Client,
@@ -37,12 +42,13 @@ pub fn query_entry_aspects(
 
     let entry_aspects = get_entry_aspects(log_context, client, &table_name, &entry_address)?;
 
+    println!("{:#?}", entry_aspects);
+
     Ok(match query {
         NetworkQuery::GetEntry => {
-            let keep = vec!["content".to_string(), "header".to_string()];
             let v = entry_aspects
                 .into_iter()
-                .filter(|a| keep.contains(&a.type_hint))
+                .filter(get_entry_aspect_filter_fn)
                 .collect::<Vec<_>>();
             v
         }

@@ -7,8 +7,17 @@ use lib3h_protocol::data_types::EntryData;
 use lib3h_protocol::data_types::Opaque;
 use lib3h_protocol::data_types::ProvidedEntryData;
 use lib3h_protocol::data_types::QueryEntryData;
+use holochain_core_types::agent::AgentId;
 use lib3h_protocol::data_types::SpaceData;
+use holochain_core_types::signature::Provenance;
+use holochain_core_types::signature::Signature;
+use holochain_core_types::entry::Entry;
+use holochain_core_types::time::Iso8601;
+use holochain_persistence_api::cas::content::AddressableContent;
+use holochain_core_types::time::test_iso_8601;
 use uuid::Uuid;
+use holochain_core_types::network::entry_aspect::EntryAspect;
+use holochain_core_types::chain_header::ChainHeader;
 
 pub fn request_id_fresh() -> String {
     Uuid::new_v4().to_string()
@@ -32,6 +41,57 @@ pub fn type_hint_fresh() -> String {
 
 pub fn opaque_fresh() -> Opaque {
     vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9].into()
+}
+
+pub fn nick_fresh() -> String {
+    Uuid::new_v4().to_string()
+}
+
+pub fn core_agent_id_fresh() -> AgentId {
+    AgentId {
+        nick: nick_fresh(),
+        pub_sign_key: agent_id_fresh().into()
+    }
+}
+
+pub fn entry_fresh() -> Entry {
+    Entry::AgentId(core_agent_id_fresh())
+}
+
+pub fn provenance_fresh() -> Provenance {
+    Provenance(agent_id_fresh(), Signature::fake())
+}
+
+pub fn provenances_fresh() -> Vec<Provenance> {
+    vec![provenance_fresh(), provenance_fresh()]
+}
+
+pub fn header_address_fresh() -> Address {
+    Uuid::new_v4().to_string().into()
+}
+
+pub fn timestamp_fresh() -> Iso8601 {
+    test_iso_8601()
+}
+
+pub fn chain_header_fresh(entry: &Entry) -> ChainHeader {
+    ChainHeader::new(
+        &entry.entry_type(),
+        &entry.address(),
+        &provenances_fresh(),
+        &Some(header_address_fresh()),
+        &Some(header_address_fresh()),
+        &Some(header_address_fresh()),
+        &timestamp_fresh(),
+    )
+}
+
+pub fn opaque_aspect_fresh() -> Opaque {
+    let entry = entry_fresh();
+    JsonString::from(EntryAspect::Content(
+        entry.clone(),
+        chain_header_fresh(&entry),
+    )).to_bytes().into()
 }
 
 pub fn publish_ts_fresh() -> u64 {
