@@ -5,6 +5,7 @@ use crate::workflow::from_client::join_space::join_space;
 use crate::workflow::from_client::leave_space::leave_space;
 use crate::workflow::from_client::query_entry::query_entry;
 use detach::Detach;
+use crate::workflow::to_client::handle_query_entry::handle_query_entry;
 use lib3h::engine::engine_actor::ClientToLib3hMessage;
 use lib3h::engine::CanAdvertise;
 use lib3h::error::Lib3hError;
@@ -124,12 +125,9 @@ impl SimGhostActor {
                 // all entries are in the database
                 // no-op
             }
-            Lib3hToClient::HandleQueryEntry(_query_entry_data) => {
-                // Request a node to handle a QueryEntry request
-
-                // specced
-                // queries are simulated on the outgoing side
-                // no-op
+            Lib3hToClient::HandleQueryEntry(query_entry_data) => {
+                let log_context = "Lib3hToClient::HandleQueryEntry";
+                handle_query_entry(&log_context, &query_entry_data);
             }
             Lib3hToClient::HandleGetAuthoringEntryList(get_list_data) => {
                 let log_context = "Lib3hToClient::HandleGetAuthoringEntryList";
