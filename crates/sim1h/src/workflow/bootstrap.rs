@@ -2,16 +2,14 @@ use crate::dht::bbdht::dynamodb::account::describe_limits;
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use lib3h::error::Lib3hError;
 use lib3h::error::Lib3hResult;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
 
 pub fn bootstrap(log_context: &LogContext, client: &Client) -> Lib3hResult<ClientToLib3hResponse> {
     tracer(&log_context, "bootstrap");
-    match describe_limits(&log_context, &client) {
-        Ok(_) => Ok(ClientToLib3hResponse::BootstrapSuccess),
-        Err(err) => Err(Lib3hError::from(err.to_string())),
-    }
+    // touch the database to check our connection is good
+    describe_limits(&log_context, &client)?;
+    Ok(ClientToLib3hResponse::BootstrapSuccess)
 }
 
 #[cfg(test)]

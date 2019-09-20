@@ -3,6 +3,7 @@ use rusoto_core::RusotoError;
 use rusoto_dynamodb::CreateTableError;
 use rusoto_dynamodb::DeleteTableError;
 use rusoto_dynamodb::DescribeTableError;
+use rusoto_dynamodb::DescribeLimitsError;
 use rusoto_dynamodb::GetItemError;
 use rusoto_dynamodb::ListTablesError;
 use rusoto_dynamodb::PutItemError;
@@ -157,6 +158,23 @@ impl From<RusotoError<DescribeTableError>> for BbDhtError {
                     BbDhtError::InternalServerError(err)
                 }
                 DescribeTableError::ResourceNotFound(err) => BbDhtError::ResourceNotFound(err),
+            },
+            RusotoError::HttpDispatch(err) => BbDhtError::HttpDispatch(err.to_string()),
+            RusotoError::Credentials(err) => BbDhtError::Credentials(err.to_string()),
+            RusotoError::Validation(err) => BbDhtError::Validation(err.to_string()),
+            RusotoError::ParseError(err) => BbDhtError::ParseError(err.to_string()),
+            RusotoError::Unknown(err) => BbDhtError::Unknown(format!("{:?}", err)),
+        }
+    }
+}
+
+impl From<RusotoError<DescribeLimitsError>> for BbDhtError {
+    fn from(rusoto_error: RusotoError<DescribeLimitsError>) -> Self {
+        match rusoto_error {
+            RusotoError::Service(service_error) => match service_error {
+                DescribeLimitsError::InternalServerError(err) => {
+                    BbDhtError::InternalServerError(err)
+                }
             },
             RusotoError::HttpDispatch(err) => BbDhtError::HttpDispatch(err.to_string()),
             RusotoError::Credentials(err) => BbDhtError::Credentials(err.to_string()),
