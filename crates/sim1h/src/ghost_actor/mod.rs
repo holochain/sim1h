@@ -10,6 +10,7 @@ use crate::workflow::to_client::disconnected::disconnected;
 use crate::workflow::to_client::connected::connected;
 use detach::Detach;
 use crate::workflow::to_client::handle_query_entry::handle_query_entry;
+use crate::workflow::to_client_response::handle_get_gossiping_entry_list_result::handle_get_gossiping_entry_list_result;
 use lib3h::engine::engine_actor::ClientToLib3hMessage;
 use lib3h::engine::CanAdvertise;
 use lib3h::error::Lib3hError;
@@ -162,9 +163,9 @@ impl SimGhostActor {
                 // specced
                 // result of no-op is no-op
             }
-            Lib3hToClientResponse::HandleGetGossipingEntryListResult(_entry_list_data) => {
-                // specced
-                // result of no-op is no-op
+            Lib3hToClientResponse::HandleGetGossipingEntryListResult(entry_list_data) => {
+                let log_context = "Lib3hToClientResponse::HandleGetGossipingEntryListResult";
+                handle_get_gossiping_entry_list_result(&log_context, &entry_list_data);
             }
         }
     }
