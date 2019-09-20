@@ -89,7 +89,7 @@ pub fn get_aspect(
     tracer(&log_context, "read_aspect");
 
     match get_item_by_address(&log_context, &client, &table_name, &aspect_address) {
-        Ok(get_output) => match get_output.item {
+        Ok(get_output) => match get_output {
             Some(aspect_item) => Ok(Some(try_aspect_from_item(aspect_item)?)),
             None => Ok(None),
         },
@@ -104,7 +104,7 @@ pub fn get_entry_aspects(
     entry_address: &Address,
 ) -> BbDhtResult<Vec<EntryAspectData>> {
     match get_item_by_address(log_context, client, table_name, entry_address) {
-        Ok(get_item_output) => match get_item_output.item {
+        Ok(get_item_output) => match get_item_output {
             Some(item) => {
                 let aspect_list = try_aspect_list_from_item(item)?;
                 let mut aspects = Vec::new();

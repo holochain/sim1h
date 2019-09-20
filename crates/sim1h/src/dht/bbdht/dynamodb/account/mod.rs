@@ -5,14 +5,13 @@ use rusoto_core::RusotoError;
 use rusoto_dynamodb::DescribeLimitsError;
 use rusoto_dynamodb::DescribeLimitsOutput;
 use rusoto_dynamodb::DynamoDb;
-use futures::Future;
 
 pub fn describe_limits(
     log_context: &LogContext,
     client: &Client,
 ) -> Result<DescribeLimitsOutput, RusotoError<DescribeLimitsError>> {
     tracer(&log_context, "begin: describe_limits");
-    let result = client.describe_limits().wait();
+    let result = client.describe_limits().sync();
     tracer(&log_context, "complete: describe_limits");
     result
 }

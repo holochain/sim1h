@@ -13,7 +13,6 @@ use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use futures::Future;
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::EntryAspectData;
 use rusoto_core::RusotoError;
@@ -73,7 +72,7 @@ pub fn put_aspect(
             item: aspect_item,
             ..Default::default()
         })
-        .wait()
+        .sync()
     {
         Ok(_) => Ok(()),
         // brute force retryable failures
@@ -163,7 +162,7 @@ pub fn append_aspect_list_to_entry(
         ..Default::default()
     };
 
-    client.update_item(aspect_list_update).wait()?;
+    client.update_item(aspect_list_update).sync()?;
     Ok(())
 }
 
@@ -246,7 +245,7 @@ pub mod tests {
 
             // get matches
             match get_item_by_address(&log_context, &local_client, &table_name, &entry_address) {
-                Ok(get_item_output) => match get_item_output.item {
+                Ok(get_item_output) => match get_item_output {
                     Some(item) => {
                         assert_eq!(expected["address"], item["address"],);
                         assert_eq!(

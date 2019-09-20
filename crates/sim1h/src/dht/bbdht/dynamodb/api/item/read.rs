@@ -3,21 +3,19 @@ use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use futures::Future;
 use holochain_persistence_api::cas::content::Address;
-use rusoto_core::RusotoError;
 use rusoto_dynamodb::DynamoDb;
-use rusoto_dynamodb::GetItemError;
 use rusoto_dynamodb::GetItemInput;
-use rusoto_dynamodb::GetItemOutput;
 use std::collections::HashMap;
+use crate::dht::bbdht::error::BbDhtResult;
+use crate::dht::bbdht::dynamodb::api::item::Item;
 
 pub fn get_item_by_address(
     log_context: &LogContext,
     client: &Client,
     table_name: &str,
     address: &Address,
-) -> Result<GetItemOutput, RusotoError<GetItemError>> {
+) -> BbDhtResult<Option<Item>> {
     tracer(&log_context, "get_item_by_address");
 
     let mut key = HashMap::new();
@@ -25,13 +23,13 @@ pub fn get_item_by_address(
         String::from(ADDRESS_KEY),
         string_attribute_value(&String::from(address.to_owned())),
     );
-    client
+    Ok(client
         .get_item(GetItemInput {
             table_name: table_name.into(),
             key: key,
             ..Default::default()
         })
-        .wait()
+        .sync()?.item)
 }
 
 #[cfg(test)]

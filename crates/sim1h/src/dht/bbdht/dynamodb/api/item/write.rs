@@ -6,7 +6,6 @@ use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use futures::Future;
 use holochain_persistence_api::cas::content::Address;
 use holochain_persistence_api::cas::content::AddressableContent;
 use rusoto_core::RusotoError;
@@ -42,7 +41,7 @@ pub fn ensure_content(
             table_name: table_name.to_string(),
             ..Default::default()
         })
-        .wait()
+        .sync()
 }
 
 pub fn touch_agent(
@@ -64,7 +63,7 @@ pub fn touch_agent(
             table_name: table_name.to_string(),
             ..Default::default()
         })
-        .wait()
+        .sync()
 }
 
 pub fn append_agent_message(
@@ -95,7 +94,7 @@ pub fn append_agent_message(
         ..Default::default()
     };
 
-    client.update_item(inbox_update).wait()
+    client.update_item(inbox_update).sync()
 }
 
 #[cfg(test)]

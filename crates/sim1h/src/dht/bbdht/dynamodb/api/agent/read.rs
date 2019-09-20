@@ -18,7 +18,6 @@ pub fn agent_exists(
     // agent only exists in the space if the space exists
     Ok(if table_exists(log_context, client, table_name)? {
         get_item_by_address(log_context, client, table_name, agent_id)?
-            .item
             .is_some()
     } else {
         false

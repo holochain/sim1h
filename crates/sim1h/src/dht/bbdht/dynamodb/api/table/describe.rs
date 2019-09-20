@@ -1,7 +1,6 @@
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use futures::Future;
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::DescribeTableError;
 use rusoto_dynamodb::DescribeTableInput;
@@ -18,7 +17,7 @@ pub fn describe_table(
         .describe_table(DescribeTableInput {
             table_name: table_name.to_string(),
         })
-        .wait()?
+        .sync()?
         .table
     {
         Some(table_description) => Ok(table_description),
