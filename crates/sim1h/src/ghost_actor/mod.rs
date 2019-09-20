@@ -23,6 +23,7 @@ use lib3h_zombie_actor::GhostContextEndpoint;
 use crate::workflow::from_client::send_direct_message::send_direct_message;
 use crate::workflow::from_client::publish_entry::publish_entry;
 use lib3h_zombie_actor::GhostEndpoint;
+use crate::workflow::to_client::handle_drop_entry::handle_drop_entry;
 use lib3h_zombie_actor::GhostResult;
 use lib3h_zombie_actor::WorkWasDone;
 use rusoto_core::Region;
@@ -117,13 +118,9 @@ impl SimGhostActor {
                 // all entry aspects are in the database
                 // no-op
             }
-            Lib3hToClient::HandleDropEntry(_drop_entry_data) => {
-                // Local client does not need to hold that entry anymore.
-                // Local client doesn't 'have to' comply.
-
-                // specced
-                // all entries are in the database
-                // no-op
+            Lib3hToClient::HandleDropEntry(drop_entry_data) => {
+                let log_context = "Lib3hToClient::HandleDropEntry";
+                handle_drop_entry(&log_context, &drop_entry_data);
             }
             Lib3hToClient::HandleQueryEntry(query_entry_data) => {
                 let log_context = "Lib3hToClient::HandleQueryEntry";
