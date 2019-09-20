@@ -8,6 +8,7 @@ use detach::Detach;
 use lib3h::engine::engine_actor::ClientToLib3hMessage;
 use lib3h::engine::CanAdvertise;
 use lib3h::error::Lib3hError;
+use crate::workflow::fetch_entry::fetch_entry;
 use lib3h_protocol::protocol::ClientToLib3h;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
 use lib3h_protocol::protocol::Lib3hToClient;
@@ -241,11 +242,11 @@ impl SimGhostActor {
             // this is a no-op
             ClientToLib3h::HoldEntry(data) => {
                 let log_context = "ClientToLib3h::HoldEntry";
+                // no response message for hold entry
                 hold_entry(&log_context, &self.dbclient, &data)?;
-                trace!("ClientToLib3h::HoldEntry: {:?}", &data);
                 Ok(true.into())
             }
-            // 80%
+            // 90% (need query logic to be finalised)
             // fetch all entry aspects from entry address
             // do some kind of filter based on the non-opaque query struct
             // familiar to rehydrate the opaque query struct
@@ -254,10 +255,11 @@ impl SimGhostActor {
                 msg.respond(query_entry(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
-            // specced
+            // MVP (needs tests, wrapping query atm)
             // query entry but hardcoded to entry query right?
             ClientToLib3h::FetchEntry(data) => {
-                trace!("ClientToLib3h::FetchEntry: {:?}", &data);
+                let log_context = "ClientToLib3h::FetchEntry";
+                msg.respond(fetch_entry(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
         }
