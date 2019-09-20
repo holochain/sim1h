@@ -13,6 +13,7 @@ use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
+use futures::Future;
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::EntryAspectData;
 use rusoto_core::RusotoError;
@@ -72,7 +73,7 @@ pub fn put_aspect(
             item: aspect_item,
             ..Default::default()
         })
-        .sync()
+        .wait()
     {
         Ok(_) => Ok(()),
         // brute force retryable failures
@@ -162,7 +163,7 @@ pub fn append_aspect_list_to_entry(
         ..Default::default()
     };
 
-    client.update_item(aspect_list_update).sync()?;
+    client.update_item(aspect_list_update).wait()?;
     Ok(())
 }
 

@@ -21,6 +21,7 @@ use lib3h_zombie_actor::GhostContextEndpoint;
 use lib3h_zombie_actor::GhostEndpoint;
 use lib3h_zombie_actor::GhostResult;
 use lib3h_zombie_actor::WorkWasDone;
+use crate::workflow::join_space::join_space;
 use rusoto_core::Region;
 use url::Url;
 
@@ -73,65 +74,39 @@ impl SimGhostActor {
         mut msg: ClientToLib3hMessage,
     ) -> GhostResult<WorkWasDone> {
         match msg.take_message().expect("exists") {
-            // MVP
-            // check database connection
             ClientToLib3h::Bootstrap(_) => {
                 let log_context = "ClientToLib3h::Bootstrap";
                 msg.respond(bootstrap(&log_context, &self.dbclient))?;
                 Ok(true.into())
             }
-            // MVP
-            // create space if not exists
-            // touch agent
             ClientToLib3h::JoinSpace(data) => {
                 let log_context = "ClientToLib3h::JoinSpace";
                 msg.respond(join_space(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
-            // MVP
-            // no-op
             ClientToLib3h::LeaveSpace(data) => {
-                let log_context = "ClientToLib3h::LeaveSpace";
-                msg.respond(leave_space(&log_context, &self.dbclient, &data))?;
+                trace!("ClientToLib3h::LeaveSpace: {:?}", &data);
                 Ok(true.into())
             }
-            // specced
-            // A: append message to inbox in database
-            // B: drain messages from inbox in database
             ClientToLib3h::SendDirectMessage(data) => {
-                let log_context = "ClientToLib3h::SendDirectMessage";
-                msg.respond(send_direct_message(&log_context, &self.dbclient, &data))?;
+                trace!("ClientToLib3h::SendDirectMessage: {:?}", &data);
                 Ok(true.into())
             }
-            // MVP
-            // append list of aspect addresses to entry address
-            // drop all aspects into database under each of their addresses
-            //
-            // later:
-            // make all this in a transaction
             ClientToLib3h::PublishEntry(data) => {
-                let log_context = "ClientToLib3h::PublishEntry";
-                msg.respond(publish_entry(&log_context, &self.dbclient, &data))?;
+                trace!("ClientToLib3h::PublishEntry: {:?}", &data);
                 Ok(true.into())
             }
-            // MVP
-            // this is a no-op
             ClientToLib3h::HoldEntry(data) => {
                 let log_context = "ClientToLib3h::HoldEntry";
                 hold_entry(&log_context, &self.dbclient, &data)?;
+                trace!("ClientToLib3h::HoldEntry: {:?}", &data);
                 Ok(true.into())
             }
-            // specced
-            // fetch all entry aspects from entry address
-            // do some kind of filter based on the non-opaque query struct
-            // familiar to rehydrate the opaque query struct
             ClientToLib3h::QueryEntry(data) => {
                 let log_context = "ClientToLib3h::QueryEntry";
                 query_entry(&log_context, &self.dbclient, &data)?;
                 Ok(true.into())
             }
-            // specced
-            // query entry but hardcoded to entry query right?
             ClientToLib3h::FetchEntry(data) => {
                 trace!("ClientToLib3h::FetchEntry: {:?}", &data);
                 Ok(true.into())
@@ -195,7 +170,7 @@ pub mod tests {
     use super::*;
     use crate::dht::bbdht::dynamodb::client::local::LOCAL_ENDPOINT;
     use lib3h_protocol::{data_types::*, Address};
-    use lib3h_tracing::test_span;
+    use holochain_tracing::test_span;
     use lib3h_zombie_actor::GhostCallbackData;
 
     fn get_response_to_request(
@@ -231,6 +206,44 @@ pub mod tests {
         r.recv().expect("Could not retrieve result")
     }
 
+    #[allow(dead_code)]
+    fn get_response_to_request_threaded(
+        request: ClientToLib3h,
+    ) -> GhostCallbackData<ClientToLib3hResponse, Lib3hError> {
+
+        let (s, r) = crossbeam_channel::unbounded();
+
+        // TODO: maybe don't leave this thread running forever...
+        std::thread::spawn(move || {
+            let mut engine = SimGhostActor::new(&"invalid-endpoint".to_string());
+
+            let mut parent_endpoint: GhostContextEndpoint<(), _, _, _, _, _> = engine
+                .take_parent_endpoint()
+                .expect("Could not get parent endpoint")
+                .as_context_endpoint_builder()
+                .request_id_prefix("parent")
+                .build();
+
+            parent_endpoint
+                .request(
+                    test_span(""),
+                    request,
+                    Box::new(move |_, callback_data| {
+                        s.send(callback_data).unwrap();
+                        Ok(())
+                    }),
+                )
+                .ok();
+            loop {
+                parent_endpoint.process(&mut ()).ok();
+                engine.process().ok();
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+        });
+
+        r.recv().expect("Could not retrieve result")
+    }
+
     #[test]
     fn bootstrap_to_invalid_url_fails() {
         let engine = SimGhostActor::new(&"invalid-endpoint".to_string());
@@ -241,6 +254,21 @@ pub mod tests {
         };
 
         match get_response_to_request(engine, ClientToLib3h::Bootstrap(bootstrap_data)) {
+            GhostCallbackData::Response(Err(_)) => assert!(true),
+            GhostCallbackData::Timeout => panic!("unexpected timeout"),
+            r => panic!("unexpected response: {:?}", r),
+        }
+    }
+
+    #[test]
+    fn bootstrap_to_invalid_url_fails_threaded() {
+
+        let bootstrap_data = BootstrapData {
+            space_address: Address::from(""),
+            bootstrap_uri: Url::parse("http://fake_url").unwrap(),
+        };
+
+        match get_response_to_request_threaded(ClientToLib3h::Bootstrap(bootstrap_data)) {
             GhostCallbackData::Response(Err(_)) => assert!(true),
             GhostCallbackData::Timeout => panic!("unexpected timeout"),
             r => panic!("unexpected response: {:?}", r),
@@ -273,10 +301,8 @@ pub mod tests {
             agent_id: Address::from("an-agent"),
         };
         match get_response_to_request(engine, ClientToLib3h::JoinSpace(space_data)) {
-            GhostCallbackData::Response(Ok(ClientToLib3hResponse::JoinSpaceResult)) => {
-                assert!(true)
-            }
-            r => panic!("unexpected response: {:?}", r),
+            GhostCallbackData::Response(Ok(ClientToLib3hResponse::JoinSpaceResult)) => assert!(true),
+            r => panic!("unexpected response: {:?}", r)
         }
     }
 }
