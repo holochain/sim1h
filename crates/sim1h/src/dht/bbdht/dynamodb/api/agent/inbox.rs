@@ -12,6 +12,7 @@ use std::collections::HashMap;
 use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_SEEN_KEY;
+use crate::dht::bbdht::dynamodb::api::item::Item;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_FROM_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_TO_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_CONTENT_KEY;
@@ -22,6 +23,7 @@ use rusoto_dynamodb::PutItemError;
 use rusoto_dynamodb::GetItemInput;
 use lib3h_protocol::data_types::DirectMessageData;
 use rusoto_core::RusotoError;
+use crate::dht::bbdht::error::BbDhtError;
 
 pub fn put_inbox_message(log_context: &LogContext, client: &Client, table_name: &TableName, request_id: &String, from: &Address, to: &Address, content: &Vec<u8>) -> BbDhtResult<()> {
     tracer(&log_context, "put_inbox_message");
@@ -185,6 +187,74 @@ pub fn get_inbox_request_ids(
     })
 }
 
+pub fn item_to_direct_message_data(space_address: &Address, item: &Item) -> BbDhtResult<DirectMessageData> {
+
+    let content = match item[MESSAGE_CONTENT_KEY].b.clone() {
+        Some(v) => v.to_vec(),
+        None => return Err(BbDhtError::MissingData(format!("message item missing content {:?}", &item))),
+    };
+
+    let from_agent_id = match item[MESSAGE_FROM_KEY].s.clone() {
+        Some(v) => v,
+        None => return Err(BbDhtError::MissingData(format!("message item missing from {:?}", &item))),
+    };
+
+    let to_agent_id = match item[MESSAGE_TO_KEY].s.clone() {
+        Some(v) => v,
+        None => return Err(BbDhtError::MissingData(format!("message item missing to {:?}", &item))),
+    };
+
+    let request_id = match item[ADDRESS_KEY].s.clone() {
+        Some(v) => v,
+        None => return Err(BbDhtError::MissingData(format!("message item missing request_id {:?}", &item))),
+    };
+
+    Ok(DirectMessageData {
+        content: content.into(),
+        from_agent_id: from_agent_id.into(),
+        to_agent_id: to_agent_id.into(),
+        request_id: request_id,
+        space_address: space_address.clone(),
+    })
+}
+
+pub fn request_ids_to_messages(
+    log_context: &LogContext,
+    client: &Client,
+    table_name: &TableName,
+    request_ids: &Vec<String>,
+) -> BbDhtResult<Vec<DirectMessageData>> {
+    tracer(log_context, "request_ids_to_messages");
+
+    let mut direct_message_datas = Vec::new();
+
+    for request_id in request_ids {
+        let mut key = HashMap::new();
+        key.insert(
+            String::from(ADDRESS_KEY),
+            string_attribute_value(&request_id),
+        );
+
+        let get_item_output = client
+        .get_item(GetItemInput {
+            table_name: table_name.into(),
+            key: key,
+            ..Default::default()
+        }).sync()?.item;
+
+        match get_item_output {
+            Some(item) => {
+                direct_message_datas.push(item_to_direct_message_data(&Address::from(table_name.clone()), &item)?);
+            }
+            // the request ids MUST be in the db
+            None => return Err(BbDhtError::MissingData(format!("missing message for request id: {:?}", &request_id)))
+        }
+
+    }
+
+    Ok(direct_message_datas)
+}
+
 pub fn check_inbox(
     log_context: &LogContext,
     client: &Client,
@@ -197,10 +267,9 @@ pub fn check_inbox(
 
     let seen_request_ids = get_inbox_request_ids(log_context, client, table_name, &REQUEST_IDS_SEEN_KEY.to_string(), to)?;
 
-    let _unseen_request_ids: Vec<String> = inbox_request_ids.iter().filter(|request_id| !seen_request_ids.contains(request_id)).cloned().collect();
+    let unseen_request_ids: Vec<String> = inbox_request_ids.iter().filter(|request_id| !seen_request_ids.contains(request_id)).cloned().collect();
 
-    // Ok(request_ids_to_messages(log_context, client, table_name, unseen_request_ids)?)
-    Ok(Vec::new())
+    request_ids_to_messages(log_context, client, table_name, &unseen_request_ids)
 }
 
 #[cfg(test)]
@@ -214,11 +283,13 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
     use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
     use crate::dht::bbdht::dynamodb::api::agent::inbox::put_inbox_message;
+    use crate::dht::bbdht::dynamodb::api::agent::inbox::check_inbox;
     use crate::dht::bbdht::dynamodb::api::agent::inbox::send_to_agent_inbox;
     use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_KEY;
     use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_SEEN_KEY;
     use crate::dht::bbdht::dynamodb::api::agent::inbox::get_inbox_request_ids;
     use crate::agent::fixture::message_content_fresh;
+    use lib3h_protocol::data_types::DirectMessageData;
 
     #[test]
     fn append_request_id_to_inbox_test() {
@@ -305,6 +376,42 @@ pub mod tests {
             };
 
         }
+    }
+
+    #[test]
+    fn check_inbox_test() {
+        let log_context = "get_inbox_request_ids_test";
+
+        tracer(&log_context, "fixtures");
+        let local_client = local_client();
+        let table_name = table_name_fresh();
+        let request_id = request_id_fresh();
+        let from = agent_id_fresh();
+        let to = agent_id_fresh();
+        let content = message_content_fresh();
+
+        let direct_message_data = DirectMessageData {
+            content: content.clone().into(),
+            from_agent_id: from.clone(),
+            to_agent_id: to.clone(),
+            request_id: request_id.clone(),
+            space_address: table_name.clone().into(),
+        };
+
+        // ensure cas
+        assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
+
+        // pub inbox message
+        assert!(send_to_agent_inbox(&log_context, &local_client, &table_name, &request_id.clone(), &from, &to, &content).is_ok());
+
+        // check inbox
+        match check_inbox(&log_context, &local_client, &table_name, &to) {
+            Ok(request_ids) => assert_eq!(vec![direct_message_data.clone()], request_ids),
+            Err(err) => {
+                panic!("incorrect request id {:?}", err)
+            }
+        };
+
     }
 
 }
