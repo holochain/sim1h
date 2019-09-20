@@ -1,9 +1,9 @@
 use crate::dht::bbdht::dynamodb::api::table::describe::describe_table;
 use crate::dht::bbdht::dynamodb::client::Client;
+use crate::dht::bbdht::error::BbDhtError;
+use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use crate::dht::bbdht::error::BbDhtResult;
-use crate::dht::bbdht::error::BbDhtError;
 
 pub fn table_exists(
     log_context: &LogContext,

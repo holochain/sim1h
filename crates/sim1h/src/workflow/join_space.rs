@@ -3,7 +3,6 @@ use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use lib3h::error::Lib3hError;
 use lib3h::error::Lib3hResult;
 use lib3h_protocol::data_types::SpaceData;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
@@ -17,22 +16,14 @@ pub fn join_space(
 
     let table_name = String::from(join_space_data.space_address.clone());
 
-    match ensure_cas_table(&log_context, &client, &table_name) {
-        Ok(_) => {}
-        Err(err) => {
-            tracer(&log_context, "join_space ensure_cas_table error");
-            return Err(Lib3hError::from(err.to_string()));
-        }
-    };
-    match touch_agent(
+    ensure_cas_table(&log_context, &client, &table_name)?;
+    touch_agent(
         &log_context,
         &client,
         &table_name,
         &join_space_data.agent_id,
-    ) {
-        Ok(_) => Ok(ClientToLib3hResponse::JoinSpaceResult),
-        Err(err) => Err(Lib3hError::from(err.to_string())),
-    }
+    )?;
+    Ok(ClientToLib3hResponse::JoinSpaceResult)
 }
 
 #[cfg(test)]
@@ -40,8 +31,8 @@ pub mod tests {
 
     use crate::dht::bbdht::dynamodb::client::fixture::bad_client;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
+    use crate::space::fixture::space_data_fresh;
     use crate::trace::tracer;
-    use crate::workflow::fixture::space_data_fresh;
     use crate::workflow::join_space::join_space;
     use lib3h_protocol::protocol::ClientToLib3hResponse;
 

@@ -1,11 +1,11 @@
 use crate::dht::bbdht::dynamodb::client::Client;
+use crate::dht::bbdht::error::BbDhtError;
+use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use rusoto_dynamodb::DescribeTableInput;
 use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::TableDescription;
-use crate::dht::bbdht::error::BbDhtResult;
-use crate::dht::bbdht::error::BbDhtError;
 
 pub fn describe_table(
     log_context: &LogContext,
@@ -21,9 +21,9 @@ pub fn describe_table(
         .table
     {
         Some(table_description) => Ok(table_description),
-        None => Err(BbDhtError::ResourceNotFound(
-            String::from("None returned for table description"),
-        )),
+        None => Err(BbDhtError::ResourceNotFound(String::from(
+            "None returned for table description",
+        ))),
     }
 }
 
@@ -37,8 +37,8 @@ pub mod test {
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::dht::bbdht::dynamodb::schema::fixture::attribute_definitions_a;
     use crate::dht::bbdht::dynamodb::schema::fixture::key_schema_a;
-    use crate::trace::tracer;
     use crate::dht::bbdht::error::BbDhtError;
+    use crate::trace::tracer;
 
     #[test]
     fn describe_table_test() {
@@ -87,9 +87,9 @@ pub mod test {
 
         // missing description error
         assert_eq!(
-            Err(BbDhtError::ResourceNotFound(
-                String::from("Cannot do operations on a non-existent table")
-            )),
+            Err(BbDhtError::ResourceNotFound(String::from(
+                "Cannot do operations on a non-existent table"
+            ))),
             describe_table(&log_context, &local_client, &table_name),
         );
     }

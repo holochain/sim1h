@@ -1,14 +1,15 @@
 use crate::dht::bbdht::dynamodb::client::Client;
-use dynomite::dynamodb::{DynamoDb, ListTablesInput};
-use crate::dht::bbdht::error::BbDhtResult;
 use crate::dht::bbdht::dynamodb::schema::TableName;
+use crate::dht::bbdht::error::BbDhtResult;
+use dynomite::dynamodb::{DynamoDb, ListTablesInput};
 
 pub fn list_tables(client: &Client) -> BbDhtResult<Option<Vec<TableName>>> {
     Ok(client
         .list_tables(ListTablesInput {
             ..Default::default()
         })
-        .sync()?.table_names)
+        .sync()?
+        .table_names)
 }
 
 #[cfg(test)]

@@ -1,14 +1,14 @@
-use std::collections::HashMap;
-use crate::trace::LogContext;
 use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::dynamodb::schema::TableName;
-use holochain_persistence_api::cas::content::Address;
-use crate::dht::bbdht::error::BbDhtResult;
-use crate::trace::tracer;
 use crate::dht::bbdht::dynamodb::schema::cas::inbox_key;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
-use rusoto_dynamodb::UpdateItemInput;
+use crate::dht::bbdht::dynamodb::schema::TableName;
+use crate::dht::bbdht::error::BbDhtResult;
+use crate::trace::tracer;
+use crate::trace::LogContext;
+use holochain_persistence_api::cas::content::Address;
 use rusoto_dynamodb::DynamoDb;
+use rusoto_dynamodb::UpdateItemInput;
+use std::collections::HashMap;
 
 pub fn send_to_agent_inbox(
     log_context: &LogContext,

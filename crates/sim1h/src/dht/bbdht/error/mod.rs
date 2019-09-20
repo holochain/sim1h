@@ -1,13 +1,14 @@
 use lib3h::error::Lib3hError;
 use rusoto_core::RusotoError;
+use rusoto_dynamodb::CreateTableError;
+use rusoto_dynamodb::DeleteTableError;
 use rusoto_dynamodb::DescribeTableError;
-use rusoto_dynamodb::ListTablesError;
+use rusoto_dynamodb::DescribeLimitsError;
 use rusoto_dynamodb::GetItemError;
+use rusoto_dynamodb::ListTablesError;
 use rusoto_dynamodb::PutItemError;
 use rusoto_dynamodb::UpdateItemError;
 use std::num::ParseIntError;
-use rusoto_dynamodb::CreateTableError;
-use rusoto_dynamodb::DeleteTableError;
 
 #[derive(Debug, PartialEq)]
 pub enum BbDhtError {
@@ -167,13 +168,28 @@ impl From<RusotoError<DescribeTableError>> for BbDhtError {
     }
 }
 
+impl From<RusotoError<DescribeLimitsError>> for BbDhtError {
+    fn from(rusoto_error: RusotoError<DescribeLimitsError>) -> Self {
+        match rusoto_error {
+            RusotoError::Service(service_error) => match service_error {
+                DescribeLimitsError::InternalServerError(err) => {
+                    BbDhtError::InternalServerError(err)
+                }
+            },
+            RusotoError::HttpDispatch(err) => BbDhtError::HttpDispatch(err.to_string()),
+            RusotoError::Credentials(err) => BbDhtError::Credentials(err.to_string()),
+            RusotoError::Validation(err) => BbDhtError::Validation(err.to_string()),
+            RusotoError::ParseError(err) => BbDhtError::ParseError(err.to_string()),
+            RusotoError::Unknown(err) => BbDhtError::Unknown(format!("{:?}", err)),
+        }
+    }
+}
+
 impl From<RusotoError<ListTablesError>> for BbDhtError {
     fn from(rusoto_error: RusotoError<ListTablesError>) -> Self {
         match rusoto_error {
             RusotoError::Service(service_error) => match service_error {
-                ListTablesError::InternalServerError(err) => {
-                    BbDhtError::InternalServerError(err)
-                }
+                ListTablesError::InternalServerError(err) => BbDhtError::InternalServerError(err),
             },
             RusotoError::HttpDispatch(err) => BbDhtError::HttpDispatch(err.to_string()),
             RusotoError::Credentials(err) => BbDhtError::Credentials(err.to_string()),
@@ -188,15 +204,9 @@ impl From<RusotoError<CreateTableError>> for BbDhtError {
     fn from(rusoto_error: RusotoError<CreateTableError>) -> Self {
         match rusoto_error {
             RusotoError::Service(service_error) => match service_error {
-                CreateTableError::InternalServerError(err) => {
-                    BbDhtError::InternalServerError(err)
-                }
-                CreateTableError::LimitExceeded(err) => {
-                    BbDhtError::LimitExceeded(err)
-                }
-                CreateTableError::ResourceInUse(err) => {
-                    BbDhtError::ResourceInUse(err)
-                }
+                CreateTableError::InternalServerError(err) => BbDhtError::InternalServerError(err),
+                CreateTableError::LimitExceeded(err) => BbDhtError::LimitExceeded(err),
+                CreateTableError::ResourceInUse(err) => BbDhtError::ResourceInUse(err),
             },
             RusotoError::HttpDispatch(err) => BbDhtError::HttpDispatch(err.to_string()),
             RusotoError::Credentials(err) => BbDhtError::Credentials(err.to_string()),
@@ -211,18 +221,10 @@ impl From<RusotoError<DeleteTableError>> for BbDhtError {
     fn from(rusoto_error: RusotoError<DeleteTableError>) -> Self {
         match rusoto_error {
             RusotoError::Service(service_error) => match service_error {
-                DeleteTableError::InternalServerError(err) => {
-                    BbDhtError::InternalServerError(err)
-                }
-                DeleteTableError::LimitExceeded(err) => {
-                    BbDhtError::LimitExceeded(err)
-                }
-                DeleteTableError::ResourceInUse(err) => {
-                    BbDhtError::ResourceInUse(err)
-                }
-                DeleteTableError::ResourceNotFound(err) => {
-                    BbDhtError::ResourceNotFound(err)
-                }
+                DeleteTableError::InternalServerError(err) => BbDhtError::InternalServerError(err),
+                DeleteTableError::LimitExceeded(err) => BbDhtError::LimitExceeded(err),
+                DeleteTableError::ResourceInUse(err) => BbDhtError::ResourceInUse(err),
+                DeleteTableError::ResourceNotFound(err) => BbDhtError::ResourceNotFound(err),
             },
             RusotoError::HttpDispatch(err) => BbDhtError::HttpDispatch(err.to_string()),
             RusotoError::Credentials(err) => BbDhtError::Credentials(err.to_string()),

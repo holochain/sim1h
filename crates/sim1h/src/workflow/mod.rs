@@ -7,3 +7,4 @@ pub mod leave_space;
 pub mod publish_entry;
 pub mod query_entry;
 pub mod send_direct_message;
+pub mod fetch_entry;

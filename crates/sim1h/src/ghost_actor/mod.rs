@@ -1,11 +1,14 @@
 use crate::dht::bbdht::dynamodb::client::{client, Client};
 use crate::workflow::bootstrap::bootstrap;
 use crate::workflow::hold_entry::hold_entry;
+use crate::workflow::join_space::join_space;
+use crate::workflow::leave_space::leave_space;
 use crate::workflow::query_entry::query_entry;
 use detach::Detach;
 use lib3h::engine::engine_actor::ClientToLib3hMessage;
 use lib3h::engine::CanAdvertise;
 use lib3h::error::Lib3hError;
+use crate::workflow::fetch_entry::fetch_entry;
 use lib3h_protocol::protocol::ClientToLib3h;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
 use lib3h_protocol::protocol::Lib3hToClient;
@@ -14,10 +17,11 @@ use lib3h_zombie_actor::create_ghost_channel;
 use lib3h_zombie_actor::GhostActor;
 use lib3h_zombie_actor::GhostCanTrack;
 use lib3h_zombie_actor::GhostContextEndpoint;
+use crate::workflow::send_direct_message::send_direct_message;
+use crate::workflow::publish_entry::publish_entry;
 use lib3h_zombie_actor::GhostEndpoint;
 use lib3h_zombie_actor::GhostResult;
 use lib3h_zombie_actor::WorkWasDone;
-use crate::workflow::join_space::join_space;
 use rusoto_core::Region;
 use url::Url;
 
@@ -79,7 +83,7 @@ impl SimGhostActor {
 
                 // specced
                 // no-op
-            },
+            }
             Lib3hToClient::SendDirectMessageResult(_direct_message_data) => {
                 // -- Direct Messaging -- //
                 // the response received from a previous `SendDirectMessage`
@@ -87,14 +91,14 @@ impl SimGhostActor {
                 // ?? dubious ??
                 // B has put a result in A inbox
                 // A queries inbox to pop
-            },
+            }
             Lib3hToClient::HandleSendDirectMessage(_direct_message_data) => {
                 // Request to handle a direct message another agent has sent us.
 
                 // specced
                 // A has put something in inbox for B
                 // B needs to query to find it and pass to core
-            },
+            }
             Lib3hToClient::HandleFetchEntry(_fetch_entry_data) => {
                 // -- Entry -- //
                 // Another node, or the network module itself is requesting data from us
@@ -102,14 +106,14 @@ impl SimGhostActor {
                 // specced
                 // all entries are in the database
                 // no-op
-            },
+            }
             Lib3hToClient::HandleStoreEntryAspect(_store_entry_aspect_data) => {
                 // Store data on a node's dht arc.
 
                 // specced
                 // all entry aspects are in the database
                 // no-op
-            },
+            }
             Lib3hToClient::HandleDropEntry(_drop_entry_data) => {
                 // Local client does not need to hold that entry anymore.
                 // Local client doesn't 'have to' comply.
@@ -117,28 +121,28 @@ impl SimGhostActor {
                 // specced
                 // all entries are in the database
                 // no-op
-            },
+            }
             Lib3hToClient::HandleQueryEntry(_query_entry_data) => {
                 // Request a node to handle a QueryEntry request
 
                 // specced
                 // queries are simulated on the outgoing side
                 // no-op
-            },
+            }
             Lib3hToClient::HandleGetAuthoringEntryList(_get_list_data) => {
                 // -- Entry lists -- //
 
                 // specced
                 // database stored everything
                 // no-op
-            },
+            }
             Lib3hToClient::HandleGetGossipingEntryList(_get_list_data) => {
                 // -- Entry lists -- //
 
                 // specced
                 // database stored everything
                 // no-op
-            },
+            }
         }
     }
 
@@ -210,14 +214,16 @@ impl SimGhostActor {
             // MVP
             // no-op
             ClientToLib3h::LeaveSpace(data) => {
-                trace!("ClientToLib3h::LeaveSpace: {:?}", &data);
+                let log_context = "ClientToLib3h::LeaveSpace";
+                msg.respond(leave_space(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
             // 30%
             // A: append message to inbox in database
             // B: drain messages from inbox in database
             ClientToLib3h::SendDirectMessage(data) => {
-                trace!("ClientToLib3h::SendDirectMessage: {:?}", &data);
+                let log_context = "ClientToLib3h::SendDirectMessage";
+                msg.respond(send_direct_message(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
             // MVP
@@ -227,18 +233,20 @@ impl SimGhostActor {
             // later:
             // make all this in a transaction
             ClientToLib3h::PublishEntry(data) => {
-                trace!("ClientToLib3h::PublishEntry: {:?}", &data);
+                let log_context = "ClientToLib3h::PublishEntry";
+                // no response message for publish entry
+                publish_entry(&log_context, &self.dbclient, &data)?;
                 Ok(true.into())
             }
             // MVP
             // this is a no-op
             ClientToLib3h::HoldEntry(data) => {
                 let log_context = "ClientToLib3h::HoldEntry";
+                // no response message for hold entry
                 hold_entry(&log_context, &self.dbclient, &data)?;
-                trace!("ClientToLib3h::HoldEntry: {:?}", &data);
                 Ok(true.into())
             }
-            // 80%
+            // 90% (need query logic to be finalised)
             // fetch all entry aspects from entry address
             // do some kind of filter based on the non-opaque query struct
             // familiar to rehydrate the opaque query struct
@@ -247,10 +255,11 @@ impl SimGhostActor {
                 msg.respond(query_entry(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
-            // specced
+            // MVP (needs tests, wrapping query atm)
             // query entry but hardcoded to entry query right?
             ClientToLib3h::FetchEntry(data) => {
-                trace!("ClientToLib3h::FetchEntry: {:?}", &data);
+                let log_context = "ClientToLib3h::FetchEntry";
+                msg.respond(fetch_entry(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
         }
@@ -311,8 +320,8 @@ impl<'engine>
 pub mod tests {
     use super::*;
     use crate::dht::bbdht::dynamodb::client::local::LOCAL_ENDPOINT;
-    use lib3h_protocol::{data_types::*, Address};
     use holochain_tracing::test_span;
+    use lib3h_protocol::{data_types::*, Address};
     use lib3h_zombie_actor::GhostCallbackData;
 
     fn get_response_to_request(
@@ -352,7 +361,6 @@ pub mod tests {
     fn get_response_to_request_threaded(
         request: ClientToLib3h,
     ) -> GhostCallbackData<ClientToLib3hResponse, Lib3hError> {
-
         let (s, r) = crossbeam_channel::unbounded();
 
         // TODO: maybe don't leave this thread running forever...
@@ -404,7 +412,6 @@ pub mod tests {
 
     #[test]
     fn bootstrap_to_invalid_url_fails_threaded() {
-
         let bootstrap_data = BootstrapData {
             space_address: Address::from(""),
             bootstrap_uri: Url::parse("http://fake_url").unwrap(),
@@ -443,8 +450,10 @@ pub mod tests {
             agent_id: Address::from("an-agent"),
         };
         match get_response_to_request(engine, ClientToLib3h::JoinSpace(space_data)) {
-            GhostCallbackData::Response(Ok(ClientToLib3hResponse::JoinSpaceResult)) => assert!(true),
-            r => panic!("unexpected response: {:?}", r)
+            GhostCallbackData::Response(Ok(ClientToLib3hResponse::JoinSpaceResult)) => {
+                assert!(true)
+            }
+            r => panic!("unexpected response: {:?}", r),
         }
     }
 }

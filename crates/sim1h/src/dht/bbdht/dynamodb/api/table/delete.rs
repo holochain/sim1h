@@ -1,10 +1,10 @@
 use crate::dht::bbdht::dynamodb::api::table::exist::until_table_not_exists;
 use crate::dht::bbdht::dynamodb::client::Client;
+use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use rusoto_dynamodb::DeleteTableInput;
 use rusoto_dynamodb::DynamoDb;
-use crate::dht::bbdht::error::BbDhtResult;
 
 pub fn delete_table(
     log_context: &LogContext,

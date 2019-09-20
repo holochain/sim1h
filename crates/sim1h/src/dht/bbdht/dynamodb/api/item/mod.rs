@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use rusoto_dynamodb::AttributeValue;
+use std::collections::HashMap;
 
 pub mod fixture;
 pub mod read;

@@ -2,28 +2,24 @@ use crate::dht::bbdht::dynamodb::api::aspect::write::append_aspect_list_to_entry
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use lib3h::error::Lib3hError;
 use lib3h::error::Lib3hResult;
 use lib3h_protocol::data_types::ProvidedEntryData;
-use lib3h_protocol::protocol::ClientToLib3hResponse;
 
 pub fn publish_entry(
     log_context: &LogContext,
     client: &Client,
     provided_entry_data: &ProvidedEntryData,
-) -> Lib3hResult<ClientToLib3hResponse> {
+) -> Lib3hResult<()> {
     tracer(&log_context, "publish_entry");
 
-    match append_aspect_list_to_entry(
+    append_aspect_list_to_entry(
         &log_context,
         &client,
         &provided_entry_data.space_address.to_string(),
         &provided_entry_data.entry.entry_address,
         &provided_entry_data.entry.aspect_list,
-    ) {
-        Ok(_) => Ok(ClientToLib3hResponse::BootstrapSuccess),
-        Err(err) => Err(Lib3hError::from(err.to_string())),
-    }
+    )?;
+    Ok(())
 }
 
 #[cfg(test)]
@@ -31,13 +27,12 @@ pub mod tests {
 
     use crate::dht::bbdht::dynamodb::client::fixture::bad_client;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
+    use crate::entry::fixture::entry_address_fresh;
+    use crate::space::fixture::space_data_fresh;
     use crate::trace::tracer;
-    use crate::workflow::fixture::entry_address_fresh;
     use crate::workflow::fixture::provided_entry_data_fresh;
-    use crate::workflow::fixture::space_data_fresh;
     use crate::workflow::join_space::join_space;
     use crate::workflow::publish_entry::publish_entry;
-    use lib3h_protocol::protocol::ClientToLib3hResponse;
 
     #[test]
     fn publish_entry_test() {
@@ -54,9 +49,8 @@ pub mod tests {
         assert!(join_space(&log_context, &local_client, &space_data).is_ok());
 
         match publish_entry(&log_context, &local_client, &provided_entry_data) {
-            Ok(ClientToLib3hResponse::BootstrapSuccess) => {}
-            Ok(result) => {
-                panic!("test OK panic: {:?} {:?}", result, &provided_entry_data);
+            Ok(()) => {
+                tracer(&log_context, "👌");
             }
             Err(err) => {
                 tracer(&log_context, "publish_entry_test Err panic");

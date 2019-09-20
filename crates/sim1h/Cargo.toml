@@ -25,8 +25,9 @@ uuid = { version = "0.4", features = ["v4"] }
 log = "0.4.8"
 env_logger = "0.6.1"
 lazy_static = "1.2.0"
-holochain_persistence_api = "0.0.8"
+holochain_persistence_api = "=0.0.8"
 holochain_json_api = "0.0.17"
-url = "2.1.0"
+url = "=2.1.0"
 crossbeam-channel = "0.3.8"
-holochain_core_types = { git = "https://github.com/holochain/holochain-rust", rev = "10d49111289da3a1f5975c7ef3e4b653aec43c4e" }
+# holochain_core_types = "=0.0.8"
+holochain_core_types = { git = "https://github.com/holochain/holochain-rust", rev = "a2d3ba8547d0f42550ca57726925daa14290a691" }
