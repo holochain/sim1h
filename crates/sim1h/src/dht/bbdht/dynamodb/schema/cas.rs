@@ -11,8 +11,11 @@ pub const ASPECT_ADDRESS_KEY: &str = "aspect_address";
 pub const ASPECT_TYPE_HINT_KEY: &str = "aspect_type_hint";
 pub const ASPECT_KEY: &str = "aspect";
 pub const ASPECT_PUBLISH_TS_KEY: &str = "aspect_publish_ts";
+
+// direct messaging keys
 pub const INBOX_KEY_PREFIX: &str = "inbox_";
 pub const REQUEST_IDS_KEY: &str = "request_ids";
+pub const REQUEST_IDS_SEEN_KEY: &str = "request_ids";
 pub const MESSAGE_FROM_KEY: &str = "message_from";
 pub const MESSAGE_TO_KEY: &str = "mesage_to";
 pub const MESSAGE_CONTENT_KEY: &str = "message_content";

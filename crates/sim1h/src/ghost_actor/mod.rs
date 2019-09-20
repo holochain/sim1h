@@ -28,6 +28,7 @@ use lib3h_protocol::protocol::ClientToLib3h;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
 use lib3h_protocol::protocol::Lib3hToClient;
 use lib3h_protocol::protocol::Lib3hToClientResponse;
+use lib3h::error::Lib3hResult;
 use crate::workflow::to_client::handle_get_gossiping_entry_list::handle_get_gossiping_entry_list;
 use lib3h_zombie_actor::create_ghost_channel;
 use lib3h_zombie_actor::GhostActor;
@@ -86,51 +87,51 @@ impl SimGhostActor {
         }
     }
 
-    pub fn be_cranked(from_network: Lib3hToClient) {
-        match from_network {
+    pub fn be_cranked(&mut self, from_network: Lib3hToClient) -> Lib3hResult<()> {
+        Ok(match from_network {
             Lib3hToClient::Connected(connected_data) => {
                 let log_context = "Lib3hToClient::Connected";
-                connected(&log_context, &connected_data);
+                connected(&log_context, &self.dbclient, &connected_data);
             }
             Lib3hToClient::Disconnected(disconnected_data) => {
                 let log_context = "Lib3hToClient::Disconnected";
-                disconnected(&log_context, &disconnected_data);
+                disconnected(&log_context, &self.dbclient, &disconnected_data);
             }
             // TODO
             Lib3hToClient::SendDirectMessageResult(direct_message_data) => {
                 let log_context = "Lib3hToClient::SendDirectMessageResult";
-                send_direct_message_result(&log_context, &direct_message_data);
+                send_direct_message_result(&log_context, &self.dbclient, &direct_message_data)?;
             }
             // TODO
             Lib3hToClient::HandleSendDirectMessage(direct_message_data) => {
                 let log_context = "Lib3hToClient::HandleSendDirectMessage";
-                handle_send_direct_message(&log_context, &direct_message_data);
+                handle_send_direct_message(&log_context, &self.dbclient, &direct_message_data);
             }
             Lib3hToClient::HandleFetchEntry(fetch_entry_data) => {
                 let log_context = "Lib3hToClient::HandleFetchEntry";
-                handle_fetch_entry(&log_context, &fetch_entry_data);
+                handle_fetch_entry(&log_context, &self.dbclient, &fetch_entry_data);
             }
             Lib3hToClient::HandleStoreEntryAspect(store_entry_aspect_data) => {
                 let log_context = "Lib3hToClient::HandleStoreEntryAspect";
-                handle_store_entry_aspect(&log_context, &store_entry_aspect_data);
+                handle_store_entry_aspect(&log_context, &self.dbclient, &store_entry_aspect_data);
             }
             Lib3hToClient::HandleDropEntry(drop_entry_data) => {
                 let log_context = "Lib3hToClient::HandleDropEntry";
-                handle_drop_entry(&log_context, &drop_entry_data);
+                handle_drop_entry(&log_context, &self.dbclient, &drop_entry_data);
             }
             Lib3hToClient::HandleQueryEntry(query_entry_data) => {
                 let log_context = "Lib3hToClient::HandleQueryEntry";
-                handle_query_entry(&log_context, &query_entry_data);
+                handle_query_entry(&log_context, &self.dbclient, &query_entry_data);
             }
             Lib3hToClient::HandleGetAuthoringEntryList(get_list_data) => {
                 let log_context = "Lib3hToClient::HandleGetAuthoringEntryList";
-                handle_get_authoring_entry_list(&log_context, &get_list_data);
+                handle_get_authoring_entry_list(&log_context, &self.dbclient, &get_list_data);
             }
             Lib3hToClient::HandleGetGossipingEntryList(get_list_data) => {
                 let log_context = "Lib3hToClient::HandleGetGossipingEntryList";
-                handle_get_gossiping_entry_list(&log_context, &get_list_data);
+                handle_get_gossiping_entry_list(&log_context, &self.dbclient, &get_list_data);
             }
-        }
+        })
     }
 
     pub fn handle_client_response(from_client: Lib3hToClientResponse) {

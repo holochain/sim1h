@@ -11,6 +11,7 @@ use rusoto_dynamodb::UpdateItemInput;
 use std::collections::HashMap;
 use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_KEY;
+use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_SEEN_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_FROM_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_TO_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_CONTENT_KEY;
@@ -18,6 +19,8 @@ use crate::dht::bbdht::dynamodb::schema::blob_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::string_set_attribute_value;
 use rusoto_dynamodb::PutItemInput;
 use rusoto_dynamodb::PutItemError;
+use rusoto_dynamodb::GetItemInput;
+use lib3h_protocol::data_types::DirectMessageData;
 use rusoto_core::RusotoError;
 
 pub fn put_inbox_message(log_context: &LogContext, client: &Client, table_name: &TableName, request_id: &String, from: &Address, to: &Address, content: &Vec<u8>) -> BbDhtResult<()> {
@@ -151,6 +154,55 @@ pub fn send_to_agent_inbox(
     Ok(())
 }
 
+pub fn get_inbox_request_ids(
+    log_context: &LogContext,
+    client: &Client,
+    table_name: &TableName,
+    inbox_folder: &String,
+    to: &Address
+) -> BbDhtResult<Vec<String>> {
+    tracer(log_context, "get_inbox_request_ids");
+
+    let mut key = HashMap::new();
+    key.insert(
+        String::from(ADDRESS_KEY),
+        string_attribute_value(&inbox_key(to)),
+    );
+    let get_item_output = client
+        .get_item(GetItemInput {
+            table_name: table_name.into(),
+            key: key,
+            ..Default::default()
+        })
+    .sync()?.item;
+
+    Ok(match get_item_output {
+        Some(item) => match item[inbox_folder].ss.clone() {
+            Some(ss) => ss,
+            None => Vec::new(),
+        }
+        None => Vec::new(),
+    })
+}
+
+pub fn check_inbox(
+    log_context: &LogContext,
+    client: &Client,
+    table_name: &TableName,
+    to: &Address,
+) -> BbDhtResult<Vec<DirectMessageData>> {
+    tracer(&log_context, "check_inbox");
+
+    let inbox_request_ids = get_inbox_request_ids(log_context, client, table_name, &REQUEST_IDS_KEY.to_string(), to)?;
+
+    let seen_request_ids = get_inbox_request_ids(log_context, client, table_name, &REQUEST_IDS_SEEN_KEY.to_string(), to)?;
+
+    let _unseen_request_ids: Vec<String> = inbox_request_ids.iter().filter(|request_id| !seen_request_ids.contains(request_id)).cloned().collect();
+
+    // Ok(request_ids_to_messages(log_context, client, table_name, unseen_request_ids)?)
+    Ok(Vec::new())
+}
+
 #[cfg(test)]
 pub mod tests {
 
@@ -163,6 +215,9 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
     use crate::dht::bbdht::dynamodb::api::agent::inbox::put_inbox_message;
     use crate::dht::bbdht::dynamodb::api::agent::inbox::send_to_agent_inbox;
+    use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_KEY;
+    use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_SEEN_KEY;
+    use crate::dht::bbdht::dynamodb::api::agent::inbox::get_inbox_request_ids;
     use crate::agent::fixture::message_content_fresh;
 
     #[test]
@@ -218,6 +273,38 @@ pub mod tests {
 
         // pub inbox message
         assert!(send_to_agent_inbox(&log_context, &local_client, &table_name, &request_id, &from, &to, &content).is_ok());
+    }
+
+    #[test]
+    fn get_inbox_request_ids_test() {
+        let log_context = "get_inbox_request_ids_test";
+
+        tracer(&log_context, "fixtures");
+        let local_client = local_client();
+        let table_name = table_name_fresh();
+        let request_id = request_id_fresh();
+        let from = agent_id_fresh();
+        let to = agent_id_fresh();
+        let content = message_content_fresh();
+
+        // ensure cas
+        assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
+
+        // test both inboxes
+        for folder in vec![REQUEST_IDS_KEY, REQUEST_IDS_SEEN_KEY] {
+
+            // pub inbox message
+            assert!(send_to_agent_inbox(&log_context, &local_client, &table_name, &request_id.clone(), &from, &to, &content).is_ok());
+
+            // get inbox message
+            match get_inbox_request_ids(&log_context, &local_client, &table_name, &folder.to_string(), &to) {
+                Ok(request_ids) => assert_eq!(vec![request_id.clone()], request_ids),
+                Err(err) => {
+                    panic!("incorrect request id {:?}", err)
+                }
+            };
+
+        }
     }
 
 }
