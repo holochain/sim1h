@@ -5,11 +5,9 @@ use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use holochain_persistence_api::cas::content::Address;
-use rusoto_core::RusotoError;
 use rusoto_dynamodb::DynamoDb;
-use rusoto_dynamodb::PutItemError;
+use crate::dht::bbdht::error::BbDhtResult;
 use rusoto_dynamodb::PutItemInput;
-use rusoto_dynamodb::PutItemOutput;
 use std::collections::HashMap;
 
 pub fn touch_agent(
@@ -17,7 +15,7 @@ pub fn touch_agent(
     client: &Client,
     table_name: &TableName,
     agent_id: &Address,
-) -> Result<PutItemOutput, RusotoError<PutItemError>> {
+) -> BbDhtResult<()> {
     tracer(&log_context, "touch_agent");
 
     let mut item = HashMap::new();
@@ -31,7 +29,8 @@ pub fn touch_agent(
             table_name: table_name.to_string(),
             ..Default::default()
         })
-        .sync()
+        .sync()?;
+    Ok(())
 }
 
 #[cfg(test)]
