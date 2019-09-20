@@ -65,44 +65,190 @@ impl SimGhostActor {
         }
     }
 
+    pub fn be_cranked(from_network: Lib3hToClient) {
+        match from_network {
+            Lib3hToClient::Connected(_connected_data) => {
+                // -- Connection -- //
+                // Notification of successful connection to a network
+
+                // specced
+                // no-op
+            }
+            Lib3hToClient::Disconnected(_disconnected_data) => {
+                // Notification of disconnection from a network
+
+                // specced
+                // no-op
+            },
+            Lib3hToClient::SendDirectMessageResult(_direct_message_data) => {
+                // -- Direct Messaging -- //
+                // the response received from a previous `SendDirectMessage`
+
+                // ?? dubious ??
+                // B has put a result in A inbox
+                // A queries inbox to pop
+            },
+            Lib3hToClient::HandleSendDirectMessage(_direct_message_data) => {
+                // Request to handle a direct message another agent has sent us.
+
+                // specced
+                // A has put something in inbox for B
+                // B needs to query to find it and pass to core
+            },
+            Lib3hToClient::HandleFetchEntry(_fetch_entry_data) => {
+                // -- Entry -- //
+                // Another node, or the network module itself is requesting data from us
+
+                // specced
+                // all entries are in the database
+                // no-op
+            },
+            Lib3hToClient::HandleStoreEntryAspect(_store_entry_aspect_data) => {
+                // Store data on a node's dht arc.
+
+                // specced
+                // all entry aspects are in the database
+                // no-op
+            },
+            Lib3hToClient::HandleDropEntry(_drop_entry_data) => {
+                // Local client does not need to hold that entry anymore.
+                // Local client doesn't 'have to' comply.
+
+                // specced
+                // all entries are in the database
+                // no-op
+            },
+            Lib3hToClient::HandleQueryEntry(_query_entry_data) => {
+                // Request a node to handle a QueryEntry request
+
+                // specced
+                // queries are simulated on the outgoing side
+                // no-op
+            },
+            Lib3hToClient::HandleGetAuthoringEntryList(_get_list_data) => {
+                // -- Entry lists -- //
+
+                // specced
+                // database stored everything
+                // no-op
+            },
+            Lib3hToClient::HandleGetGossipingEntryList(_get_list_data) => {
+                // -- Entry lists -- //
+
+                // specced
+                // database stored everything
+                // no-op
+            },
+        }
+    }
+
+    pub fn handle_client_response(from_client: Lib3hToClientResponse) {
+        match from_client {
+            Lib3hToClientResponse::HandleSendDirectMessageResult(_direct_message_data) => {
+                // Our response to a direct message from another agent.
+
+                // A sends message to B
+                // B told A it received the message
+            }
+            Lib3hToClientResponse::HandleFetchEntryResult(_fetch_entry_result_data) => {
+                /// Successful data response for a `HandleFetchEntryData` request
+
+                // specced
+                // result of no-op is no-op
+            }
+            Lib3hToClientResponse::HandleStoreEntryAspectResult => {
+                // specced
+                // result of no-op is no-op
+            }
+            Lib3hToClientResponse::HandleDropEntryResult => {
+                // specced
+                // result of no-op is no-op
+            }
+            Lib3hToClientResponse::HandleQueryEntryResult(_query_entry_result_data) => {
+                // Response to a `HandleQueryEntry` request
+
+                // specced
+                // result of no-op is no-op
+            }
+            Lib3hToClientResponse::HandleGetAuthoringEntryListResult(_entry_list_data) => {
+                // specced
+                // result of no-op is no-op
+            }
+            Lib3hToClientResponse::HandleGetGossipingEntryListResult(_entry_list_data) => {
+                // specced
+                // result of no-op is no-op
+            }
+        }
+    }
+
+    // pub fn turn_crank()(
+    //     let cranks = vec![Lib3hToClient::Connected())];
+    //     be_cranked(cranks.take_random());
+    // )
+
     pub fn handle_msg_from_client(
         &mut self,
         mut msg: ClientToLib3hMessage,
     ) -> GhostResult<WorkWasDone> {
         match msg.take_message().expect("exists") {
+            // MVP
+            // check database connection
+            // optional
             ClientToLib3h::Bootstrap(_) => {
                 let log_context = "ClientToLib3h::Bootstrap";
                 msg.respond(bootstrap(&log_context, &self.dbclient))?;
                 Ok(true.into())
             }
+            // MVP
+            // create space if not exists
+            // touch agent
             ClientToLib3h::JoinSpace(data) => {
                 let log_context = "ClientToLib3h::JoinSpace";
                 msg.respond(join_space(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
+            // MVP
+            // no-op
             ClientToLib3h::LeaveSpace(data) => {
                 trace!("ClientToLib3h::LeaveSpace: {:?}", &data);
                 Ok(true.into())
             }
+            // 30%
+            // A: append message to inbox in database
+            // B: drain messages from inbox in database
             ClientToLib3h::SendDirectMessage(data) => {
                 trace!("ClientToLib3h::SendDirectMessage: {:?}", &data);
                 Ok(true.into())
             }
+            // MVP
+            // append list of aspect addresses to entry address
+            // drop all aspects into database under each of their addresses
+            //
+            // later:
+            // make all this in a transaction
             ClientToLib3h::PublishEntry(data) => {
                 trace!("ClientToLib3h::PublishEntry: {:?}", &data);
                 Ok(true.into())
             }
+            // MVP
+            // this is a no-op
             ClientToLib3h::HoldEntry(data) => {
                 let log_context = "ClientToLib3h::HoldEntry";
                 hold_entry(&log_context, &self.dbclient, &data)?;
                 trace!("ClientToLib3h::HoldEntry: {:?}", &data);
                 Ok(true.into())
             }
+            // 80%
+            // fetch all entry aspects from entry address
+            // do some kind of filter based on the non-opaque query struct
+            // familiar to rehydrate the opaque query struct
             ClientToLib3h::QueryEntry(data) => {
                 let log_context = "ClientToLib3h::QueryEntry";
                 query_entry(&log_context, &self.dbclient, &data)?;
                 Ok(true.into())
             }
+            // specced
+            // query entry but hardcoded to entry query right?
             ClientToLib3h::FetchEntry(data) => {
                 trace!("ClientToLib3h::FetchEntry: {:?}", &data);
                 Ok(true.into())
