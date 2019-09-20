@@ -41,7 +41,7 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::client::fixture::bad_client;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::trace::tracer;
-    use crate::workflow::fixture::space_data_fresh;
+    use crate::space::fixture::space_data_fresh;
     use crate::workflow::join_space::join_space;
     use lib3h_protocol::protocol::ClientToLib3hResponse;
 

@@ -14,3 +14,7 @@ pub mod protocol_map;
 pub mod test;
 pub mod trace;
 pub mod workflow;
+pub mod entry;
+pub mod aspect;
+pub mod space;
+pub mod network;

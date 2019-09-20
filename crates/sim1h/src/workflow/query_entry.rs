@@ -94,10 +94,10 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::test::unordered_vec_compare;
     use crate::trace::tracer;
-    use crate::workflow::fixture::entry_address_fresh;
+    use crate::entry::fixture::entry_address_fresh;
     use crate::workflow::fixture::provided_entry_data_fresh;
     use crate::workflow::fixture::query_entry_data_fresh;
-    use crate::workflow::fixture::space_data_fresh;
+    use crate::space::fixture::space_data_fresh;
     use crate::workflow::join_space::join_space;
     use crate::workflow::publish_entry::publish_entry;
     use crate::workflow::query_entry::query_entry_aspects;

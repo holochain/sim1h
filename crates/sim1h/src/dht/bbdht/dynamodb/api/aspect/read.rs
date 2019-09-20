@@ -142,9 +142,9 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::test::unordered_vec_compare;
     use crate::trace::tracer;
-    use crate::workflow::fixture::aspect_list_fresh;
-    use crate::workflow::fixture::entry_address_fresh;
-    use crate::workflow::fixture::entry_aspect_data_fresh;
+    use crate::aspect::fixture::aspect_list_fresh;
+    use crate::entry::fixture::entry_address_fresh;
+    use crate::aspect::fixture::entry_aspect_data_fresh;
     use lib3h_protocol::data_types::EntryAspectData;
 
     #[test]

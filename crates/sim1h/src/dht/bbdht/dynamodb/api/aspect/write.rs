@@ -181,9 +181,9 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_LIST_KEY;
     use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
     use crate::trace::tracer;
-    use crate::workflow::fixture::aspect_list_fresh;
-    use crate::workflow::fixture::entry_address_fresh;
-    use crate::workflow::fixture::entry_aspect_data_fresh;
+    use crate::aspect::fixture::aspect_list_fresh;
+    use crate::entry::fixture::entry_address_fresh;
+    use crate::aspect::fixture::entry_aspect_data_fresh;
     use std::collections::HashMap;
 
     #[test]
