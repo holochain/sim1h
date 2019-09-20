@@ -7,6 +7,7 @@ use crate::workflow::from_client::query_entry::query_entry;
 use crate::workflow::to_client::handle_store_entry_aspect::handle_store_entry_aspect;
 use crate::workflow::to_client::handle_fetch_entry::handle_fetch_entry;
 use crate::workflow::to_client::disconnected::disconnected;
+use crate::workflow::to_client::connected::connected;
 use detach::Detach;
 use crate::workflow::to_client::handle_query_entry::handle_query_entry;
 use lib3h::engine::engine_actor::ClientToLib3hMessage;
@@ -78,12 +79,9 @@ impl SimGhostActor {
 
     pub fn be_cranked(from_network: Lib3hToClient) {
         match from_network {
-            Lib3hToClient::Connected(_connected_data) => {
-                // -- Connection -- //
-                // Notification of successful connection to a network
-
-                // specced
-                // no-op
+            Lib3hToClient::Connected(connected_data) => {
+                let log_context = "Lib3hToClient::Connected";
+                connected(&log_context, &connected_data);
             }
             Lib3hToClient::Disconnected(disconnected_data) => {
                 let log_context = "Lib3hToClient::Disconnected";
@@ -95,7 +93,8 @@ impl SimGhostActor {
 
                 // ?? dubious ??
                 // B has put a result in A inbox
-                // A queries inbox to pop
+                // A queries inbox
+                // A records seen
             }
             Lib3hToClient::HandleSendDirectMessage(_direct_message_data) => {
                 // Request to handle a direct message another agent has sent us.
