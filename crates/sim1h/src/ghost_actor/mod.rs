@@ -4,6 +4,7 @@ use crate::workflow::from_client::hold_entry::hold_entry;
 use crate::workflow::from_client::join_space::join_space;
 use crate::workflow::from_client::leave_space::leave_space;
 use crate::workflow::from_client::query_entry::query_entry;
+use crate::workflow::to_client::handle_store_entry_aspect::handle_store_entry_aspect;
 use detach::Detach;
 use crate::workflow::to_client::handle_query_entry::handle_query_entry;
 use lib3h::engine::engine_actor::ClientToLib3hMessage;
@@ -111,12 +112,9 @@ impl SimGhostActor {
                 // all entries are in the database
                 // no-op
             }
-            Lib3hToClient::HandleStoreEntryAspect(_store_entry_aspect_data) => {
-                // Store data on a node's dht arc.
-
-                // specced
-                // all entry aspects are in the database
-                // no-op
+            Lib3hToClient::HandleStoreEntryAspect(store_entry_aspect_data) => {
+                let log_context = "Lib3hToClient::HandleStoreEntryAspect";
+                handle_store_entry_aspect(&log_context, &store_entry_aspect_data);
             }
             Lib3hToClient::HandleDropEntry(drop_entry_data) => {
                 let log_context = "Lib3hToClient::HandleDropEntry";
@@ -175,11 +173,6 @@ impl SimGhostActor {
             }
         }
     }
-
-    // pub fn turn_crank()(
-    //     let cranks = vec![Lib3hToClient::Connected())];
-    //     be_cranked(cranks.take_random());
-    // )
 
     pub fn handle_msg_from_client(
         &mut self,
