@@ -151,7 +151,7 @@ impl SimGhostActor {
                 // B told A it received the message
             }
             Lib3hToClientResponse::HandleFetchEntryResult(_fetch_entry_result_data) => {
-                /// Successful data response for a `HandleFetchEntryData` request
+                // Successful data response for a `HandleFetchEntryData` request
 
                 // specced
                 // result of no-op is no-op
@@ -244,7 +244,7 @@ impl SimGhostActor {
             // familiar to rehydrate the opaque query struct
             ClientToLib3h::QueryEntry(data) => {
                 let log_context = "ClientToLib3h::QueryEntry";
-                query_entry(&log_context, &self.dbclient, &data)?;
+                msg.respond(query_entry(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
             // specced

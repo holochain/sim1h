@@ -6,11 +6,14 @@ use crate::trace::LogContext;
 use holochain_core_types::network::query::NetworkQuery;
 use holochain_json_api::json::JsonString;
 use lib3h::error::Lib3hResult;
+use lib3h_protocol::data_types::QueryEntryResultData;
 use lib3h_protocol::data_types::EntryAspectData;
 use lib3h_protocol::data_types::QueryEntryData;
+use lib3h_protocol::data_types::Opaque;
 use std::convert::TryFrom;
+use lib3h_protocol::protocol::ClientToLib3hResponse;
 
-pub fn query_entry(
+pub fn query_entry_aspects(
     log_context: &LogContext,
     client: &Client,
     query_entry_data: &QueryEntryData,
@@ -36,10 +39,10 @@ pub fn query_entry(
 
     Ok(match query {
         NetworkQuery::GetEntry => {
-            let _keep = vec!["content", "header"];
+            let keep = vec!["content".to_string(), "header".to_string()];
             let v = entry_aspects
                 .into_iter()
-                .filter(|_| true)
+                .filter(|a| keep.contains(&a.type_hint))
                 .collect::<Vec<_>>();
             v
         }
@@ -58,6 +61,27 @@ pub fn query_entry(
     })
 }
 
+pub fn aspects_to_opaque(aspects: &Vec<EntryAspectData>) -> Opaque {
+    let json = JsonString::from(aspects.clone());
+    json.to_bytes().into()
+}
+
+pub fn query_entry(
+    log_context: &LogContext,
+    client: &Client,
+    query_entry_data: &QueryEntryData,
+) -> Lib3hResult<ClientToLib3hResponse> {
+    let entry_aspects = query_entry_aspects(log_context, client, query_entry_data)?;
+    Ok(ClientToLib3hResponse::QueryEntryResult(QueryEntryResultData{
+        entry_address: query_entry_data.entry_address.clone(),
+        request_id: query_entry_data.request_id.clone(),
+        space_address: query_entry_data.space_address.clone(),
+        query_result: aspects_to_opaque(&entry_aspects),
+        requester_agent_id: query_entry_data.requester_agent_id.clone(),
+        responder_agent_id: query_entry_data.requester_agent_id.clone(),
+    }))
+}
+
 #[cfg(test)]
 pub mod tests {
 
@@ -70,11 +94,11 @@ pub mod tests {
     use crate::workflow::fixture::space_data_fresh;
     use crate::workflow::join_space::join_space;
     use crate::workflow::publish_entry::publish_entry;
-    use crate::workflow::query_entry::query_entry;
+    use crate::workflow::query_entry::query_entry_aspects;
 
     #[test]
-    pub fn query_entry_test() {
-        let log_context = "query_entry_test";
+    pub fn query_entry_aspects_test() {
+        let log_context = "query_entry_aspects_test";
 
         tracer(&log_context, "fixtures");
         let local_client = local_client();
@@ -89,7 +113,7 @@ pub mod tests {
         // publish entry
         assert!(publish_entry(&log_context, &local_client, &provided_entry_data).is_ok());
 
-        match query_entry(&log_context, &local_client, &query_entry_data) {
+        match query_entry_aspects(&log_context, &local_client, &query_entry_data) {
             Ok(v) => assert!(unordered_vec_compare(
                 v,
                 provided_entry_data.entry.aspect_list
