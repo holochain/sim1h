@@ -13,6 +13,7 @@ use lib3h_protocol::protocol::ClientToLib3h;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
 use lib3h_protocol::protocol::Lib3hToClient;
 use lib3h_protocol::protocol::Lib3hToClientResponse;
+use crate::workflow::to_client::handle_get_gossiping_entry_list::handle_get_gossiping_entry_list;
 use lib3h_zombie_actor::create_ghost_channel;
 use lib3h_zombie_actor::GhostActor;
 use lib3h_zombie_actor::GhostCanTrack;
@@ -136,12 +137,9 @@ impl SimGhostActor {
                 // database stored everything
                 // no-op
             }
-            Lib3hToClient::HandleGetGossipingEntryList(_get_list_data) => {
-                // -- Entry lists -- //
-
-                // specced
-                // database stored everything
-                // no-op
+            Lib3hToClient::HandleGetGossipingEntryList(get_list_data) => {
+                let log_context = "Lib3hToClient::HandleGetGossipingEntryList";
+                handle_get_gossiping_entry_list(&log_context, &get_list_data);
             }
         }
     }
