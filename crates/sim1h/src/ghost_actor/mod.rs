@@ -16,6 +16,8 @@ use lib3h_zombie_actor::create_ghost_channel;
 use lib3h_zombie_actor::GhostActor;
 use lib3h_zombie_actor::GhostCanTrack;
 use lib3h_zombie_actor::GhostContextEndpoint;
+use crate::workflow::send_direct_message::send_direct_message;
+use crate::workflow::publish_entry::publish_entry;
 use lib3h_zombie_actor::GhostEndpoint;
 use lib3h_zombie_actor::GhostResult;
 use lib3h_zombie_actor::WorkWasDone;
@@ -219,8 +221,8 @@ impl SimGhostActor {
             // A: append message to inbox in database
             // B: drain messages from inbox in database
             ClientToLib3h::SendDirectMessage(data) => {
-                trace!("ClientToLib3h::SendDirectMessage: {:?}", &data);
-                // TODO - implement response message
+                let log_context = "ClientToLib3h::SendDirectMessage";
+                msg.respond(send_direct_message(&log_context, &self.dbclient, &data))?;
                 Ok(true.into())
             }
             // MVP
@@ -230,8 +232,9 @@ impl SimGhostActor {
             // later:
             // make all this in a transaction
             ClientToLib3h::PublishEntry(data) => {
-                trace!("ClientToLib3h::PublishEntry: {:?}", &data);
+                let log_context = "ClientToLib3h::PublishEntry";
                 // no response message for publish entry
+                publish_entry(&log_context, &self.dbclient, &data)?;
                 Ok(true.into())
             }
             // MVP

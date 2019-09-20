@@ -12,7 +12,7 @@ pub fn send_direct_message(
     direct_message_data: &DirectMessageData,
 ) -> Lib3hResult<ClientToLib3hResponse> {
     tracer(&log_context, "send_direct_message");
-    match send_to_agent_inbox(
+    send_to_agent_inbox(
         &log_context,
         &client,
         &direct_message_data.space_address.to_string(),
@@ -20,9 +20,8 @@ pub fn send_direct_message(
         &direct_message_data.from_agent_id,
         &direct_message_data.to_agent_id,
         &direct_message_data.content,
-    ) {
-        _ => Ok(ClientToLib3hResponse::SendDirectMessageResult(
-            direct_message_data.clone(),
-        )),
-    }
+    )?;
+    Ok(ClientToLib3hResponse::SendDirectMessageResult(
+        direct_message_data.clone(),
+    ))
 }
