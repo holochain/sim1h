@@ -42,8 +42,6 @@ pub fn query_entry_aspects(
 
     let entry_aspects = get_entry_aspects(log_context, client, &table_name, &entry_address)?;
 
-    println!("{:#?}", entry_aspects);
-
     Ok(match query {
         NetworkQuery::GetEntry => {
             let v = entry_aspects
@@ -101,6 +99,28 @@ pub mod tests {
     use crate::workflow::join_space::join_space;
     use crate::workflow::publish_entry::publish_entry;
     use crate::workflow::query_entry::query_entry_aspects;
+    use crate::entry::fixture::entry_fresh;
+    use crate::aspect::fixture::link_add_aspect_fresh;
+    use crate::aspect::fixture::link_remove_aspect_fresh;
+    use crate::aspect::fixture::update_aspect_fresh;
+    use crate::aspect::fixture::deletion_aspect_fresh;
+    use crate::aspect::fixture::content_aspect_fresh;
+    use crate::aspect::fixture::header_aspect_fresh;
+    use crate::workflow::query_entry::get_entry_aspect_filter_fn;
+
+    #[test]
+    pub fn get_entry_aspect_filter_fn_test() {
+
+        // things that should persist
+        assert!(get_entry_aspect_filter_fn(&content_aspect_fresh().into()));
+        assert!(get_entry_aspect_filter_fn(&header_aspect_fresh(&entry_fresh()).into()));
+
+        // things that should be dropped
+        assert!(!get_entry_aspect_filter_fn(&link_add_aspect_fresh(&entry_fresh()).into()));
+        assert!(!get_entry_aspect_filter_fn(&link_remove_aspect_fresh(&entry_fresh()).into()));
+        assert!(!get_entry_aspect_filter_fn(&update_aspect_fresh(&entry_fresh()).into()));
+        assert!(!get_entry_aspect_filter_fn(&deletion_aspect_fresh(&entry_fresh()).into()));
+    }
 
     #[test]
     pub fn query_entry_aspects_test() {

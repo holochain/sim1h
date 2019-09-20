@@ -30,4 +30,4 @@ holochain_json_api = "0.0.17"
 url = "=2.1.0"
 crossbeam-channel = "0.3.8"
 # holochain_core_types = "=0.0.8"
-holochain_core_types = { git = "https://github.com/holochain/holochain-rust", rev = "sim1h-integration" }
+holochain_core_types = { git = "https://github.com/holochain/holochain-rust", rev = "a2d3ba8547d0f42550ca57726925daa14290a691" }

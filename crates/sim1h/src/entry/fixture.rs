@@ -39,3 +39,11 @@ pub fn entry_data_fresh(entry_address: &Address) -> EntryData {
         aspect_list: aspect_list_fresh(),
     }
 }
+
+pub fn link_tag_fresh() -> String {
+    Uuid::new_v4().to_string()
+}
+
+pub fn link_type_fresh() -> String {
+    Uuid::new_v4().to_string()
+}

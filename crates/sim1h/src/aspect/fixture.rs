@@ -5,7 +5,55 @@ use uuid::Uuid;
 use lib3h_protocol::data_types::EntryAspectData;
 use lib3h_protocol::data_types::Opaque;
 use crate::entry::fixture::entry_fresh;
+use holochain_core_types::entry::Entry;
+use holochain_persistence_api::cas::content::AddressableContent;
+use holochain_core_types::link::link_data::LinkData;
 use crate::entry::fixture::chain_header_fresh;
+use crate::entry::fixture::entry_address_fresh;
+use crate::entry::fixture::link_tag_fresh;
+use crate::entry::fixture::link_type_fresh;
+use crate::agent::fixture::core_agent_id_fresh;
+
+pub fn link_add_aspect_fresh(entry: &Entry) -> EntryAspect {
+    let link_data = LinkData::new_add(
+        &entry.address(),
+        &entry_address_fresh(),
+        &link_tag_fresh(),
+        &link_type_fresh(),
+        chain_header_fresh(&entry_fresh()),
+        core_agent_id_fresh(),
+    );
+    EntryAspect::LinkAdd(link_data, chain_header_fresh(entry))
+}
+
+pub fn link_remove_aspect_fresh(entry: &Entry) -> EntryAspect {
+    let link_data = LinkData::new_delete(
+        &entry.address(),
+        &entry_address_fresh(),
+        &link_tag_fresh(),
+        &link_type_fresh(),
+        chain_header_fresh(&entry_fresh()),
+        core_agent_id_fresh(),
+    );
+    EntryAspect::LinkRemove((link_data, Vec::new()), chain_header_fresh(entry))
+}
+
+pub fn update_aspect_fresh(entry: &Entry) -> EntryAspect {
+    EntryAspect::Update(entry.clone(), chain_header_fresh(&entry))
+}
+
+pub fn deletion_aspect_fresh(entry: &Entry) -> EntryAspect {
+    EntryAspect::Deletion(chain_header_fresh(&entry))
+}
+
+pub fn content_aspect_fresh() -> EntryAspect {
+    let entry = entry_fresh();
+    EntryAspect::Content(entry.clone(), chain_header_fresh(&entry))
+}
+
+pub fn header_aspect_fresh(entry: &Entry) -> EntryAspect {
+    EntryAspect::Header(chain_header_fresh(entry))
+}
 
 pub fn entry_aspect_data_fresh() -> EntryAspectData {
     EntryAspectData {
@@ -27,11 +75,7 @@ pub fn aspect_list_fresh() -> Vec<EntryAspectData> {
 }
 
 pub fn opaque_aspect_fresh() -> Opaque {
-    let entry = entry_fresh();
-    JsonString::from(EntryAspect::Content(
-        entry.clone(),
-        chain_header_fresh(&entry),
-    )).to_bytes().into()
+    JsonString::from(content_aspect_fresh()).to_bytes().into()
 }
 
 pub fn aspect_address_fresh() -> Address {
