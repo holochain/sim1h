@@ -24,8 +24,8 @@ pub mod tests {
     use crate::entry::fixture::entry_address_fresh;
     use crate::space::fixture::space_data_fresh;
     use crate::trace::tracer;
-    use crate::workflow::fixture::provided_entry_data_fresh;
-    use crate::workflow::hold_entry::hold_entry;
+    use crate::workflow::from_client::fixture::provided_entry_data_fresh;
+    use crate::workflow::from_client::hold_entry::hold_entry;
 
     #[test]
     fn hold_entry_test() {

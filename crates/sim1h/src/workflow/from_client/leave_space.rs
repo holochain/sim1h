@@ -21,7 +21,7 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::space::fixture::space_data_fresh;
     use crate::trace::tracer;
-    use crate::workflow::leave_space::leave_space;
+    use crate::workflow::from_client::leave_space::leave_space;
     use lib3h_protocol::protocol::ClientToLib3hResponse;
 
     #[test]

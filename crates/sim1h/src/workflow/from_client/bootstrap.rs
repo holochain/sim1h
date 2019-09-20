@@ -19,7 +19,7 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::client::fixture::bad_client;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::trace::tracer;
-    use crate::workflow::bootstrap::bootstrap;
+    use crate::workflow::from_client::bootstrap::bootstrap;
 
     #[test]
     fn bootstrap_test() {

@@ -103,12 +103,12 @@ pub mod tests {
     use crate::space::fixture::space_data_fresh;
     use crate::test::unordered_vec_compare;
     use crate::trace::tracer;
-    use crate::workflow::fixture::provided_entry_data_fresh;
-    use crate::workflow::fixture::query_entry_data_fresh;
-    use crate::workflow::join_space::join_space;
-    use crate::workflow::publish_entry::publish_entry;
-    use crate::workflow::query_entry::get_entry_aspect_filter_fn;
-    use crate::workflow::query_entry::query_entry_aspects;
+    use crate::workflow::from_client::fixture::provided_entry_data_fresh;
+    use crate::workflow::from_client::fixture::query_entry_data_fresh;
+    use crate::workflow::from_client::join_space::join_space;
+    use crate::workflow::from_client::publish_entry::publish_entry;
+    use crate::workflow::from_client::query_entry::get_entry_aspect_filter_fn;
+    use crate::workflow::from_client::query_entry::query_entry_aspects;
 
     #[test]
     pub fn get_entry_aspect_filter_fn_test() {

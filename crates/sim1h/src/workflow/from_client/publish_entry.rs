@@ -30,9 +30,9 @@ pub mod tests {
     use crate::entry::fixture::entry_address_fresh;
     use crate::space::fixture::space_data_fresh;
     use crate::trace::tracer;
-    use crate::workflow::fixture::provided_entry_data_fresh;
-    use crate::workflow::join_space::join_space;
-    use crate::workflow::publish_entry::publish_entry;
+    use crate::workflow::from_client::fixture::provided_entry_data_fresh;
+    use crate::workflow::from_client::join_space::join_space;
+    use crate::workflow::from_client::publish_entry::publish_entry;
 
     #[test]
     fn publish_entry_test() {

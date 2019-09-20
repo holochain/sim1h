@@ -6,7 +6,7 @@ use lib3h_protocol::data_types::FetchEntryResultData;
 use lib3h_protocol::data_types::FetchEntryData;
 use lib3h_protocol::data_types::QueryEntryData;
 use holochain_json_api::json::JsonString;
-use crate::workflow::query_entry::query_entry_aspects;
+use crate::workflow::from_client::query_entry::query_entry_aspects;
 use holochain_core_types::network::query::NetworkQuery;
 use lib3h_protocol::data_types::EntryData;
 
