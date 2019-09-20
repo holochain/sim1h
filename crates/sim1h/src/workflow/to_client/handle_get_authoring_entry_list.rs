@@ -3,7 +3,6 @@ use lib3h_protocol::data_types::GetListData;
 use crate::trace::tracer;
 
 // -- Entry lists -- //
-// MVP
 // database stored everything
 // no-op
 pub fn handle_get_authoring_entry_list(log_context: &LogContext, get_list_data: &GetListData) {

@@ -4,7 +4,6 @@ use crate::trace::LogContext;
 use lib3h::error::Lib3hResult;
 use lib3h_protocol::data_types::ProvidedEntryData;
 
-/// MVP
 /// this is a no-op
 pub fn hold_entry(
     log_context: &LogContext,
@@ -12,10 +11,6 @@ pub fn hold_entry(
     _provided_entry_data: &ProvidedEntryData,
 ) -> Lib3hResult<()> {
     tracer(&log_context, "hold_entry");
-
-    // it is valid for the provided_agent_id to not have joined the network
-    // it is a remote client and they may be "offline"
-
     Ok(())
 }
 

@@ -35,5 +35,3 @@ pub fn fetch_entry(log_context: &LogContext, client: &Client, fetch_entry_data: 
     };
     Ok(ClientToLib3hResponse::FetchEntryResult(fetch_entry_result_data))
 }
-
-// TODO TESTS

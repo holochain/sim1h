@@ -8,7 +8,6 @@ use lib3h_protocol::data_types::ProvidedEntryData;
 /// MVP
 /// append list of aspect addresses to entry address
 /// drop all aspects into database under each of their addresses
-///
 /// later:
 /// make all this in a transaction
 pub fn publish_entry(
