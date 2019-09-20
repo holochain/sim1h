@@ -220,6 +220,7 @@ impl SimGhostActor {
             // B: drain messages from inbox in database
             ClientToLib3h::SendDirectMessage(data) => {
                 trace!("ClientToLib3h::SendDirectMessage: {:?}", &data);
+                // TODO - implement response message
                 Ok(true.into())
             }
             // MVP
@@ -230,6 +231,7 @@ impl SimGhostActor {
             // make all this in a transaction
             ClientToLib3h::PublishEntry(data) => {
                 trace!("ClientToLib3h::PublishEntry: {:?}", &data);
+                // no response message for publish entry
                 Ok(true.into())
             }
             // MVP
