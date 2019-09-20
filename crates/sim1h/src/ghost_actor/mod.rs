@@ -5,6 +5,7 @@ use crate::workflow::from_client::join_space::join_space;
 use crate::workflow::from_client::leave_space::leave_space;
 use crate::workflow::from_client::query_entry::query_entry;
 use crate::workflow::to_client::handle_store_entry_aspect::handle_store_entry_aspect;
+use crate::workflow::to_client::handle_fetch_entry::handle_fetch_entry;
 use detach::Detach;
 use crate::workflow::to_client::handle_query_entry::handle_query_entry;
 use lib3h::engine::engine_actor::ClientToLib3hMessage;
@@ -104,13 +105,9 @@ impl SimGhostActor {
                 // A has put something in inbox for B
                 // B needs to query to find it and pass to core
             }
-            Lib3hToClient::HandleFetchEntry(_fetch_entry_data) => {
-                // -- Entry -- //
-                // Another node, or the network module itself is requesting data from us
-
-                // specced
-                // all entries are in the database
-                // no-op
+            Lib3hToClient::HandleFetchEntry(fetch_entry_data) => {
+                let log_context = "Lib3hToClient::HandleFetchEntry";
+                handle_fetch_entry(&log_context, &fetch_entry_data);
             }
             Lib3hToClient::HandleStoreEntryAspect(store_entry_aspect_data) => {
                 let log_context = "Lib3hToClient::HandleStoreEntryAspect";
