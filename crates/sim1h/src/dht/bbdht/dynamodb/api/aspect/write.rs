@@ -150,12 +150,12 @@ pub fn append_aspect_list_to_entry(
     let mut expression_attribute_names = HashMap::new();
     expression_attribute_names.insert("#aspect_list".to_string(), ASPECT_LIST_KEY.to_string());
 
+    // https://stackoverflow.com/questions/31288085/how-to-append-a-value-to-list-attribute-on-aws-dynamodb
     let update_expression = "ADD #aspect_list :aspects";
 
     let aspect_list_update = UpdateItemInput {
         table_name: table_name.to_string(),
         key: aspect_addresses_key,
-        // https://stackoverflow.com/questions/31288085/how-to-append-a-value-to-list-attribute-on-aws-dynamodb
         update_expression: Some(update_expression.to_string()),
         expression_attribute_names: Some(expression_attribute_names),
         expression_attribute_values: Some(expression_attribute_values),

@@ -12,6 +12,7 @@ pub const ASPECT_TYPE_HINT_KEY: &str = "aspect_type_hint";
 pub const ASPECT_KEY: &str = "aspect";
 pub const ASPECT_PUBLISH_TS_KEY: &str = "aspect_publish_ts";
 pub const INBOX_KEY_PREFIX: &str = "inbox_";
+pub const REQUEST_IDS_KEY: &str = "request_ids";
 
 pub fn inbox_key(agent_id: &Address) -> String {
     format!("{}{}", INBOX_KEY_PREFIX, agent_id)
