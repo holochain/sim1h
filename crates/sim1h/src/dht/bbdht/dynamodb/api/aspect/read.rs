@@ -1,4 +1,5 @@
 use crate::dht::bbdht::dynamodb::api::item::read::get_item_by_address;
+use crate::dht::bbdht::dynamodb::api::item::Item;
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_KEY;
@@ -12,7 +13,6 @@ use crate::trace::tracer;
 use crate::trace::LogContext;
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::EntryAspectData;
-use crate::dht::bbdht::dynamodb::api::item::Item;
 
 fn try_aspect_from_item(item: Item) -> BbDhtResult<EntryAspectData> {
     let aspect_address = match item[ASPECT_ADDRESS_KEY].s.clone() {
@@ -63,9 +63,7 @@ fn try_aspect_from_item(item: Item) -> BbDhtResult<EntryAspectData> {
     })
 }
 
-pub fn try_aspect_list_from_item(
-    item: Item,
-) -> BbDhtResult<Vec<Address>> {
+pub fn try_aspect_list_from_item(item: Item) -> BbDhtResult<Vec<Address>> {
     let addresses = match item[ASPECT_LIST_KEY].ss.clone() {
         Some(addresses) => addresses.iter().map(|s| Address::from(s.clone())).collect(),
         None => {
@@ -132,6 +130,8 @@ pub fn get_entry_aspects(
 #[cfg(test)]
 pub mod tests {
 
+    use crate::aspect::fixture::aspect_list_fresh;
+    use crate::aspect::fixture::entry_aspect_data_fresh;
     use crate::dht::bbdht::dynamodb::api::aspect::read::get_aspect;
     use crate::dht::bbdht::dynamodb::api::aspect::read::get_entry_aspects;
     use crate::dht::bbdht::dynamodb::api::aspect::write::append_aspect_list_to_entry;
@@ -140,11 +140,9 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
     use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
+    use crate::entry::fixture::entry_address_fresh;
     use crate::test::unordered_vec_compare;
     use crate::trace::tracer;
-    use crate::aspect::fixture::aspect_list_fresh;
-    use crate::entry::fixture::entry_address_fresh;
-    use crate::aspect::fixture::entry_aspect_data_fresh;
     use lib3h_protocol::data_types::EntryAspectData;
 
     #[test]

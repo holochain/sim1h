@@ -3,13 +3,13 @@ use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::CONTENT_KEY;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::TableName;
+use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use holochain_persistence_api::cas::content::AddressableContent;
 use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::PutItemInput;
 use std::collections::HashMap;
-use crate::dht::bbdht::error::BbDhtResult;
 
 pub fn ensure_content(
     log_context: &LogContext,

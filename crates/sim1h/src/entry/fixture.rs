@@ -1,13 +1,13 @@
-use holochain_persistence_api::cas::content::Address;
-use uuid::Uuid;
-use holochain_core_types::entry::Entry;
-use holochain_core_types::chain_header::ChainHeader;
 use crate::agent::fixture::core_agent_id_fresh;
 use crate::agent::fixture::provenances_fresh;
-use lib3h_protocol::data_types::EntryData;
-use crate::network::fixture::timestamp_fresh;
 use crate::aspect::fixture::aspect_list_fresh;
+use crate::network::fixture::timestamp_fresh;
+use holochain_core_types::chain_header::ChainHeader;
+use holochain_core_types::entry::Entry;
+use holochain_persistence_api::cas::content::Address;
 use holochain_persistence_api::cas::content::AddressableContent;
+use lib3h_protocol::data_types::EntryData;
+use uuid::Uuid;
 
 pub fn entry_address_fresh() -> Address {
     Address::from(Uuid::new_v4().to_string())

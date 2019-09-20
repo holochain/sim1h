@@ -1,18 +1,18 @@
-use holochain_json_api::json::JsonString;
-use holochain_core_types::network::entry_aspect::EntryAspect;
-use holochain_persistence_api::cas::content::Address;
-use uuid::Uuid;
-use lib3h_protocol::data_types::EntryAspectData;
-use lib3h_protocol::data_types::Opaque;
-use crate::entry::fixture::entry_fresh;
-use holochain_core_types::entry::Entry;
-use holochain_persistence_api::cas::content::AddressableContent;
-use holochain_core_types::link::link_data::LinkData;
+use crate::agent::fixture::core_agent_id_fresh;
 use crate::entry::fixture::chain_header_fresh;
 use crate::entry::fixture::entry_address_fresh;
+use crate::entry::fixture::entry_fresh;
 use crate::entry::fixture::link_tag_fresh;
 use crate::entry::fixture::link_type_fresh;
-use crate::agent::fixture::core_agent_id_fresh;
+use holochain_core_types::entry::Entry;
+use holochain_core_types::link::link_data::LinkData;
+use holochain_core_types::network::entry_aspect::EntryAspect;
+use holochain_json_api::json::JsonString;
+use holochain_persistence_api::cas::content::Address;
+use holochain_persistence_api::cas::content::AddressableContent;
+use lib3h_protocol::data_types::EntryAspectData;
+use lib3h_protocol::data_types::Opaque;
+use uuid::Uuid;
 
 pub fn link_add_aspect_fresh(entry: &Entry) -> EntryAspect {
     let link_data = LinkData::new_add(

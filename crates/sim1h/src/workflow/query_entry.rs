@@ -6,12 +6,12 @@ use crate::trace::LogContext;
 use holochain_core_types::network::query::NetworkQuery;
 use holochain_json_api::json::JsonString;
 use lib3h::error::Lib3hResult;
-use lib3h_protocol::data_types::QueryEntryResultData;
 use lib3h_protocol::data_types::EntryAspectData;
-use lib3h_protocol::data_types::QueryEntryData;
 use lib3h_protocol::data_types::Opaque;
-use std::convert::TryFrom;
+use lib3h_protocol::data_types::QueryEntryData;
+use lib3h_protocol::data_types::QueryEntryResultData;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
+use std::convert::TryFrom;
 
 pub fn get_entry_aspect_filter_fn(aspect: &EntryAspectData) -> bool {
     let keep = vec!["content".to_string(), "header".to_string()];
@@ -76,50 +76,61 @@ pub fn query_entry(
     query_entry_data: &QueryEntryData,
 ) -> Lib3hResult<ClientToLib3hResponse> {
     let entry_aspects = query_entry_aspects(log_context, client, query_entry_data)?;
-    Ok(ClientToLib3hResponse::QueryEntryResult(QueryEntryResultData{
-        entry_address: query_entry_data.entry_address.clone(),
-        request_id: query_entry_data.request_id.clone(),
-        space_address: query_entry_data.space_address.clone(),
-        query_result: aspects_to_opaque(&entry_aspects),
-        requester_agent_id: query_entry_data.requester_agent_id.clone(),
-        responder_agent_id: query_entry_data.requester_agent_id.clone(),
-    }))
+    Ok(ClientToLib3hResponse::QueryEntryResult(
+        QueryEntryResultData {
+            entry_address: query_entry_data.entry_address.clone(),
+            request_id: query_entry_data.request_id.clone(),
+            space_address: query_entry_data.space_address.clone(),
+            query_result: aspects_to_opaque(&entry_aspects),
+            requester_agent_id: query_entry_data.requester_agent_id.clone(),
+            responder_agent_id: query_entry_data.requester_agent_id.clone(),
+        },
+    ))
 }
 
 #[cfg(test)]
 pub mod tests {
 
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::test::unordered_vec_compare;
-    use crate::trace::tracer;
-    use crate::entry::fixture::entry_address_fresh;
-    use crate::workflow::fixture::provided_entry_data_fresh;
-    use crate::workflow::fixture::query_entry_data_fresh;
-    use crate::space::fixture::space_data_fresh;
-    use crate::workflow::join_space::join_space;
-    use crate::workflow::publish_entry::publish_entry;
-    use crate::workflow::query_entry::query_entry_aspects;
-    use crate::entry::fixture::entry_fresh;
+    use crate::aspect::fixture::content_aspect_fresh;
+    use crate::aspect::fixture::deletion_aspect_fresh;
+    use crate::aspect::fixture::header_aspect_fresh;
     use crate::aspect::fixture::link_add_aspect_fresh;
     use crate::aspect::fixture::link_remove_aspect_fresh;
     use crate::aspect::fixture::update_aspect_fresh;
-    use crate::aspect::fixture::deletion_aspect_fresh;
-    use crate::aspect::fixture::content_aspect_fresh;
-    use crate::aspect::fixture::header_aspect_fresh;
+    use crate::dht::bbdht::dynamodb::client::local::local_client;
+    use crate::entry::fixture::entry_address_fresh;
+    use crate::entry::fixture::entry_fresh;
+    use crate::space::fixture::space_data_fresh;
+    use crate::test::unordered_vec_compare;
+    use crate::trace::tracer;
+    use crate::workflow::fixture::provided_entry_data_fresh;
+    use crate::workflow::fixture::query_entry_data_fresh;
+    use crate::workflow::join_space::join_space;
+    use crate::workflow::publish_entry::publish_entry;
     use crate::workflow::query_entry::get_entry_aspect_filter_fn;
+    use crate::workflow::query_entry::query_entry_aspects;
 
     #[test]
     pub fn get_entry_aspect_filter_fn_test() {
-
         // things that should persist
         assert!(get_entry_aspect_filter_fn(&content_aspect_fresh().into()));
-        assert!(get_entry_aspect_filter_fn(&header_aspect_fresh(&entry_fresh()).into()));
+        assert!(get_entry_aspect_filter_fn(
+            &header_aspect_fresh(&entry_fresh()).into()
+        ));
 
         // things that should be dropped
-        assert!(!get_entry_aspect_filter_fn(&link_add_aspect_fresh(&entry_fresh()).into()));
-        assert!(!get_entry_aspect_filter_fn(&link_remove_aspect_fresh(&entry_fresh()).into()));
-        assert!(!get_entry_aspect_filter_fn(&update_aspect_fresh(&entry_fresh()).into()));
-        assert!(!get_entry_aspect_filter_fn(&deletion_aspect_fresh(&entry_fresh()).into()));
+        assert!(!get_entry_aspect_filter_fn(
+            &link_add_aspect_fresh(&entry_fresh()).into()
+        ));
+        assert!(!get_entry_aspect_filter_fn(
+            &link_remove_aspect_fresh(&entry_fresh()).into()
+        ));
+        assert!(!get_entry_aspect_filter_fn(
+            &update_aspect_fresh(&entry_fresh()).into()
+        ));
+        assert!(!get_entry_aspect_filter_fn(
+            &deletion_aspect_fresh(&entry_fresh()).into()
+        ));
     }
 
     #[test]

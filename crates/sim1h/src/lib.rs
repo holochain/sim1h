@@ -8,13 +8,13 @@ extern crate env_logger;
 extern crate futures;
 
 pub mod agent;
+pub mod aspect;
 pub mod dht;
+pub mod entry;
 pub mod ghost_actor;
+pub mod network;
 pub mod protocol_map;
+pub mod space;
 pub mod test;
 pub mod trace;
 pub mod workflow;
-pub mod entry;
-pub mod aspect;
-pub mod space;
-pub mod network;

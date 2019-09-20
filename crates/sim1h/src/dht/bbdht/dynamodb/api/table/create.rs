@@ -3,16 +3,16 @@ use crate::dht::bbdht::dynamodb::api::table::exist::until_table_exists;
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::dht::bbdht::dynamodb::schema::cas::attribute_definitions_cas;
 use crate::dht::bbdht::dynamodb::schema::cas::key_schema_cas;
+use crate::dht::bbdht::error::BbDhtError;
+use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use dynomite::dynamodb::{CreateTableInput};
+use dynomite::dynamodb::CreateTableInput;
 use rusoto_dynamodb::AttributeDefinition;
 use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::KeySchemaElement;
 use rusoto_dynamodb::ProvisionedThroughput;
 use rusoto_dynamodb::TableDescription;
-use crate::dht::bbdht::error::BbDhtResult;
-use crate::dht::bbdht::error::BbDhtError;
 
 pub fn create_table(
     log_context: &LogContext,
@@ -85,7 +85,7 @@ pub fn ensure_table(
                 &key_schema,
                 &attribute_definitions,
             )
-        },
+        }
         Err(BbDhtError::Unknown(_)) => {
             tracer(&log_context, "retry ensure_table Unknown");
             ensure_table(
@@ -95,7 +95,7 @@ pub fn ensure_table(
                 &key_schema,
                 &attribute_definitions,
             )
-        },
+        }
         Err(BbDhtError::ResourceNotFound(_)) => {
             // this must be covered by table_exists
             tracer(&log_context, "retry ensure_table ResourceNotFound");
@@ -106,7 +106,7 @@ pub fn ensure_table(
                 &key_schema,
                 &attribute_definitions,
             )
-        },
+        }
         Err(err) => Err(err.into()),
     }
 }
