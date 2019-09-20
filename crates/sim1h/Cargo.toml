@@ -27,6 +27,6 @@ env_logger = "0.6.1"
 lazy_static = "1.2.0"
 holochain_persistence_api = "0.0.8"
 holochain_json_api = "0.0.17"
-url = "1.7.2"
+url = "2.1.0"
 crossbeam-channel = "0.3.8"
 holochain_core_types = { git = "https://github.com/holochain/holochain-rust", rev = "10d49111289da3a1f5975c7ef3e4b653aec43c4e" }
