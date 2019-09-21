@@ -113,27 +113,28 @@ pub mod tests {
     use crate::workflow::from_client::publish_entry::publish_entry;
     use crate::workflow::from_client::query_entry::get_entry_aspect_filter_fn;
     use crate::workflow::from_client::query_entry::query_entry_aspects;
+    use crate::aspect::entry_aspect_to_entry_aspect_data;
 
     #[test]
     pub fn get_entry_aspect_filter_fn_test() {
         // things that should persist
-        assert!(get_entry_aspect_filter_fn(&content_aspect_fresh().into()));
+        assert!(get_entry_aspect_filter_fn(&entry_aspect_to_entry_aspect_data(content_aspect_fresh())));
         assert!(get_entry_aspect_filter_fn(
-            &header_aspect_fresh(&entry_fresh()).into()
+            &entry_aspect_to_entry_aspect_data(header_aspect_fresh(&entry_fresh()))
         ));
 
         // things that should be dropped
         assert!(!get_entry_aspect_filter_fn(
-            &link_add_aspect_fresh(&entry_fresh()).into()
+            &entry_aspect_to_entry_aspect_data(link_add_aspect_fresh(&entry_fresh()))
         ));
         assert!(!get_entry_aspect_filter_fn(
-            &link_remove_aspect_fresh(&entry_fresh()).into()
+            &entry_aspect_to_entry_aspect_data(link_remove_aspect_fresh(&entry_fresh()))
         ));
         assert!(!get_entry_aspect_filter_fn(
-            &update_aspect_fresh(&entry_fresh()).into()
+            &entry_aspect_to_entry_aspect_data(update_aspect_fresh(&entry_fresh()))
         ));
         assert!(!get_entry_aspect_filter_fn(
-            &deletion_aspect_fresh(&entry_fresh()).into()
+            &entry_aspect_to_entry_aspect_data(deletion_aspect_fresh(&entry_fresh()))
         ));
     }
 
