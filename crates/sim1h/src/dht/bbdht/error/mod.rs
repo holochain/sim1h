@@ -1,3 +1,4 @@
+#[cfg(ghost)]
 use lib3h::error::Lib3hError;
 use rusoto_core::RusotoError;
 use rusoto_dynamodb::CreateTableError;
@@ -64,6 +65,7 @@ impl From<ParseIntError> for BbDhtError {
     }
 }
 
+#[cfg(ghost)]
 impl From<BbDhtError> for Lib3hError {
     fn from(bb_dht_error: BbDhtError) -> Self {
         Lib3hError::from(bb_dht_error.to_string())

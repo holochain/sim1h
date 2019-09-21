@@ -3,12 +3,12 @@ use crate::trace::LogContext;
 use crate::workflow::from_client::query_entry::query_entry_aspects;
 use holochain_core_types::network::query::NetworkQuery;
 use holochain_json_api::json::JsonString;
-use lib3h::error::Lib3hResult;
 use lib3h_protocol::data_types::EntryData;
 use lib3h_protocol::data_types::FetchEntryData;
 use lib3h_protocol::data_types::FetchEntryResultData;
 use lib3h_protocol::data_types::QueryEntryData;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
+use crate::dht::bbdht::error::BbDhtResult;
 
 /// MVP (needs tests, wrapping query atm)
 /// query entry but hardcoded to entry query right?
@@ -16,7 +16,7 @@ pub fn fetch_entry(
     log_context: &LogContext,
     client: &Client,
     fetch_entry_data: &FetchEntryData,
-) -> Lib3hResult<ClientToLib3hResponse> {
+) -> BbDhtResult<ClientToLib3hResponse> {
     let query_entry_data = QueryEntryData {
         request_id: fetch_entry_data.request_id.clone(),
         // seems weird but the two structs don't line up 1:1

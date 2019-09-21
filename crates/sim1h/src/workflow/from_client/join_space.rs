@@ -3,9 +3,9 @@ use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use lib3h::error::Lib3hResult;
 use lib3h_protocol::data_types::SpaceData;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
+use crate::dht::bbdht::error::BbDhtResult;
 
 /// create space if not exists
 /// touch agent
@@ -13,7 +13,7 @@ pub fn join_space(
     log_context: &LogContext,
     client: &Client,
     join_space_data: &SpaceData,
-) -> Lib3hResult<ClientToLib3hResponse> {
+) -> BbDhtResult<ClientToLib3hResponse> {
     tracer(&log_context, "join_space");
 
     let table_name = String::from(join_space_data.space_address.clone());

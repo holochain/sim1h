@@ -1,15 +1,15 @@
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use lib3h::error::Lib3hResult;
 use lib3h_protocol::data_types::ProvidedEntryData;
+use crate::dht::bbdht::error::BbDhtResult;
 
 /// this is a no-op
 pub fn hold_entry(
     log_context: &LogContext,
     _client: &Client,
     _provided_entry_data: &ProvidedEntryData,
-) -> Lib3hResult<()> {
+) -> BbDhtResult<()> {
     tracer(&log_context, "hold_entry");
     Ok(())
 }

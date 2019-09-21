@@ -2,8 +2,8 @@ use crate::dht::bbdht::dynamodb::api::aspect::write::append_aspect_list_to_entry
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use lib3h::error::Lib3hResult;
 use lib3h_protocol::data_types::ProvidedEntryData;
+use crate::dht::bbdht::error::BbDhtResult;
 
 /// MVP
 /// append list of aspect addresses to entry address
@@ -14,7 +14,7 @@ pub fn publish_entry(
     log_context: &LogContext,
     client: &Client,
     provided_entry_data: &ProvidedEntryData,
-) -> Lib3hResult<()> {
+) -> BbDhtResult<()> {
     tracer(&log_context, "publish_entry");
 
     append_aspect_list_to_entry(

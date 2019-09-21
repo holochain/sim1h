@@ -1,11 +1,10 @@
 use crate::dht::bbdht::dynamodb::api::aspect::read::get_entry_aspects;
 use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::error::BbDhtError;
+use crate::dht::bbdht::error::{BbDhtError, BbDhtResult};
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use holochain_core_types::network::query::NetworkQuery;
 use holochain_json_api::json::JsonString;
-use lib3h::error::Lib3hResult;
 use lib3h_protocol::data_types::EntryAspectData;
 use lib3h_protocol::data_types::Opaque;
 use lib3h_protocol::data_types::QueryEntryData;
@@ -22,7 +21,7 @@ pub fn query_entry_aspects(
     log_context: &LogContext,
     client: &Client,
     query_entry_data: &QueryEntryData,
-) -> Lib3hResult<Vec<EntryAspectData>> {
+) -> BbDhtResult<Vec<EntryAspectData>> {
     tracer(&log_context, "publish_entry");
 
     let table_name = query_entry_data.space_address.to_string();
@@ -78,7 +77,7 @@ pub fn query_entry(
     log_context: &LogContext,
     client: &Client,
     query_entry_data: &QueryEntryData,
-) -> Lib3hResult<ClientToLib3hResponse> {
+) -> BbDhtResult<ClientToLib3hResponse> {
     let entry_aspects = query_entry_aspects(log_context, client, query_entry_data)?;
     Ok(ClientToLib3hResponse::QueryEntryResult(
         QueryEntryResultData {

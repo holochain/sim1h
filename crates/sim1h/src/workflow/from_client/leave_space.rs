@@ -1,16 +1,16 @@
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use lib3h::error::Lib3hResult;
 use lib3h_protocol::data_types::SpaceData;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
+use crate::dht::bbdht::error::BbDhtResult;
 
 /// no-op
 pub fn leave_space(
     log_context: &LogContext,
     _client: &Client,
     _leave_space_data: &SpaceData,
-) -> Lib3hResult<ClientToLib3hResponse> {
+) -> BbDhtResult<ClientToLib3hResponse> {
     tracer(&log_context, "leave_space");
     // leave space is a no-op in a simulation
     Ok(ClientToLib3hResponse::LeaveSpaceResult)
