@@ -1,5 +1,5 @@
-use crate::trace::LogContext;
 use crate::trace::tracer;
+use crate::trace::LogContext;
 
 // result of no-op is no-op
 pub fn handle_store_entry_aspect_result(log_context: &LogContext) {

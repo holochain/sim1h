@@ -1,7 +1,7 @@
+use crate::dht::bbdht::dynamodb::client::Client;
+use crate::trace::tracer;
 use crate::trace::LogContext;
 use lib3h_protocol::data_types::ConnectedData;
-use crate::trace::tracer;
-use crate::dht::bbdht::dynamodb::client::Client;
 
 /// -- Connection -- //
 /// Notification of successful connection to a network

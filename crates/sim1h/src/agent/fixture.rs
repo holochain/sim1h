@@ -1,10 +1,10 @@
 use holochain_core_types::agent::AgentId;
 use holochain_core_types::signature::Provenance;
 use holochain_core_types::signature::Signature;
-use holochain_persistence_api::cas::content::Address;
-use uuid::Uuid;
 use holochain_json_api::json::JsonString;
 use holochain_json_api::json::RawString;
+use holochain_persistence_api::cas::content::Address;
+use uuid::Uuid;
 
 pub fn agent_id_fresh() -> Address {
     Address::from(Uuid::new_v4().to_string())

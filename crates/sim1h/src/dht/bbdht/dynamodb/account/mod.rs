@@ -1,9 +1,9 @@
 use crate::dht::bbdht::dynamodb::client::Client;
+use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use rusoto_dynamodb::DescribeLimitsOutput;
 use rusoto_dynamodb::DynamoDb;
-use crate::dht::bbdht::error::BbDhtResult;
 
 pub fn describe_limits(
     log_context: &LogContext,

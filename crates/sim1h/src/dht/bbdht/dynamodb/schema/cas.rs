@@ -15,9 +15,10 @@ pub const ASPECT_PUBLISH_TS_KEY: &str = "aspect_publish_ts";
 // direct messaging keys
 pub const INBOX_KEY_PREFIX: &str = "inbox_";
 pub const REQUEST_IDS_KEY: &str = "request_ids";
-pub const REQUEST_IDS_SEEN_KEY: &str = "request_ids";
+pub const REQUEST_IDS_SEEN_KEY: &str = "request_ids_seen";
+pub const MESSAGE_SPACE_ADDRESS_KEY: &str = "message_space_address";
 pub const MESSAGE_FROM_KEY: &str = "message_from";
-pub const MESSAGE_TO_KEY: &str = "mesage_to";
+pub const MESSAGE_TO_KEY: &str = "message_to";
 pub const MESSAGE_CONTENT_KEY: &str = "message_content";
 
 pub fn inbox_key(agent_id: &Address) -> String {

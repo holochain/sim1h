@@ -1,43 +1,43 @@
 use crate::dht::bbdht::dynamodb::client::{client, Client};
 use crate::workflow::from_client::bootstrap::bootstrap;
+use crate::workflow::from_client::fetch_entry::fetch_entry;
 use crate::workflow::from_client::hold_entry::hold_entry;
 use crate::workflow::from_client::join_space::join_space;
 use crate::workflow::from_client::leave_space::leave_space;
+use crate::workflow::from_client::publish_entry::publish_entry;
 use crate::workflow::from_client::query_entry::query_entry;
+use crate::workflow::from_client::send_direct_message::send_direct_message;
+use crate::workflow::to_client::connected::connected;
+use crate::workflow::to_client::disconnected::disconnected;
+use crate::workflow::to_client::handle_drop_entry::handle_drop_entry;
+use crate::workflow::to_client::handle_fetch_entry::handle_fetch_entry;
+use crate::workflow::to_client::handle_get_authoring_entry_list::handle_get_authoring_entry_list;
+use crate::workflow::to_client::handle_get_gossiping_entry_list::handle_get_gossiping_entry_list;
+use crate::workflow::to_client::handle_query_entry::handle_query_entry;
 use crate::workflow::to_client::handle_send_direct_message::handle_send_direct_message;
 use crate::workflow::to_client::handle_store_entry_aspect::handle_store_entry_aspect;
 use crate::workflow::to_client::send_direct_message_result::send_direct_message_result;
-use crate::workflow::to_client::handle_fetch_entry::handle_fetch_entry;
-use crate::workflow::to_client::disconnected::disconnected;
-use crate::workflow::to_client::connected::connected;
-use crate::workflow::to_client_response::handle_store_entry_aspect_result::handle_store_entry_aspect_result;
-use crate::workflow::to_client_response::handle_send_direct_message_result::handle_send_direct_message_result;
-use crate::workflow::to_client_response::handle_get_authoring_entry_list_result::handle_get_authoring_entry_list_result;
-use detach::Detach;
-use crate::workflow::to_client_response::handle_query_entry_result::handle_query_entry_result;
 use crate::workflow::to_client_response::handle_drop_entry_result::handle_drop_entry_result;
 use crate::workflow::to_client_response::handle_fetch_entry_result::handle_fetch_entry_result;
-use crate::workflow::to_client::handle_query_entry::handle_query_entry;
+use crate::workflow::to_client_response::handle_get_authoring_entry_list_result::handle_get_authoring_entry_list_result;
 use crate::workflow::to_client_response::handle_get_gossiping_entry_list_result::handle_get_gossiping_entry_list_result;
+use crate::workflow::to_client_response::handle_query_entry_result::handle_query_entry_result;
+use crate::workflow::to_client_response::handle_send_direct_message_result::handle_send_direct_message_result;
+use crate::workflow::to_client_response::handle_store_entry_aspect_result::handle_store_entry_aspect_result;
+use detach::Detach;
 use lib3h::engine::engine_actor::ClientToLib3hMessage;
 use lib3h::engine::CanAdvertise;
 use lib3h::error::Lib3hError;
-use crate::workflow::to_client::handle_get_authoring_entry_list::handle_get_authoring_entry_list;
-use crate::workflow::from_client::fetch_entry::fetch_entry;
+use lib3h::error::Lib3hResult;
 use lib3h_protocol::protocol::ClientToLib3h;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
 use lib3h_protocol::protocol::Lib3hToClient;
 use lib3h_protocol::protocol::Lib3hToClientResponse;
-use lib3h::error::Lib3hResult;
-use crate::workflow::to_client::handle_get_gossiping_entry_list::handle_get_gossiping_entry_list;
 use lib3h_zombie_actor::create_ghost_channel;
 use lib3h_zombie_actor::GhostActor;
 use lib3h_zombie_actor::GhostCanTrack;
 use lib3h_zombie_actor::GhostContextEndpoint;
-use crate::workflow::from_client::send_direct_message::send_direct_message;
-use crate::workflow::from_client::publish_entry::publish_entry;
 use lib3h_zombie_actor::GhostEndpoint;
-use crate::workflow::to_client::handle_drop_entry::handle_drop_entry;
 use lib3h_zombie_actor::GhostResult;
 use lib3h_zombie_actor::WorkWasDone;
 use rusoto_core::Region;
@@ -97,7 +97,6 @@ impl SimGhostActor {
                 let log_context = "Lib3hToClient::Disconnected";
                 disconnected(&log_context, &self.dbclient, &disconnected_data);
             }
-            // TODO
             Lib3hToClient::SendDirectMessageResult(direct_message_data) => {
                 let log_context = "Lib3hToClient::SendDirectMessageResult";
                 send_direct_message_result(&log_context, &self.dbclient, &direct_message_data)?;
@@ -136,7 +135,7 @@ impl SimGhostActor {
 
     pub fn handle_client_response(from_client: Lib3hToClientResponse) {
         match from_client {
-            // TODO
+            // TOD
             Lib3hToClientResponse::HandleSendDirectMessageResult(direct_message_data) => {
                 let log_context = "Lib3hToClientResponse::HandleSendDirectMessageResult";
                 handle_send_direct_message_result(&log_context, &direct_message_data);
