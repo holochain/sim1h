@@ -270,7 +270,6 @@ pub fn get_inbox_request_ids(
         })
         .sync()?
         .item;
-
     Ok(match get_item_output {
         Some(item) => match item.get(inbox_folder) {
             Some(attribute) => match attribute.ss.clone() {
@@ -560,32 +559,29 @@ pub mod tests {
         // ensure cas
         assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
 
-        // test both inboxes
-        for folder in folders() {
-            // pub inbox message
-            assert!(send_to_agent_inbox(
-                &log_context,
-                &local_client,
-                &table_name,
-                &request_id.clone(),
-                &from,
-                &to,
-                &content
-            )
-            .is_ok());
+        // pub inbox message
+        assert!(send_to_agent_inbox(
+            &log_context,
+            &local_client,
+            &table_name,
+            &request_id.clone(),
+            &from,
+            &to,
+            &content
+        )
+        .is_ok());
 
-            // get inbox message
-            match get_inbox_request_ids(
-                &log_context,
-                &local_client,
-                &table_name,
-                &folder.to_string(),
-                &to,
-            ) {
-                Ok(request_ids) => assert_eq!(vec![request_id.clone()], request_ids),
-                Err(err) => panic!("incorrect request id {:?}", err),
-            };
-        }
+        // get inbox message
+        match get_inbox_request_ids(
+            &log_context,
+            &local_client,
+            &table_name,
+            &REQUEST_IDS_KEY.to_string(),
+            &to,
+        ) {
+            Ok(request_ids) => assert_eq!(vec![request_id.clone()], request_ids),
+            Err(err) => panic!("incorrect request id {:?}", err),
+        };
     }
 
     #[test]
