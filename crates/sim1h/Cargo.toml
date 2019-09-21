@@ -16,9 +16,9 @@ rusoto_core = "0.40.0"
 rusoto_dynamodb = "0.40.0"
 dynomite = "0.5"
 futures = "0.1.21"
-lib3h = { git = "https://github.com/holochain/lib3h", branch = "develop" }
+#lib3h = { git = "https://github.com/holochain/lib3h", branch = "develop" }
 lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "develop" }
-lib3h_zombie_actor = { git = "https://github.com/holochain/lib3h", branch = "develop" }
+#lib3h_zombie_actor = { git = "https://github.com/holochain/lib3h", branch = "develop" }
 detach = { git = "https://github.com/holochain/lib3h", branch = "develop" }
 holochain_tracing = { git = "https://github.com/holochain/holochain-tracing", branch = "master" }
 uuid = { version = "0.4", features = ["v4"] }
