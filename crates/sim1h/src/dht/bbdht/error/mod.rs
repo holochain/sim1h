@@ -33,27 +33,28 @@ pub enum BbDhtError {
     CorruptData(String),
 }
 
-impl ToString for BbDhtError {
-    fn to_string(&self) -> String {
-        match self {
-            BbDhtError::InternalServerError(s) => s,
-            BbDhtError::ProvisionedThroughputExceeded(s) => s,
-            BbDhtError::ItemCollectionSizeLimitExceeded(s) => s,
-            BbDhtError::ConditionalCheckFailed(s) => s,
-            BbDhtError::TransactionConflict(s) => s,
-            BbDhtError::RequestLimitExceeded(s) => s,
-            BbDhtError::LimitExceeded(s) => s,
-            BbDhtError::ResourceNotFound(s) => s,
-            BbDhtError::ResourceInUse(s) => s,
-            BbDhtError::HttpDispatch(s) => s,
-            BbDhtError::Credentials(s) => s,
-            BbDhtError::Validation(s) => s,
-            BbDhtError::ParseError(s) => s,
-            BbDhtError::Unknown(s) => s,
-            BbDhtError::MissingData(s) => s,
-            BbDhtError::CorruptData(s) => s,
-        }
-        .to_string()
+impl std::fmt::Display for BbDhtError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let (error_type, error_string) = match self {
+            BbDhtError::InternalServerError(s) => ("Internal server error", s),
+            BbDhtError::ProvisionedThroughputExceeded(s) => ("Provisioned throughput exceeded", s),
+            BbDhtError::ItemCollectionSizeLimitExceeded(s) => ("Item collection size limit exceeded", s),
+            BbDhtError::ConditionalCheckFailed(s) => ("Conditional check failed", s),
+            BbDhtError::TransactionConflict(s) => ("Transaction conflict", s),
+            BbDhtError::RequestLimitExceeded(s) => ("Request limit exceeded", s),
+            BbDhtError::LimitExceeded(s) => ("Limit exceeded", s),
+            BbDhtError::ResourceNotFound(s) => ("Resource not found", s),
+            BbDhtError::ResourceInUse(s) => ("Resource in use", s),
+            BbDhtError::HttpDispatch(s) => ("HTTP dispatch", s),
+            BbDhtError::Credentials(s) => ("Credentials", s),
+            BbDhtError::Validation(s) => ("Validation", s),
+            BbDhtError::ParseError(s) => ("Parse error", s),
+            BbDhtError::Unknown(s) => ("Unknown", s),
+            BbDhtError::MissingData(s) => ("Missing data", s),
+            BbDhtError::CorruptData(s) => ("Corrupt data", s),
+        };
+        // Use `self.number` to refer to each positional data point.
+        write!(f, "BbDhtError [{}]: {}", error_type, error_string)
     }
 }
 
@@ -235,4 +236,8 @@ impl From<RusotoError<DeleteTableError>> for BbDhtError {
             RusotoError::Unknown(err) => BbDhtError::Unknown(format!("{:?}", err)),
         }
     }
+}
+
+impl std::error::Error for BbDhtError {
+
 }
