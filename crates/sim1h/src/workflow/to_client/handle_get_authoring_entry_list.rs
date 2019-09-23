@@ -1,7 +1,7 @@
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use lib3h_protocol::data_types::GetListData;
+use lib3h_protocol::data_types::EntryListData;
 
 // -- Entry lists -- //
 // database stored everything
@@ -9,7 +9,7 @@ use lib3h_protocol::data_types::GetListData;
 pub fn handle_get_authoring_entry_list(
     log_context: &LogContext,
     _client: &Client,
-    get_list_data: &GetListData,
+    get_list_data: &EntryListData,
 ) {
     tracer(
         &log_context,
