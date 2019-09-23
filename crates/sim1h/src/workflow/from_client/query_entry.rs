@@ -94,6 +94,7 @@ pub fn query_entry(
 #[cfg(test)]
 pub mod tests {
 
+    use crate::aspect::entry_aspect_to_entry_aspect_data;
     use crate::aspect::fixture::content_aspect_fresh;
     use crate::aspect::fixture::deletion_aspect_fresh;
     use crate::aspect::fixture::header_aspect_fresh;
@@ -112,12 +113,13 @@ pub mod tests {
     use crate::workflow::from_client::publish_entry::publish_entry;
     use crate::workflow::from_client::query_entry::get_entry_aspect_filter_fn;
     use crate::workflow::from_client::query_entry::query_entry_aspects;
-    use crate::aspect::entry_aspect_to_entry_aspect_data;
 
     #[test]
     pub fn get_entry_aspect_filter_fn_test() {
         // things that should persist
-        assert!(get_entry_aspect_filter_fn(&entry_aspect_to_entry_aspect_data(content_aspect_fresh())));
+        assert!(get_entry_aspect_filter_fn(
+            &entry_aspect_to_entry_aspect_data(content_aspect_fresh())
+        ));
         assert!(get_entry_aspect_filter_fn(
             &entry_aspect_to_entry_aspect_data(header_aspect_fresh(&entry_fresh()))
         ));
@@ -164,5 +166,4 @@ pub mod tests {
             }
         }
     }
-
 }

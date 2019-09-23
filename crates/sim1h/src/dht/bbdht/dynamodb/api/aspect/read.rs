@@ -11,11 +11,23 @@ use crate::dht::bbdht::error::BbDhtError;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
+
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::EntryAspectData;
+use std::collections::HashMap;
+use std::fmt::Debug;
+
+fn get_or_err<'a, V: Debug>(item: &'a HashMap<String, V>, key: &'a str) -> BbDhtResult<&'a V> {
+    item.get(&key.to_string()).ok_or_else(|| {
+        BbDhtError::MissingData(format!(
+            "Key not present in hashmap! key={}, hashmap={:?}",
+            key, item
+        ))
+    })
+}
 
 fn try_aspect_from_item(item: Item) -> BbDhtResult<EntryAspectData> {
-    let aspect_address = match item[ASPECT_ADDRESS_KEY].s.clone() {
+    let aspect_address = match get_or_err(&item, ASPECT_ADDRESS_KEY)?.s.clone() {
         Some(address) => Address::from(address),
         None => {
             return Err(BbDhtError::MissingData(format!(
@@ -25,7 +37,7 @@ fn try_aspect_from_item(item: Item) -> BbDhtResult<EntryAspectData> {
         }
     };
 
-    let aspect = match item[ASPECT_KEY].b.clone() {
+    let aspect = match get_or_err(&item, ASPECT_KEY)?.b.clone() {
         Some(binary_data) => binary_data.to_vec().into(),
         None => {
             return Err(BbDhtError::MissingData(format!(
@@ -35,7 +47,7 @@ fn try_aspect_from_item(item: Item) -> BbDhtResult<EntryAspectData> {
         }
     };
 
-    let publish_ts = match item[ASPECT_PUBLISH_TS_KEY].n.clone() {
+    let publish_ts = match get_or_err(&item, ASPECT_PUBLISH_TS_KEY)?.n.clone() {
         Some(publish_ts) => publish_ts.parse()?,
         None => {
             return Err(BbDhtError::MissingData(format!(
@@ -45,7 +57,7 @@ fn try_aspect_from_item(item: Item) -> BbDhtResult<EntryAspectData> {
         }
     };
 
-    let type_hint = match item[ASPECT_TYPE_HINT_KEY].s.clone() {
+    let type_hint = match get_or_err(&item, ASPECT_TYPE_HINT_KEY)?.s.clone() {
         Some(type_hint) => type_hint,
         None => {
             return Err(BbDhtError::MissingData(format!(
@@ -64,7 +76,7 @@ fn try_aspect_from_item(item: Item) -> BbDhtResult<EntryAspectData> {
 }
 
 pub fn try_aspect_list_from_item(item: Item) -> BbDhtResult<Vec<Address>> {
-    let addresses = match item[ASPECT_LIST_KEY].ss.clone() {
+    let addresses = match get_or_err(&item, ASPECT_LIST_KEY)?.ss.clone() {
         Some(addresses) => addresses.iter().map(|s| Address::from(s.clone())).collect(),
         None => {
             return Err(BbDhtError::MissingData(format!(
@@ -235,5 +247,4 @@ pub mod tests {
             }
         }
     }
-
 }

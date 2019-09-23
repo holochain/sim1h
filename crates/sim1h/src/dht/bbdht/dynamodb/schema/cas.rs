@@ -147,5 +147,4 @@ pub mod tests {
             attribute_definitions_cas()[0]
         );
     }
-
 }
