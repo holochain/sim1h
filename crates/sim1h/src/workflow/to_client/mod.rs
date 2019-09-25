@@ -19,6 +19,7 @@ lazy_static! {
     pub static ref SIM1H_INITIALIZED: AtomicBool = AtomicBool::new(false);
     pub static ref SPACE_ADDRESS: Mutex<Option<Address>> = Mutex::new(None);
     pub static ref AGENT_ID: Mutex<Option<Address>> = Mutex::new(None);
+    pub static ref CLIENT_OUTBOX: Mutex<Vec<Lib3hToClient>> = Mutex::new(Vec::new());
 }
 
 fn should_get_authoring_list() -> bool {
@@ -44,5 +45,5 @@ pub fn process_pending_requests_to_client() -> Vec<Lib3hToClient> {
         SIM1H_INITIALIZED.store(true, Ordering::Relaxed);
     };
 
-    requests
+    requests.into_iter().chain(CLIENT_OUTBOX.lock().drain(..)).collect()
 }
