@@ -36,7 +36,6 @@ pub mod tests {
     use crate::space::fixture::space_data_fresh;
     use crate::trace::tracer;
     use crate::workflow::from_client::fixture::provided_entry_data_fresh;
-    use crate::workflow::from_client::join_space::join_space;
     use crate::workflow::from_client::publish_entry::publish_entry;
     use crate::workflow::state::Sim1hState;
 
@@ -49,16 +48,13 @@ pub mod tests {
         let space_data = space_data_fresh();
         let entry_address = entry_address_fresh();
         let provided_entry_data = provided_entry_data_fresh(&space_data, &entry_address);
+        let mut state = Sim1hState::default();
 
         tracer(&log_context, "check response");
 
-        assert!(join_space(
-            &mut Sim1hState::default(),
-            &log_context,
-            &local_client,
-            &space_data
-        )
-        .is_ok());
+        assert!(state
+            .join_space(&log_context, &local_client, &space_data)
+            .is_ok());
 
         match publish_entry(&log_context, &local_client, &provided_entry_data) {
             Ok(()) => {

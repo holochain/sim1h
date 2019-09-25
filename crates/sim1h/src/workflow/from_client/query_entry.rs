@@ -51,52 +51,54 @@ pub fn aspects_to_opaque(aspects: &Vec<EntryAspectData>) -> Opaque {
     json.to_bytes().into()
 }
 
-/// 90% (need query logic to be finalised)
-/// fetch all entry aspects from entry address
-/// do some kind of filter based on the non-opaque query struct
-/// familiar to rehydrate the opaque query struct
-pub fn query_entry(
-    _state: &mut Sim1hState,
-    log_context: &LogContext,
-    client: &Client,
-    query_entry_data: &QueryEntryData,
-) -> BbDhtResult<()> {
-    /*Ok(ClientToLib3hResponse::QueryEntryResult(
-        QueryEntryResultData {
-            entry_address: query_entry_data.entry_address.clone(),
-            request_id: query_entry_data.request_id.clone(),
-            space_address: query_entry_data.space_address.clone(),
-            query_result: aspects_to_opaque(&entry_aspects),
-            requester_agent_id: query_entry_data.requester_agent_id.clone(),
-            responder_agent_id: query_entry_data.requester_agent_id.clone(),
-        },
-    ))*/
+impl Sim1hState {
+    /// 90% (need query logic to be finalised)
+    /// fetch all entry aspects from entry address
+    /// do some kind of filter based on the non-opaque query struct
+    /// familiar to rehydrate the opaque query struct
+    pub fn query_entry(
+        &mut self,
+        log_context: &LogContext,
+        client: &Client,
+        query_entry_data: &QueryEntryData,
+    ) -> BbDhtResult<()> {
+        /*Ok(ClientToLib3hResponse::QueryEntryResult(
+            QueryEntryResultData {
+                entry_address: query_entry_data.entry_address.clone(),
+                request_id: query_entry_data.request_id.clone(),
+                space_address: query_entry_data.space_address.clone(),
+                query_result: aspects_to_opaque(&entry_aspects),
+                requester_agent_id: query_entry_data.requester_agent_id.clone(),
+                responder_agent_id: query_entry_data.requester_agent_id.clone(),
+            },
+        ))*/
 
-    // 1. get all entry aspects from DB
-    let _entry_aspects = query_entry_aspects(log_context, client, query_entry_data)?;
+        // 1. get all entry aspects from DB
+        let _entry_aspects = query_entry_aspects(log_context, client, query_entry_data)?;
 
-    // 2. make core hold all of those -> send Lib3hClientProtocol::HoldEntry
-    // for _aspect in entry_aspects {
-    //     let request_id = ProcessUniqueId::new().to_string();
-    //     state
-    //         .client_outbox
-    //         .push(Lib3hToClient::HandleStoreEntryAspect(
-    //             StoreEntryAspectData {
-    //                 request_id,
-    //                 space_address: state
-    //                     .space_address
-    //                     .clone()
-    //                     .expect("Must have space address when handling queries"),
-    //                 provider_agent_id: Address,
-    //                 entry_address: Address,
-    //                 entry_aspect: EntryAspectData,
-    //             },
-    //         ))
-    // }
+        // 2. make core hold all of those -> send Lib3hClientProtocol::HoldEntry
+        // for _aspect in entry_aspects {
+        //     let request_id = ProcessUniqueId::new().to_string();
+        //     self
+        //         .client_outbox
+        //         .push(Lib3hToClient::HandleStoreEntryAspect(
+        //             StoreEntryAspectData {
+        //                 request_id,
+        //                 space_address: self
+        //                     .space_address
+        //                     .clone()
+        //                     .expect("Must have space address when handling queries"),
+        //                 provider_agent_id: Address,
+        //                 entry_address: Address,
+        //                 entry_aspect: EntryAspectData,
+        //             },
+        //         ))
+        // }
 
-    // 3. redirect query back to core -> send Lib3hClientProtocol::QueryEntry
-    // 4. redirect core's answer back to itself -> send Lib3hClientProtocol::HandleQueryEntryResult
-    Ok(())
+        // 3. redirect query back to core -> send Lib3hClientProtocol::QueryEntry
+        // 4. redirect core's answer back to itself -> send Lib3hClientProtocol::HandleQueryEntryResult
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -117,7 +119,6 @@ pub mod tests {
     use crate::trace::tracer;
     use crate::workflow::from_client::fixture::provided_entry_data_fresh;
     use crate::workflow::from_client::fixture::query_entry_data_fresh;
-    use crate::workflow::from_client::join_space::join_space;
     use crate::workflow::from_client::publish_entry::publish_entry;
     use crate::workflow::from_client::query_entry::get_entry_aspect_filter_fn;
     use crate::workflow::from_client::query_entry::query_entry_aspects;
@@ -158,15 +159,12 @@ pub mod tests {
         let entry_address = entry_address_fresh();
         let query_entry_data = query_entry_data_fresh(&space_data, &entry_address);
         let provided_entry_data = provided_entry_data_fresh(&space_data, &entry_address);
+        let mut state = Sim1hState::default();
 
         // join space
-        assert!(join_space(
-            &mut Sim1hState::default(),
-            &log_context,
-            &local_client,
-            &space_data
-        )
-        .is_ok());
+        assert!(state
+            .join_space(&log_context, &local_client, &space_data)
+            .is_ok());
 
         // publish entry
         assert!(publish_entry(&log_context, &local_client, &provided_entry_data).is_ok());
