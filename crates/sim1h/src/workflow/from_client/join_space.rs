@@ -6,6 +6,7 @@ use crate::trace::LogContext;
 use lib3h_protocol::data_types::SpaceData;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
 use crate::dht::bbdht::error::BbDhtResult;
+use crate::workflow::to_client::{AGENT_ID, SPACE_ADDRESS};
 
 /// create space if not exists
 /// touch agent
@@ -25,6 +26,13 @@ pub fn join_space(
         &table_name,
         &join_space_data.agent_id,
     )?;
+
+    let mut space_address_lock = SPACE_ADDRESS.lock();
+    (*space_address_lock) = Some(join_space_data.space_address.clone());
+
+    let mut agent_id_lock = AGENT_ID.lock();
+    (*agent_id_lock) = Some(join_space_data.agent_id.clone());
+
     Ok(ClientToLib3hResponse::JoinSpaceResult)
 }
 
