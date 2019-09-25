@@ -1,9 +1,9 @@
 use crate::dht::bbdht::dynamodb::api::aspect::write::append_aspect_list_to_entry;
 use crate::dht::bbdht::dynamodb::client::Client;
+use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use lib3h_protocol::data_types::ProvidedEntryData;
-use crate::dht::bbdht::error::BbDhtResult;
 
 /// MVP
 /// append list of aspect addresses to entry address
@@ -38,6 +38,7 @@ pub mod tests {
     use crate::workflow::from_client::fixture::provided_entry_data_fresh;
     use crate::workflow::from_client::join_space::join_space;
     use crate::workflow::from_client::publish_entry::publish_entry;
+    use crate::workflow::state::Sim1hState;
 
     #[test]
     fn publish_entry_test() {
@@ -51,7 +52,13 @@ pub mod tests {
 
         tracer(&log_context, "check response");
 
-        assert!(join_space(&log_context, &local_client, &space_data).is_ok());
+        assert!(join_space(
+            &mut Sim1hState::default(),
+            &log_context,
+            &local_client,
+            &space_data
+        )
+        .is_ok());
 
         match publish_entry(&log_context, &local_client, &provided_entry_data) {
             Ok(()) => {
@@ -107,5 +114,4 @@ pub mod tests {
             }
         }
     }
-
 }

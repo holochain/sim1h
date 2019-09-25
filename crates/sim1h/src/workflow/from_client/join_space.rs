@@ -1,16 +1,17 @@
 use crate::dht::bbdht::dynamodb::api::agent::write::touch_agent;
 use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
 use crate::dht::bbdht::dynamodb::client::Client;
+use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
+use crate::workflow::state::Sim1hState;
 use lib3h_protocol::data_types::SpaceData;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
-use crate::dht::bbdht::error::BbDhtResult;
-use crate::workflow::to_client::{AGENT_ID, SPACE_ADDRESS};
 
 /// create space if not exists
 /// touch agent
 pub fn join_space(
+    state: &mut Sim1hState,
     log_context: &LogContext,
     client: &Client,
     join_space_data: &SpaceData,
@@ -27,11 +28,8 @@ pub fn join_space(
         &join_space_data.agent_id,
     )?;
 
-    let mut space_address_lock = SPACE_ADDRESS.lock();
-    (*space_address_lock) = Some(join_space_data.space_address.clone());
-
-    let mut agent_id_lock = AGENT_ID.lock();
-    (*agent_id_lock) = Some(join_space_data.agent_id.clone());
+    state.space_address = Some(join_space_data.space_address.clone());
+    state.agent_id = Some(join_space_data.agent_id.clone());
 
     Ok(ClientToLib3hResponse::JoinSpaceResult)
 }
@@ -39,6 +37,7 @@ pub fn join_space(
 #[cfg(test)]
 pub mod tests {
 
+    use super::Sim1hState;
     use crate::dht::bbdht::dynamodb::client::fixture::bad_client;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::space::fixture::space_data_fresh;
@@ -56,7 +55,12 @@ pub mod tests {
 
         tracer(&log_context, "check response");
 
-        match join_space(&log_context, &local_client, &space_data) {
+        match join_space(
+            &mut Sim1hState::default(),
+            &log_context,
+            &local_client,
+            &space_data,
+        ) {
             Ok(ClientToLib3hResponse::JoinSpaceResult) => {}
             Ok(result) => {
                 panic!("test OK panic: {:?} {:?}", result, &space_data);
@@ -77,7 +81,12 @@ pub mod tests {
         let space_data = space_data_fresh();
 
         tracer(&log_context, "check response");
-        match join_space(&log_context, &bad_client, &space_data) {
+        match join_space(
+            &mut Sim1hState::default(),
+            &log_context,
+            &bad_client,
+            &space_data,
+        ) {
             Err(_) => {
                 tracer(&log_context, "👌");
             }
@@ -86,5 +95,4 @@ pub mod tests {
             }
         }
     }
-
 }

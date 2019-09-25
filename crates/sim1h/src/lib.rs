@@ -6,8 +6,6 @@ extern crate log;
 
 extern crate env_logger;
 extern crate futures;
-#[macro_use]
-extern crate lazy_static;
 
 pub mod agent;
 pub mod aspect;
