@@ -3,14 +3,17 @@ use crate::dht::bbdht::dynamodb::client::Client;
 use crate::dht::bbdht::error::{BbDhtError, BbDhtResult};
 use crate::trace::tracer;
 use crate::trace::LogContext;
+use crate::workflow::to_client::{AGENT_ID, CLIENT_OUTBOX, SPACE_ADDRESS};
 use holochain_core_types::network::query::NetworkQuery;
 use holochain_json_api::json::JsonString;
-use lib3h_protocol::data_types::EntryAspectData;
+use lib3h_protocol::data_types::{EntryAspectData, StoreEntryAspectData};
 use lib3h_protocol::data_types::Opaque;
 use lib3h_protocol::data_types::QueryEntryData;
 use lib3h_protocol::data_types::QueryEntryResultData;
-use lib3h_protocol::protocol::ClientToLib3hResponse;
+use lib3h_protocol::protocol::{ClientToLib3hResponse, Lib3hToClient};
 use std::convert::TryFrom;
+use lib3h_protocol::protocol_client::Lib3hClientProtocol;
+use snowflake::ProcessUniqueId;
 
 pub fn get_entry_aspect_filter_fn(aspect: &EntryAspectData) -> bool {
     let keep = vec!["content".to_string(), "header".to_string()];
@@ -41,27 +44,7 @@ pub fn query_entry_aspects(
 
     let entry_aspects = get_entry_aspects(log_context, client, &table_name, &entry_address)?;
 
-    Ok(match query {
-        NetworkQuery::GetEntry => {
-            let v = entry_aspects
-                .into_iter()
-                .filter(get_entry_aspect_filter_fn)
-                .collect::<Vec<_>>();
-            v
-        }
-        NetworkQuery::GetLinks(
-            _link_type,
-            _link_tag,
-            _maybe_crud_status,
-            _get_links_network_query,
-        ) => {
-            let v = entry_aspects
-                .into_iter()
-                .filter(|_| true)
-                .collect::<Vec<_>>();
-            v
-        }
-    })
+    Ok(entry_aspects)
 }
 
 pub fn aspects_to_opaque(aspects: &Vec<EntryAspectData>) -> Opaque {
@@ -77,9 +60,9 @@ pub fn query_entry(
     log_context: &LogContext,
     client: &Client,
     query_entry_data: &QueryEntryData,
-) -> BbDhtResult<ClientToLib3hResponse> {
-    let entry_aspects = query_entry_aspects(log_context, client, query_entry_data)?;
-    Ok(ClientToLib3hResponse::QueryEntryResult(
+) -> BbDhtResult<()> {
+
+    /*Ok(ClientToLib3hResponse::QueryEntryResult(
         QueryEntryResultData {
             entry_address: query_entry_data.entry_address.clone(),
             request_id: query_entry_data.request_id.clone(),
@@ -88,7 +71,26 @@ pub fn query_entry(
             requester_agent_id: query_entry_data.requester_agent_id.clone(),
             responder_agent_id: query_entry_data.requester_agent_id.clone(),
         },
-    ))
+    ))*/
+
+    // 1. get all entry aspects from DB
+    let entry_aspects = query_entry_aspects(log_context, client, query_entry_data)?;
+
+    // 2. make core hold all of those -> send Lib3hClientProtocol::HoldEntry
+    for aspect in entry_aspects {
+        let request_id = ProcessUniqueId::new().to_string();
+        CLIENT_OUTBOX.lock().push(Lib3hToClient::HandleStoreEntryAspect(StoreEntryAspectData {
+            request_id,
+            space_address: SPACE_ADDRESS.lock().clone().expect("Must have space address when handling queries"),
+            provider_agent_id: Address,
+            entry_address: Address,
+            entry_aspect: EntryAspectData
+        }))
+    }
+
+    // 3. redirect query back to core -> send Lib3hClientProtocol::QueryEntry
+    // 4. redirect core's answer back to itself -> send Lib3hClientProtocol::HandleQueryEntryResult
+    Ok(())
 }
 
 #[cfg(test)]
