@@ -3,7 +3,6 @@ use crate::trace::LogContext;
 use lib3h_protocol::data_types::{FetchEntryResultData, ProvidedEntryData};
 use crate::workflow::from_client::publish_entry::publish_entry;
 use crate::dht::bbdht::dynamodb::client::Client;
-use lib3h_protocol::Address;
 use crate::dht::bbdht::error::BbDhtResult;
 
 /// Successful data response for a `HandleFetchEntryData` request
@@ -20,8 +19,8 @@ pub fn handle_fetch_entry_result(
 
     if fetch_entry_result_data.request_id == String::from("fetch-and-publish") {
         publish_entry(log_context, client, &ProvidedEntryData {
-            space_address: Address::new(),
-            provider_agent_id: Address::new(),
+            space_address: fetch_entry_result_data.space_address.clone(),
+            provider_agent_id: fetch_entry_result_data.provider_agent_id.clone(),
             entry: fetch_entry_result_data.entry.clone(),
         })?;
     }
