@@ -21,7 +21,7 @@ impl Sim1hState {
 
         // Fetch every entry that core is claiming to have authored:
         for (entry_address, aspect_addresses) in entry_list_data.address_map.iter() {
-            self.client_outbox
+            self.client_request_outbox
                 .push(Lib3hToClient::HandleFetchEntry(FetchEntryData {
                     space_address: self
                         .space_address

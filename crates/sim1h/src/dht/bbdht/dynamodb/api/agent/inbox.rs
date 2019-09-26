@@ -5,11 +5,11 @@ use crate::dht::bbdht::dynamodb::schema::cas::inbox_key;
 use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_CONTENT_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_FROM_KEY;
+use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_SPACE_ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_TO_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_SEEN_KEY;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
-use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_SPACE_ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::string_set_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::dht::bbdht::error::BbDhtError;
@@ -275,16 +275,14 @@ pub fn get_inbox_request_ids(
             Some(attribute) => match attribute.ss.clone() {
                 Some(ss) => ss,
                 None => Vec::new(),
-            }
+            },
             None => Vec::new(),
         },
         None => Vec::new(),
     })
 }
 
-pub fn item_to_direct_message_data(
-    item: &Item,
-) -> BbDhtResult<DirectMessageData> {
+pub fn item_to_direct_message_data(item: &Item) -> BbDhtResult<DirectMessageData> {
     let content = match item[MESSAGE_CONTENT_KEY].b.clone() {
         Some(v) => v.to_vec(),
         None => {
@@ -372,9 +370,7 @@ pub fn request_ids_to_messages(
 
         match get_item_output {
             Some(item) => {
-                direct_message_datas.push(item_to_direct_message_data(
-                    &item,
-                )?);
+                direct_message_datas.push(item_to_direct_message_data(&item)?);
             }
             // the request ids MUST be in the db
             None => {
@@ -634,5 +630,4 @@ pub mod tests {
             Err(err) => panic!("incorrect request id {:?}", err),
         };
     }
-
 }
