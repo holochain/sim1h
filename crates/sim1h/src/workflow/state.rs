@@ -1,11 +1,13 @@
-use lib3h_protocol::data_types::GetListData;
-
-use lib3h_protocol::protocol::ClientToLib3hResponse;
-
 use crate::dht::bbdht::dynamodb::api::agent::inbox::check_inbox;
 use crate::dht::bbdht::dynamodb::client::Client;
+use lib3h_protocol::data_types::GetListData;
+use lib3h_protocol::protocol::ClientToLib3hResponse;
 use lib3h_protocol::protocol::Lib3hToClient;
 use lib3h_protocol::Address;
+use std::collections::HashMap;
+
+type AddressMap = HashMap<Address, Vec<Address>>;
+type Sim1hResult<T> = Result<T, String>;
 
 #[derive(Default)]
 pub struct Sim1hState {
@@ -14,11 +16,24 @@ pub struct Sim1hState {
     pub agent_id: Option<Address>,
     pub client_request_outbox: Vec<Lib3hToClient>,
     pub client_response_outbox: Vec<ClientToLib3hResponse>,
+    pub entries_held: AddressMap,
 }
 
 impl Sim1hState {
     fn should_get_authoring_list(&mut self) -> bool {
         self.initialized == false && self.space_address.is_some() && self.agent_id.is_some()
+    }
+
+    pub fn space_address(&self) -> Sim1hResult<&Address> {
+        self.space_address
+            .as_ref()
+            .ok_or("Cannot get space_address: Sim1hState is not initialized".to_string())
+    }
+
+    pub fn agent_id(&self) -> Sim1hResult<&Address> {
+        self.agent_id
+            .as_ref()
+            .ok_or("Cannot get agent_id: Sim1hState is not initialized".to_string())
     }
 
     fn create_authoring_gossip_list_requests(&self) -> Vec<Lib3hToClient> {
