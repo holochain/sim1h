@@ -21,6 +21,7 @@ pub fn send_direct_message(
         &direct_message_data.from_agent_id,
         &direct_message_data.to_agent_id,
         &direct_message_data.content,
+        false,
     )?;
     Ok(ClientToLib3hResponse::SendDirectMessageResult(
         direct_message_data.clone(),

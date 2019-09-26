@@ -26,6 +26,7 @@ pub fn send_direct_message_result(
         &direct_message_data.from_agent_id,
         &direct_message_data.to_agent_id,
         &direct_message_data.content,
+        true,
     )?;
     Ok(())
 }
