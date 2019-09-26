@@ -9,10 +9,7 @@ use holochain_json_api::json::JsonString;
 use lib3h_protocol::data_types::EntryAspectData;
 use lib3h_protocol::data_types::Opaque;
 use lib3h_protocol::data_types::QueryEntryData;
-use lib3h_protocol::data_types::StoreEntryAspectData;
 use lib3h_protocol::protocol::Lib3hToClient;
-use snowflake::ProcessUniqueId;
-use std::collections::HashSet;
 use std::convert::TryFrom;
 
 pub fn get_entry_aspect_filter_fn(aspect: &EntryAspectData) -> bool {
