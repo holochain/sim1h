@@ -9,10 +9,7 @@ use holochain_json_api::json::JsonString;
 use lib3h_protocol::data_types::EntryAspectData;
 use lib3h_protocol::data_types::Opaque;
 use lib3h_protocol::data_types::QueryEntryData;
-use lib3h_protocol::data_types::StoreEntryAspectData;
 use lib3h_protocol::protocol::Lib3hToClient;
-use snowflake::ProcessUniqueId;
-use std::collections::HashSet;
 use std::convert::TryFrom;
 
 pub fn get_entry_aspect_filter_fn(aspect: &EntryAspectData) -> bool {
@@ -60,55 +57,14 @@ impl Sim1hState {
     pub fn query_entry(
         &mut self,
         log_context: &LogContext,
-        client: &Client,
+        _client: &Client,
         query_entry_data: &QueryEntryData,
     ) -> BbDhtResult<()> {
-        /*Ok(ClientToLib3hResponse::QueryEntryResult(
-            QueryEntryResultData {
-                entry_address: query_entry_data.entry_address.clone(),
-                request_id: query_entry_data.request_id.clone(),
-                space_address: query_entry_data.space_address.clone(),
-                query_result: aspects_to_opaque(&entry_aspects),
-                requester_agent_id: query_entry_data.requester_agent_id.clone(),
-                responder_agent_id: query_entry_data.requester_agent_id.clone(),
-            },
-        ))*/
+        tracer(&log_context, "query_entry");
 
-        // 1. get all entry aspects from DB
-        let entry_aspects = query_entry_aspects(log_context, client, query_entry_data)?;
-
-        // 2. request that  core hold all of those
-        // (this is "just-in-time gossiping")
-        let mut addresses = HashSet::new();
-        for aspect in entry_aspects {
-            let request_id = ProcessUniqueId::new().to_string();
-            addresses.insert(aspect.aspect_address.clone());
-            self.client_request_outbox
-                .push(Lib3hToClient::HandleStoreEntryAspect(
-                    StoreEntryAspectData {
-                        request_id,
-                        space_address: self
-                            .space_address
-                            .clone()
-                            .expect("Must have space address when handling queries"),
-                        provider_agent_id: self.agent_id.clone().expect("Must have agent id"),
-                        entry_address: aspect.aspect_address.clone(),
-                        entry_aspect: aspect,
-                    },
-                ));
-        }
-
-        // 3. associate these aspects with this query request data, so that when
-        // all aspects are held by core, we can trigger a Lib3hToClient::HandleQueryEntry
-        // since core can fulfill its own request by itself, now that it is has held
-        // the necessary entries
-        // (see workflow::from_client::hold_entry)
-        self.queries_awaiting_gossip
-            .push((query_entry_data.clone(), addresses));
-
-        // 4. redirect core's answer back to itself
-        // -> send ClientToLib3hResponse::QueryEntryResult
-        // (see workflow::to_client_response::handle_query_entry_result)
+        // Just mirror the request back, since we are a full-sync bbDHT
+        self.client_request_outbox
+            .push(Lib3hToClient::HandleQueryEntry(query_entry_data.clone()));
 
         Ok(())
     }

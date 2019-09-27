@@ -8,6 +8,7 @@ use rusoto_dynamodb::DescribeTableError;
 use rusoto_dynamodb::GetItemError;
 use rusoto_dynamodb::ListTablesError;
 use rusoto_dynamodb::PutItemError;
+use rusoto_dynamodb::ScanError;
 use rusoto_dynamodb::UpdateItemError;
 use std::num::ParseIntError;
 
@@ -38,7 +39,9 @@ impl std::fmt::Display for BbDhtError {
         let (error_type, error_string) = match self {
             BbDhtError::InternalServerError(s) => ("Internal server error", s),
             BbDhtError::ProvisionedThroughputExceeded(s) => ("Provisioned throughput exceeded", s),
-            BbDhtError::ItemCollectionSizeLimitExceeded(s) => ("Item collection size limit exceeded", s),
+            BbDhtError::ItemCollectionSizeLimitExceeded(s) => {
+                ("Item collection size limit exceeded", s)
+            }
             BbDhtError::ConditionalCheckFailed(s) => ("Conditional check failed", s),
             BbDhtError::TransactionConflict(s) => ("Transaction conflict", s),
             BbDhtError::RequestLimitExceeded(s) => ("Request limit exceeded", s),
@@ -238,6 +241,24 @@ impl From<RusotoError<DeleteTableError>> for BbDhtError {
     }
 }
 
-impl std::error::Error for BbDhtError {
-
+impl From<RusotoError<ScanError>> for BbDhtError {
+    fn from(rusoto_error: RusotoError<ScanError>) -> Self {
+        match rusoto_error {
+            RusotoError::Service(service_error) => match service_error {
+                ScanError::InternalServerError(err) => BbDhtError::InternalServerError(err),
+                ScanError::RequestLimitExceeded(err) => BbDhtError::RequestLimitExceeded(err),
+                ScanError::ProvisionedThroughputExceeded(err) => {
+                    BbDhtError::ProvisionedThroughputExceeded(err)
+                }
+                ScanError::ResourceNotFound(err) => BbDhtError::ResourceNotFound(err),
+            },
+            RusotoError::HttpDispatch(err) => BbDhtError::HttpDispatch(err.to_string()),
+            RusotoError::Credentials(err) => BbDhtError::Credentials(err.to_string()),
+            RusotoError::Validation(err) => BbDhtError::Validation(err.to_string()),
+            RusotoError::ParseError(err) => BbDhtError::ParseError(err.to_string()),
+            RusotoError::Unknown(err) => BbDhtError::Unknown(format!("{:?}", err)),
+        }
+    }
 }
+
+impl std::error::Error for BbDhtError {}
