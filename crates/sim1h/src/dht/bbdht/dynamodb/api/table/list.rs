@@ -28,5 +28,4 @@ pub mod test {
         // list
         assert!(list_tables(&local_client).is_ok());
     }
-
 }

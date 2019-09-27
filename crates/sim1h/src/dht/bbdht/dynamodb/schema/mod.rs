@@ -28,6 +28,13 @@ pub fn string_attribute_value(value: &str) -> AttributeValue {
     }
 }
 
+pub fn bool_attribute_value(value: bool) -> AttributeValue {
+    AttributeValue {
+        bool: Some(value),
+        ..Default::default()
+    }
+}
+
 pub fn blob_attribute_value(value: &Vec<u8>) -> AttributeValue {
     AttributeValue {
         b: Some(value.as_slice().into()),

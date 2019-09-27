@@ -1,16 +1,15 @@
 use crate::dht::bbdht::dynamodb::api::aspect::read::get_entry_aspects;
 use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::error::BbDhtError;
+use crate::dht::bbdht::error::{BbDhtError, BbDhtResult};
 use crate::trace::tracer;
 use crate::trace::LogContext;
+use crate::workflow::state::Sim1hState;
 use holochain_core_types::network::query::NetworkQuery;
 use holochain_json_api::json::JsonString;
-use lib3h::error::Lib3hResult;
 use lib3h_protocol::data_types::EntryAspectData;
 use lib3h_protocol::data_types::Opaque;
 use lib3h_protocol::data_types::QueryEntryData;
-use lib3h_protocol::data_types::QueryEntryResultData;
-use lib3h_protocol::protocol::ClientToLib3hResponse;
+use lib3h_protocol::protocol::Lib3hToClient;
 use std::convert::TryFrom;
 
 pub fn get_entry_aspect_filter_fn(aspect: &EntryAspectData) -> bool {
@@ -22,7 +21,7 @@ pub fn query_entry_aspects(
     log_context: &LogContext,
     client: &Client,
     query_entry_data: &QueryEntryData,
-) -> Lib3hResult<Vec<EntryAspectData>> {
+) -> BbDhtResult<Vec<EntryAspectData>> {
     tracer(&log_context, "publish_entry");
 
     let table_name = query_entry_data.space_address.to_string();
@@ -35,34 +34,14 @@ pub fn query_entry_aspects(
         Err(err) => Err(BbDhtError::CorruptData(err.to_string()))?,
     };
     let query_json = JsonString::from_json(&query_str.to_string());
-    let query = match NetworkQuery::try_from(query_json.clone()) {
+    let _query = match NetworkQuery::try_from(query_json.clone()) {
         Ok(v) => v,
         Err(err) => Err(BbDhtError::CorruptData(err.to_string()))?,
     };
 
     let entry_aspects = get_entry_aspects(log_context, client, &table_name, &entry_address)?;
 
-    Ok(match query {
-        NetworkQuery::GetEntry => {
-            let v = entry_aspects
-                .into_iter()
-                .filter(get_entry_aspect_filter_fn)
-                .collect::<Vec<_>>();
-            v
-        }
-        NetworkQuery::GetLinks(
-            _link_type,
-            _link_tag,
-            _maybe_crud_status,
-            _get_links_network_query,
-        ) => {
-            let v = entry_aspects
-                .into_iter()
-                .filter(|_| true)
-                .collect::<Vec<_>>();
-            v
-        }
-    })
+    Ok(entry_aspects)
 }
 
 pub fn aspects_to_opaque(aspects: &Vec<EntryAspectData>) -> Opaque {
@@ -70,31 +49,31 @@ pub fn aspects_to_opaque(aspects: &Vec<EntryAspectData>) -> Opaque {
     json.to_bytes().into()
 }
 
-/// 90% (need query logic to be finalised)
-/// fetch all entry aspects from entry address
-/// do some kind of filter based on the non-opaque query struct
-/// familiar to rehydrate the opaque query struct
-pub fn query_entry(
-    log_context: &LogContext,
-    client: &Client,
-    query_entry_data: &QueryEntryData,
-) -> Lib3hResult<ClientToLib3hResponse> {
-    let entry_aspects = query_entry_aspects(log_context, client, query_entry_data)?;
-    Ok(ClientToLib3hResponse::QueryEntryResult(
-        QueryEntryResultData {
-            entry_address: query_entry_data.entry_address.clone(),
-            request_id: query_entry_data.request_id.clone(),
-            space_address: query_entry_data.space_address.clone(),
-            query_result: aspects_to_opaque(&entry_aspects),
-            requester_agent_id: query_entry_data.requester_agent_id.clone(),
-            responder_agent_id: query_entry_data.requester_agent_id.clone(),
-        },
-    ))
+impl Sim1hState {
+    /// 90% (need query logic to be finalised)
+    /// fetch all entry aspects from entry address
+    /// do some kind of filter based on the non-opaque query struct
+    /// familiar to rehydrate the opaque query struct
+    pub fn query_entry(
+        &mut self,
+        log_context: &LogContext,
+        _client: &Client,
+        query_entry_data: &QueryEntryData,
+    ) -> BbDhtResult<()> {
+        tracer(&log_context, "query_entry");
+
+        // Just mirror the request back, since we are a full-sync bbDHT
+        self.client_request_outbox
+            .push(Lib3hToClient::HandleQueryEntry(query_entry_data.clone()));
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 pub mod tests {
 
+    use crate::aspect::entry_aspect_to_entry_aspect_data;
     use crate::aspect::fixture::content_aspect_fresh;
     use crate::aspect::fixture::deletion_aspect_fresh;
     use crate::aspect::fixture::header_aspect_fresh;
@@ -109,16 +88,17 @@ pub mod tests {
     use crate::trace::tracer;
     use crate::workflow::from_client::fixture::provided_entry_data_fresh;
     use crate::workflow::from_client::fixture::query_entry_data_fresh;
-    use crate::workflow::from_client::join_space::join_space;
     use crate::workflow::from_client::publish_entry::publish_entry;
     use crate::workflow::from_client::query_entry::get_entry_aspect_filter_fn;
     use crate::workflow::from_client::query_entry::query_entry_aspects;
-    use crate::aspect::entry_aspect_to_entry_aspect_data;
+    use crate::workflow::state::Sim1hState;
 
     #[test]
     pub fn get_entry_aspect_filter_fn_test() {
         // things that should persist
-        assert!(get_entry_aspect_filter_fn(&entry_aspect_to_entry_aspect_data(content_aspect_fresh())));
+        assert!(get_entry_aspect_filter_fn(
+            &entry_aspect_to_entry_aspect_data(content_aspect_fresh())
+        ));
         assert!(get_entry_aspect_filter_fn(
             &entry_aspect_to_entry_aspect_data(header_aspect_fresh(&entry_fresh()))
         ));
@@ -148,9 +128,12 @@ pub mod tests {
         let entry_address = entry_address_fresh();
         let query_entry_data = query_entry_data_fresh(&space_data, &entry_address);
         let provided_entry_data = provided_entry_data_fresh(&space_data, &entry_address);
+        let mut state = Sim1hState::default();
 
         // join space
-        assert!(join_space(&log_context, &local_client, &space_data).is_ok());
+        assert!(state
+            .join_space(&log_context, &local_client, &space_data)
+            .is_ok());
 
         // publish entry
         assert!(publish_entry(&log_context, &local_client, &provided_entry_data).is_ok());
@@ -165,5 +148,4 @@ pub mod tests {
             }
         }
     }
-
 }

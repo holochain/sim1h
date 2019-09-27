@@ -14,6 +14,13 @@ pub fn client(region: Region) -> Client {
     DynamoDbClient::new(region).with_retries(Policy::Exponential(10, Duration::from_millis(100)))
 }
 
+pub fn client_from_endpoint(endpoint: String) -> Client {
+    client(Region::Custom {
+        name: "localhost".to_string(),
+        endpoint,
+    })
+}
+
 #[cfg(test)]
 pub mod test {
     use crate::dht::bbdht::dynamodb::client::client;

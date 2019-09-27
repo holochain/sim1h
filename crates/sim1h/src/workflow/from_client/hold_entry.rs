@@ -1,28 +1,30 @@
 use crate::dht::bbdht::dynamodb::client::Client;
+use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use lib3h::error::Lib3hResult;
+use crate::workflow::state::Sim1hState;
 use lib3h_protocol::data_types::ProvidedEntryData;
 
-/// this is a no-op
-pub fn hold_entry(
-    log_context: &LogContext,
-    _client: &Client,
-    _provided_entry_data: &ProvidedEntryData,
-) -> Lib3hResult<()> {
-    tracer(&log_context, "hold_entry");
-    Ok(())
+impl Sim1hState {
+    pub fn hold_entry(
+        log_context: &LogContext,
+        _client: &Client,
+        _data: &ProvidedEntryData,
+    ) -> BbDhtResult<()> {
+        tracer(&log_context, "hold_entry");
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 pub mod tests {
 
+    use super::Sim1hState;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::entry::fixture::entry_address_fresh;
     use crate::space::fixture::space_data_fresh;
     use crate::trace::tracer;
     use crate::workflow::from_client::fixture::provided_entry_data_fresh;
-    use crate::workflow::from_client::hold_entry::hold_entry;
 
     #[test]
     fn hold_entry_test() {
@@ -35,7 +37,7 @@ pub mod tests {
         let provided_entry_data = provided_entry_data_fresh(&space_data, &entry_address);
 
         tracer(&log_context, "check response");
-        match hold_entry(&log_context, &local_client, &provided_entry_data) {
+        match Sim1hState::hold_entry(&log_context, &local_client, &provided_entry_data) {
             Ok(()) => {}
             Err(e) => {
                 panic!("bad error {:?}", e);
@@ -54,7 +56,7 @@ pub mod tests {
         let provided_entry_data = provided_entry_data_fresh(&space_data, &entry_address);
 
         tracer(&log_context, "check response");
-        match hold_entry(&log_context, &local_client, &provided_entry_data) {
+        match Sim1hState::hold_entry(&log_context, &local_client, &provided_entry_data) {
             Ok(()) => {
                 tracer(&log_context, "👌");
             }
@@ -63,5 +65,4 @@ pub mod tests {
             }
         }
     }
-
 }

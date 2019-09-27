@@ -1,6 +1,7 @@
 use crate::dht::bbdht::dynamodb::api::item::read::get_item_by_address;
 use crate::dht::bbdht::dynamodb::api::item::Item;
 use crate::dht::bbdht::dynamodb::client::Client;
+use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_LIST_KEY;
@@ -11,11 +12,27 @@ use crate::dht::bbdht::error::BbDhtError;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
+use crate::workflow::state::AspectAddressMap;
+
+use rusoto_dynamodb::DynamoDb;
+use rusoto_dynamodb::ScanInput;
+
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::EntryAspectData;
+use std::collections::HashMap;
+use std::fmt::Debug;
+
+fn get_or_err<'a, V: Debug>(item: &'a HashMap<String, V>, key: &'a str) -> BbDhtResult<&'a V> {
+    item.get(&key.to_string()).ok_or_else(|| {
+        BbDhtError::MissingData(format!(
+            "Key not present in hashmap! key={}, hashmap={:?}",
+            key, item
+        ))
+    })
+}
 
 fn try_aspect_from_item(item: Item) -> BbDhtResult<EntryAspectData> {
-    let aspect_address = match item[ASPECT_ADDRESS_KEY].s.clone() {
+    let aspect_address = match get_or_err(&item, ASPECT_ADDRESS_KEY)?.s.clone() {
         Some(address) => Address::from(address),
         None => {
             return Err(BbDhtError::MissingData(format!(
@@ -25,7 +42,7 @@ fn try_aspect_from_item(item: Item) -> BbDhtResult<EntryAspectData> {
         }
     };
 
-    let aspect = match item[ASPECT_KEY].b.clone() {
+    let aspect = match get_or_err(&item, ASPECT_KEY)?.b.clone() {
         Some(binary_data) => binary_data.to_vec().into(),
         None => {
             return Err(BbDhtError::MissingData(format!(
@@ -35,7 +52,7 @@ fn try_aspect_from_item(item: Item) -> BbDhtResult<EntryAspectData> {
         }
     };
 
-    let publish_ts = match item[ASPECT_PUBLISH_TS_KEY].n.clone() {
+    let publish_ts = match get_or_err(&item, ASPECT_PUBLISH_TS_KEY)?.n.clone() {
         Some(publish_ts) => publish_ts.parse()?,
         None => {
             return Err(BbDhtError::MissingData(format!(
@@ -45,7 +62,7 @@ fn try_aspect_from_item(item: Item) -> BbDhtResult<EntryAspectData> {
         }
     };
 
-    let type_hint = match item[ASPECT_TYPE_HINT_KEY].s.clone() {
+    let type_hint = match get_or_err(&item, ASPECT_TYPE_HINT_KEY)?.s.clone() {
         Some(type_hint) => type_hint,
         None => {
             return Err(BbDhtError::MissingData(format!(
@@ -64,7 +81,7 @@ fn try_aspect_from_item(item: Item) -> BbDhtResult<EntryAspectData> {
 }
 
 pub fn try_aspect_list_from_item(item: Item) -> BbDhtResult<Vec<Address>> {
-    let addresses = match item[ASPECT_LIST_KEY].ss.clone() {
+    let addresses = match get_or_err(&item, ASPECT_LIST_KEY)?.ss.clone() {
         Some(addresses) => addresses.iter().map(|s| Address::from(s.clone())).collect(),
         None => {
             return Err(BbDhtError::MissingData(format!(
@@ -127,6 +144,45 @@ pub fn get_entry_aspects(
     }
 }
 
+pub fn scan_aspects(
+    _log_context: LogContext,
+    client: &Client,
+    table_name: &TableName,
+    exclusive_start_key: Option<Item>,
+) -> BbDhtResult<(AspectAddressMap, Option<Item>)> {
+    client
+        .scan(ScanInput {
+            table_name: table_name.to_string(),
+            projection_expression: projection_expression(vec![ADDRESS_KEY, ASPECT_LIST_KEY]),
+            exclusive_start_key,
+            ..Default::default()
+        })
+        .sync()
+        .map_err(|err| err.into())
+        .map(|result| {
+            let items = result
+                .items
+                .unwrap_or(Vec::new())
+                .into_iter()
+                .filter_map(|mut item: Item| {
+                    Some((
+                        Address::from(item.remove(ADDRESS_KEY)?.s?),
+                        item.remove(ASPECT_LIST_KEY)?
+                            .ss?
+                            .into_iter()
+                            .map(Address::from)
+                            .collect(),
+                    ))
+                })
+                .collect();
+            (items, result.last_evaluated_key)
+        })
+}
+
+fn projection_expression(fields: Vec<&str>) -> Option<String> {
+    Some(fields.join(", "))
+}
+
 #[cfg(test)]
 pub mod tests {
 
@@ -134,6 +190,7 @@ pub mod tests {
     use crate::aspect::fixture::entry_aspect_data_fresh;
     use crate::dht::bbdht::dynamodb::api::aspect::read::get_aspect;
     use crate::dht::bbdht::dynamodb::api::aspect::read::get_entry_aspects;
+    use crate::dht::bbdht::dynamodb::api::aspect::read::scan_aspects;
     use crate::dht::bbdht::dynamodb::api::aspect::write::append_aspect_list_to_entry;
     use crate::dht::bbdht::dynamodb::api::aspect::write::put_aspect;
     use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
@@ -236,4 +293,44 @@ pub mod tests {
         }
     }
 
+    #[test]
+    fn scan_aspects_test() {
+        let log_context = "scan_aspects_test";
+
+        tracer(&log_context, "fixtures");
+        let local_client = local_client();
+        let table_name = table_name_fresh();
+        let entry_address = entry_address_fresh();
+        let aspect_list = aspect_list_fresh();
+        let aspect_addresses = aspect_list
+            .iter()
+            .map(|a| a.aspect_address.clone())
+            .collect();
+
+        ensure_cas_table(&log_context, &local_client, &table_name).unwrap();
+
+        {
+            let (items, _) = scan_aspects(&log_context, &local_client, &table_name, None)
+                .unwrap_or_else(|err| panic!("error while scanning: {:?}", err));
+            assert!(items.len() == 0);
+        }
+
+        append_aspect_list_to_entry(
+            &log_context,
+            &local_client,
+            &table_name,
+            &entry_address,
+            &aspect_list,
+        )
+        .unwrap();
+
+        let (items, _) = scan_aspects(&log_context, &local_client, &table_name, None)
+            .unwrap_or_else(|err| panic!("error while scanning: {:?}", err));
+
+        assert!(items.len() == 1);
+        assert!(unordered_vec_compare(
+            items[&entry_address].clone().into_iter().collect(),
+            aspect_addresses
+        ));
+    }
 }

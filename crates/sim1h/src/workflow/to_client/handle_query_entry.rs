@@ -1,7 +1,7 @@
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use lib3h_protocol::data_types::QueryEntryData;
+use lib3h_protocol::data_types::QueryEntryResultData;
 
 // Request a node to handle a QueryEntry request
 // queries are simulated on the outgoing side
@@ -9,7 +9,7 @@ use lib3h_protocol::data_types::QueryEntryData;
 pub fn handle_query_entry(
     log_context: &LogContext,
     _client: &Client,
-    query_entry_data: &QueryEntryData,
+    query_entry_data: &QueryEntryResultData,
 ) {
     tracer(
         &log_context,

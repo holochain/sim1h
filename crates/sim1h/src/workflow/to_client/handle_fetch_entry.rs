@@ -1,7 +1,7 @@
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use lib3h_protocol::data_types::FetchEntryData;
+use lib3h_protocol::data_types::FetchEntryResultData;
 
 // -- Entry -- //
 // Another node, or the network module itself is requesting data from us
@@ -10,7 +10,7 @@ use lib3h_protocol::data_types::FetchEntryData;
 pub fn handle_fetch_entry(
     log_context: &LogContext,
     _client: &Client,
-    fetch_entry_data: &FetchEntryData,
+    fetch_entry_data: &FetchEntryResultData,
 ) {
     tracer(
         &log_context,

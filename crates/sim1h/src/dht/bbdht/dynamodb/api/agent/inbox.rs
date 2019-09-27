@@ -1,15 +1,15 @@
 use crate::dht::bbdht::dynamodb::api::item::Item;
 use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::dynamodb::schema::blob_attribute_value;
-use crate::dht::bbdht::dynamodb::schema::cas::inbox_key;
+use crate::dht::bbdht::dynamodb::schema::{blob_attribute_value, bool_attribute_value};
+use crate::dht::bbdht::dynamodb::schema::cas::{inbox_key, MESSAGE_IS_RESPONSE_KEY};
 use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_CONTENT_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_FROM_KEY;
+use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_SPACE_ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_TO_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_SEEN_KEY;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
-use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_SPACE_ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::string_set_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::dht::bbdht::error::BbDhtError;
@@ -35,6 +35,7 @@ pub fn put_inbox_message(
     from: &Address,
     to: &Address,
     content: &Vec<u8>,
+    response: bool,
 ) -> BbDhtResult<()> {
     tracer(&log_context, "put_inbox_message");
 
@@ -63,6 +64,11 @@ pub fn put_inbox_message(
     message_item.insert(
         String::from(MESSAGE_CONTENT_KEY),
         blob_attribute_value(&content),
+    );
+
+    message_item.insert(
+        String::from(MESSAGE_IS_RESPONSE_KEY),
+        bool_attribute_value(response),
     );
 
     match client
@@ -94,6 +100,7 @@ pub fn put_inbox_message(
                     from,
                     to,
                     content,
+                    response,
                 )
             }
             PutItemError::ProvisionedThroughputExceeded(err) => {
@@ -112,6 +119,7 @@ pub fn put_inbox_message(
                     from,
                     to,
                     content,
+                    response,
                 )
             }
             PutItemError::RequestLimitExceeded(err) => {
@@ -130,6 +138,7 @@ pub fn put_inbox_message(
                     from,
                     to,
                     content,
+                    response,
                 )
             }
             PutItemError::TransactionConflict(err) => {
@@ -148,6 +157,7 @@ pub fn put_inbox_message(
                     from,
                     to,
                     content,
+                    response,
                 )
             }
             _ => Err(err.into()),
@@ -165,6 +175,7 @@ pub fn put_inbox_message(
                 from,
                 to,
                 content,
+                response,
             )
         }
         Err(err) => Err(err.into()),
@@ -223,6 +234,7 @@ pub fn send_to_agent_inbox(
     from: &Address,
     to: &Address,
     content: &Vec<u8>,
+    response: bool,
 ) -> BbDhtResult<()> {
     tracer(&log_context, "send_to_agent_inbox");
 
@@ -234,6 +246,7 @@ pub fn send_to_agent_inbox(
         from,
         to,
         content,
+        response,
     )?;
 
     append_request_id_to_inbox(
@@ -275,16 +288,14 @@ pub fn get_inbox_request_ids(
             Some(attribute) => match attribute.ss.clone() {
                 Some(ss) => ss,
                 None => Vec::new(),
-            }
+            },
             None => Vec::new(),
         },
         None => Vec::new(),
     })
 }
 
-pub fn item_to_direct_message_data(
-    item: &Item,
-) -> BbDhtResult<DirectMessageData> {
+pub fn item_to_direct_message_data(item: &Item) -> BbDhtResult<(DirectMessageData, bool)> {
     let content = match item[MESSAGE_CONTENT_KEY].b.clone() {
         Some(v) => v.to_vec(),
         None => {
@@ -335,13 +346,23 @@ pub fn item_to_direct_message_data(
         }
     };
 
-    Ok(DirectMessageData {
+    let is_response = match item[MESSAGE_IS_RESPONSE_KEY].bool.clone() {
+        Some(v) => v,
+        None => {
+            return Err(BbDhtError::MissingData(format!(
+                "message item missing response flag {:?}",
+                &item
+            )))
+        }
+    };
+
+    Ok((DirectMessageData {
         content: content.into(),
         from_agent_id: from_agent_id.into(),
         to_agent_id: to_agent_id.into(),
         request_id: request_id,
         space_address: space_address.into(),
-    })
+    }, is_response))
 }
 
 pub fn request_ids_to_messages(
@@ -349,7 +370,7 @@ pub fn request_ids_to_messages(
     client: &Client,
     table_name: &TableName,
     request_ids: &Vec<String>,
-) -> BbDhtResult<Vec<DirectMessageData>> {
+) -> BbDhtResult<Vec<(DirectMessageData, bool)>> {
     tracer(log_context, "request_ids_to_messages");
 
     let mut direct_message_datas = Vec::new();
@@ -372,9 +393,7 @@ pub fn request_ids_to_messages(
 
         match get_item_output {
             Some(item) => {
-                direct_message_datas.push(item_to_direct_message_data(
-                    &item,
-                )?);
+                direct_message_datas.push(item_to_direct_message_data(&item)?);
             }
             // the request ids MUST be in the db
             None => {
@@ -394,7 +413,7 @@ pub fn check_inbox(
     client: &Client,
     table_name: &TableName,
     to: &Address,
-) -> BbDhtResult<Vec<DirectMessageData>> {
+) -> BbDhtResult<Vec<(DirectMessageData, bool)>> {
     tracer(&log_context, "check_inbox");
 
     let inbox_request_ids = get_inbox_request_ids(
@@ -499,6 +518,7 @@ pub mod tests {
         let from = agent_id_fresh();
         let to = agent_id_fresh();
         let content = message_content_fresh();
+        let is_response = false;
 
         // ensure cas
         assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
@@ -511,7 +531,8 @@ pub mod tests {
             &request_id,
             &from,
             &to,
-            &content
+            &content,
+            is_response,
         )
         .is_ok());
     }
@@ -527,6 +548,7 @@ pub mod tests {
         let from = agent_id_fresh();
         let to = agent_id_fresh();
         let content = message_content_fresh();
+        let is_response = false;
 
         // ensure cas
         assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
@@ -539,7 +561,8 @@ pub mod tests {
             &request_id,
             &from,
             &to,
-            &content
+            &content,
+            is_response,
         )
         .is_ok());
     }
@@ -555,6 +578,7 @@ pub mod tests {
         let from = agent_id_fresh();
         let to = agent_id_fresh();
         let content = message_content_fresh();
+        let is_response = false;
 
         // ensure cas
         assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
@@ -567,7 +591,8 @@ pub mod tests {
             &request_id.clone(),
             &from,
             &to,
-            &content
+            &content,
+            is_response,
         )
         .is_ok());
 
@@ -595,6 +620,7 @@ pub mod tests {
         let from = agent_id_fresh();
         let to = agent_id_fresh();
         let content = message_content_fresh();
+        let is_response = false;
 
         let direct_message_data = DirectMessageData {
             content: content.clone().into(),
@@ -615,24 +641,24 @@ pub mod tests {
             &request_id.clone(),
             &from,
             &to,
-            &content
+            &content,
+            is_response,
         )
         .is_ok());
 
         // check inbox
         match check_inbox(&log_context, &local_client, &table_name, &to) {
-            Ok(messages) => assert_eq!(vec![direct_message_data.clone()], messages),
+            Ok(messages) => assert_eq!(vec![(direct_message_data.clone(), is_response)], messages),
             Err(err) => panic!("incorrect request id {:?}", err),
         };
 
         // check again, should be empty
         match check_inbox(&log_context, &local_client, &table_name, &to) {
             Ok(request_ids) => {
-                let v: Vec<DirectMessageData> = Vec::new();
+                let v: Vec<(DirectMessageData, bool)> = Vec::new();
                 assert_eq!(v, request_ids);
             }
             Err(err) => panic!("incorrect request id {:?}", err),
         };
     }
-
 }

@@ -1,41 +1,49 @@
 use crate::dht::bbdht::dynamodb::api::agent::write::touch_agent;
 use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
 use crate::dht::bbdht::dynamodb::client::Client;
+use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use lib3h::error::Lib3hResult;
+use crate::workflow::state::Sim1hState;
 use lib3h_protocol::data_types::SpaceData;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
 
-/// create space if not exists
-/// touch agent
-pub fn join_space(
-    log_context: &LogContext,
-    client: &Client,
-    join_space_data: &SpaceData,
-) -> Lib3hResult<ClientToLib3hResponse> {
-    tracer(&log_context, "join_space");
+impl Sim1hState {
+    /// create space if not exists
+    /// touch agent
+    pub fn join_space(
+        &mut self,
+        log_context: &LogContext,
+        client: &Client,
+        join_space_data: &SpaceData,
+    ) -> BbDhtResult<ClientToLib3hResponse> {
+        tracer(&log_context, "join_space");
 
-    let table_name = String::from(join_space_data.space_address.clone());
+        let table_name = String::from(join_space_data.space_address.clone());
 
-    ensure_cas_table(&log_context, &client, &table_name)?;
-    touch_agent(
-        &log_context,
-        &client,
-        &table_name,
-        &join_space_data.agent_id,
-    )?;
-    Ok(ClientToLib3hResponse::JoinSpaceResult)
+        ensure_cas_table(&log_context, &client, &table_name)?;
+        touch_agent(
+            &log_context,
+            &client,
+            &table_name,
+            &join_space_data.agent_id,
+        )?;
+
+        self.space_address = Some(join_space_data.space_address.clone());
+        self.agent_id = Some(join_space_data.agent_id.clone());
+
+        Ok(ClientToLib3hResponse::JoinSpaceResult)
+    }
 }
 
 #[cfg(test)]
 pub mod tests {
 
+    use super::Sim1hState;
     use crate::dht::bbdht::dynamodb::client::fixture::bad_client;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::space::fixture::space_data_fresh;
     use crate::trace::tracer;
-    use crate::workflow::from_client::join_space::join_space;
     use lib3h_protocol::protocol::ClientToLib3hResponse;
 
     #[test]
@@ -45,10 +53,11 @@ pub mod tests {
         tracer(&log_context, "fixtures");
         let local_client = local_client();
         let space_data = space_data_fresh();
+        let mut state = Sim1hState::default();
 
         tracer(&log_context, "check response");
 
-        match join_space(&log_context, &local_client, &space_data) {
+        match state.join_space(&log_context, &local_client, &space_data) {
             Ok(ClientToLib3hResponse::JoinSpaceResult) => {}
             Ok(result) => {
                 panic!("test OK panic: {:?} {:?}", result, &space_data);
@@ -67,9 +76,10 @@ pub mod tests {
         tracer(&log_context, "fixtures");
         let bad_client = bad_client();
         let space_data = space_data_fresh();
+        let mut state = Sim1hState::default();
 
         tracer(&log_context, "check response");
-        match join_space(&log_context, &bad_client, &space_data) {
+        match state.join_space(&log_context, &bad_client, &space_data) {
             Err(_) => {
                 tracer(&log_context, "👌");
             }
@@ -78,5 +88,4 @@ pub mod tests {
             }
         }
     }
-
 }

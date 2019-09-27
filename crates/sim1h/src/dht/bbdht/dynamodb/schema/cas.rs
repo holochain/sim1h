@@ -20,6 +20,7 @@ pub const MESSAGE_SPACE_ADDRESS_KEY: &str = "message_space_address";
 pub const MESSAGE_FROM_KEY: &str = "message_from";
 pub const MESSAGE_TO_KEY: &str = "message_to";
 pub const MESSAGE_CONTENT_KEY: &str = "message_content";
+pub const MESSAGE_IS_RESPONSE_KEY: &str = "message_is_response";
 
 pub fn inbox_key(agent_id: &Address) -> String {
     format!("{}{}", INBOX_KEY_PREFIX, agent_id)
@@ -147,5 +148,4 @@ pub mod tests {
             attribute_definitions_cas()[0]
         );
     }
-
 }

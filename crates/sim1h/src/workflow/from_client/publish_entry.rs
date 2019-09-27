@@ -1,8 +1,8 @@
 use crate::dht::bbdht::dynamodb::api::aspect::write::append_aspect_list_to_entry;
 use crate::dht::bbdht::dynamodb::client::Client;
+use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use lib3h::error::Lib3hResult;
 use lib3h_protocol::data_types::ProvidedEntryData;
 
 /// MVP
@@ -14,7 +14,7 @@ pub fn publish_entry(
     log_context: &LogContext,
     client: &Client,
     provided_entry_data: &ProvidedEntryData,
-) -> Lib3hResult<()> {
+) -> BbDhtResult<()> {
     tracer(&log_context, "publish_entry");
 
     append_aspect_list_to_entry(
@@ -36,8 +36,8 @@ pub mod tests {
     use crate::space::fixture::space_data_fresh;
     use crate::trace::tracer;
     use crate::workflow::from_client::fixture::provided_entry_data_fresh;
-    use crate::workflow::from_client::join_space::join_space;
     use crate::workflow::from_client::publish_entry::publish_entry;
+    use crate::workflow::state::Sim1hState;
 
     #[test]
     fn publish_entry_test() {
@@ -48,10 +48,13 @@ pub mod tests {
         let space_data = space_data_fresh();
         let entry_address = entry_address_fresh();
         let provided_entry_data = provided_entry_data_fresh(&space_data, &entry_address);
+        let mut state = Sim1hState::default();
 
         tracer(&log_context, "check response");
 
-        assert!(join_space(&log_context, &local_client, &space_data).is_ok());
+        assert!(state
+            .join_space(&log_context, &local_client, &space_data)
+            .is_ok());
 
         match publish_entry(&log_context, &local_client, &provided_entry_data) {
             Ok(()) => {
@@ -107,5 +110,4 @@ pub mod tests {
             }
         }
     }
-
 }
