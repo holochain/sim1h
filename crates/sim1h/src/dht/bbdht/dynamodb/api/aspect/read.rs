@@ -12,6 +12,7 @@ use crate::dht::bbdht::error::BbDhtError;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
+use crate::workflow::state::AspectAddressMap;
 
 use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::ScanInput;
@@ -144,11 +145,11 @@ pub fn get_entry_aspects(
 }
 
 pub fn scan_aspects(
-    _log_context: &LogContext,
+    _log_context: LogContext,
     client: &Client,
     table_name: &TableName,
     exclusive_start_key: Option<Item>,
-) -> BbDhtResult<(Vec<(Address, Vec<Address>)>, Option<Item>)> {
+) -> BbDhtResult<(AspectAddressMap, Option<Item>)> {
     let _ = projection_expression(vec![ADDRESS_KEY, ASPECT_LIST_KEY]);
     client
         .scan(ScanInput {
@@ -211,10 +212,6 @@ pub mod tests {
         let table_name = table_name_fresh();
         let entry_address = entry_address_fresh();
         let aspect_list = aspect_list_fresh();
-        let aspect_addresses = aspect_list
-            .iter()
-            .map(|a| a.aspect_address.clone())
-            .collect();
 
         // ensure cas
         assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
@@ -252,12 +249,6 @@ pub mod tests {
                 panic!("no aspects found {:?}", err);
             }
         }
-
-        let (items, _) = scan_aspects(&log_context, &local_client, &table_name, None)
-            .unwrap_or_else(|err| panic!("error while scanning: {:?}", err));
-
-        assert!(items.len() == 1);
-        assert!(unordered_vec_compare(items[0].1.clone(), aspect_addresses));
     }
 
     #[test]
@@ -334,12 +325,13 @@ pub mod tests {
         )
         .unwrap();
 
-        {
-            let (items, _) = scan_aspects(&log_context, &local_client, &table_name, None)
-                .unwrap_or_else(|err| panic!("error while scanning: {:?}", err));
+        let (items, _) = scan_aspects(&log_context, &local_client, &table_name, None)
+            .unwrap_or_else(|err| panic!("error while scanning: {:?}", err));
 
-            assert!(items.len() == 1);
-            assert!(unordered_vec_compare(items[0].1.clone(), aspect_addresses));
-        }
+        assert!(items.len() == 1);
+        assert!(unordered_vec_compare(
+            items[&entry_address].clone().into_iter().collect(),
+            aspect_addresses
+        ));
     }
 }

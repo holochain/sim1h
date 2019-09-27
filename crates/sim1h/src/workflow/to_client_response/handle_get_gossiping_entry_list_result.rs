@@ -16,6 +16,11 @@ impl Sim1hState {
                 entry_list_data
             ),
         );
-        self.entries_held = entry_list_data.address_map.clone();
+        self.held_aspects = entry_list_data
+            .address_map
+            .clone() // TODO: remove if possible
+            .into_iter()
+            .map(|(k, v)| (k, v.into_iter().collect()))
+            .collect();
     }
 }
