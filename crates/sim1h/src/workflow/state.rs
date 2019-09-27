@@ -12,6 +12,7 @@ use std::collections::hash_map::Entry::Occupied;
 use std::collections::hash_map::Entry::Vacant;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use uuid::Uuid;
 
 pub type AspectAddressMap = HashMap<Address, HashSet<Address>>;
 type Sim1hResult<T> = Result<T, String>;
@@ -111,8 +112,12 @@ impl Sim1hState {
     }
 
     fn create_store_requests(&mut self, client: &Client) -> Sim1hResult<Vec<Lib3hToClient>> {
+        if !self.initialized {
+            return Ok(Vec::new());
+        }
         let log_context = "create_store_requests";
-        let space_address = self.space_address()?;
+        let agent_id = self.agent_id()?.clone();
+        let space_address = self.space_address()?.clone();
         let table_name = space_address.to_string();
         let (incoming, last_evaluated_key) = scan_aspects(
             log_context,
@@ -122,41 +127,41 @@ impl Sim1hState {
         )
         .map_err(|err| err.to_string())?;
         self.last_evaluated_scan_key = last_evaluated_key;
+        let mut messages = Vec::new();
 
-        let to_hold: Vec<Lib3hToClient> = incoming
-            .keys()
-            .map(|entry_address: &Address| {
-                let aspects = incoming[entry_address].clone();
-                let diff = match self.held_aspects.entry(entry_address.clone()) {
-                    Vacant(e) => {
-                        e.insert(aspects.clone());
-                        aspects.into_iter().collect()
-                    }
-                    Occupied(mut e) => {
-                        let old = e.insert(aspects.clone());
-                        aspects.difference(&old).cloned().collect::<Vec<_>>()
-                    }
-                };
-                diff.into_iter()
+        for entry_address in incoming.keys() {
+            let aspects = incoming[entry_address].clone();
+            let diff = match self.held_aspects.entry(entry_address.clone()) {
+                Vacant(e) => {
+                    e.insert(aspects.clone());
+                    aspects.into_iter().collect()
+                }
+                Occupied(mut e) => {
+                    let old = e.insert(aspects.clone());
+                    aspects.difference(&old).cloned().collect::<Vec<_>>()
+                }
+            };
+            messages.append(
+                &mut diff
+                    .into_iter()
                     .filter_map(|aspect_address| {
                         get_aspect(&log_context, client, &table_name, &aspect_address)
                             .expect("Cannot get aspect")
                     })
                     .map(|entry_aspect| {
                         Lib3hToClient::HandleStoreEntryAspect(StoreEntryAspectData {
-                            request_id: "TODO".to_string(),
+                            request_id: Uuid::new_v4().to_string(), // XXX: well, is this so bad?
                             space_address: space_address.clone(),
-                            provider_agent_id: Address::from("TODO"),
+                            provider_agent_id: agent_id.clone(), // TODO: is this OK?
                             entry_address: entry_address.clone(),
                             entry_aspect,
                         })
                     })
-                    .collect::<Vec<_>>()
-            })
-            .flatten()
-            .collect();
+                    .collect(),
+            );
+        }
 
-        Ok(Vec::new())
+        Ok(messages)
     }
 
     pub fn process_pending_requests_to_client(
@@ -170,12 +175,14 @@ impl Sim1hState {
             Vec::new()
         };
 
-        Ok(requests
+        let messages = requests
             .into_iter()
             .chain(self.create_store_requests(client)?.into_iter())
             .chain(self.create_direct_message_requests(client).into_iter())
             .chain(self.client_request_outbox.drain(..))
-            .collect())
+            .collect();
+
+        Ok(messages)
     }
 
     pub fn process_pending_responses_to_client(&mut self) -> Vec<ClientToLib3hResponse> {
