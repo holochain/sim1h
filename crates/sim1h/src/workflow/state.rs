@@ -17,6 +17,8 @@ use uuid::Uuid;
 pub type AspectAddressMap = HashMap<Address, HashSet<Address>>;
 type Sim1hResult<T> = Result<T, String>;
 
+const TICKS_PER_BIG_FETCH: u32 = 100;
+
 #[derive(Default)]
 pub struct Sim1hState {
     pub initialized: bool,
@@ -25,6 +27,7 @@ pub struct Sim1hState {
     pub client_request_outbox: Vec<Lib3hToClient>,
     pub client_response_outbox: Vec<ClientToLib3hResponse>,
     pub held_aspects: AspectAddressMap,
+    num_ticks: u32,
     last_evaluated_scan_key: Option<Item>,
 }
 
@@ -112,7 +115,8 @@ impl Sim1hState {
     }
 
     fn create_store_requests(&mut self, client: &Client) -> Sim1hResult<Vec<Lib3hToClient>> {
-        if !self.initialized {
+        self.num_ticks += 1;
+        if !self.initialized || self.num_ticks % TICKS_PER_BIG_FETCH > 0 {
             return Ok(Vec::new());
         }
         let log_context = "create_store_requests";
