@@ -16,7 +16,7 @@ pub fn client(region: Region) -> Client {
 
 pub fn client_from_endpoint(endpoint: String) -> Client {
     client(Region::Custom {
-        name: "".to_string(),
+        name: "localhost".to_string(),
         endpoint,
     })
 }
