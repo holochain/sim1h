@@ -46,3 +46,23 @@ Currently wrapping dynamodb from AWS for the key/value store.
 - it's pretty popular and does what you'd expect for basic key/value stuff
 
 Calling this the "bezos bunker DHT" (bbDHT).
+
+## Usage with holochain-rust
+
+Currently supported on the [sim1h-integration branch](https://github.com/holochain/holochain-rust/tree/sim1h-integration). That branch supports a new `sim1h` network type, as well as a nix command to run a local dynamodb instance.
+
+In your conductor config, use the following for the `network` config section:
+
+```
+[network]
+type = 'sim1h'
+dynamo_url = 'http://localhost:8000' # URL of running dynamodb instance
+```
+
+You can run a local dynamodb instance at port 8000 by entering a nix-shell and running:
+
+    dynamodb
+
+If you want to expose your local dynamodb instance over the internet, we suggest using a tunneling service like [ngrok](https://ngrok.com/) to map a public URL to your local port. Then, your friends can use that public URL as their `dynamo_url` instead of localhost.
+
+That's it!
