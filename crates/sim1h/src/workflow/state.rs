@@ -18,7 +18,7 @@ use uuid::Uuid;
 pub type AspectAddressMap = HashMap<Address, HashSet<Address>>;
 type Sim1hResult<T> = Result<T, String>;
 
-const MIN_TOLERABLE_TICK_INTERVAL: u128 = 50;
+const MIN_TOLERABLE_TICK_INTERVAL_MS: u128 = 80;
 
 #[derive(Default)]
 pub struct Sim1hState {
@@ -184,8 +184,8 @@ impl Sim1hState {
         let now = Instant::now();
         if let Some(then) = self.last_tick_instant {
             let millis = now.duration_since(then).as_millis();
-            if millis < MIN_TOLERABLE_TICK_INTERVAL {
-                warn!("process_pending_requests_to_client: It's only been {} since the last tick(), could you please take it easy?", millis);
+            if millis < MIN_TOLERABLE_TICK_INTERVAL_MS {
+                return Ok(Vec::new());
             }
         }
         self.last_tick_instant = Some(now);
