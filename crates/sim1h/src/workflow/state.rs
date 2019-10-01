@@ -12,12 +12,13 @@ use std::collections::hash_map::Entry::Occupied;
 use std::collections::hash_map::Entry::Vacant;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::time::Instant;
 use uuid::Uuid;
 
 pub type AspectAddressMap = HashMap<Address, HashSet<Address>>;
 type Sim1hResult<T> = Result<T, String>;
 
-const TICKS_PER_BIG_FETCH: u32 = 100;
+const MIN_TOLERABLE_TICK_INTERVAL: u128 = 50;
 
 #[derive(Default)]
 pub struct Sim1hState {
@@ -28,6 +29,7 @@ pub struct Sim1hState {
     pub client_response_outbox: Vec<ClientToLib3hResponse>,
     pub held_aspects: AspectAddressMap,
     num_ticks: u32,
+    last_tick_instant: Option<Instant>,
     last_evaluated_scan_key: Option<Item>,
 }
 
@@ -115,10 +117,10 @@ impl Sim1hState {
     }
 
     fn create_store_requests(&mut self, client: &Client) -> Sim1hResult<Vec<Lib3hToClient>> {
-        self.num_ticks += 1;
-        if !self.initialized || self.num_ticks % TICKS_PER_BIG_FETCH > 0 {
+        if !self.initialized {
             return Ok(Vec::new());
         }
+
         let log_context = "create_store_requests";
         let agent_id = self.agent_id()?.clone();
         let space_address = self.space_address()?.clone();
@@ -178,6 +180,16 @@ impl Sim1hState {
         } else {
             Vec::new()
         };
+
+        let now = Instant::now();
+        if let Some(then) = self.last_tick_instant {
+            let millis = now.duration_since(then).as_millis();
+            if millis < MIN_TOLERABLE_TICK_INTERVAL {
+                warn!("process_pending_requests_to_client: It's only been {} since the last tick(), could you please take it easy?", millis);
+            }
+        }
+        self.last_tick_instant = Some(now);
+        self.num_ticks += 1;
 
         let messages = requests
             .into_iter()
