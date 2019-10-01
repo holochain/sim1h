@@ -23,19 +23,13 @@ impl Sim1hState {
         for (entry_address, aspect_addresses) in entry_list_data.address_map.iter() {
             self.client_request_outbox
                 .push(Lib3hToClient::HandleFetchEntry(FetchEntryData {
-                    space_address: self
-                        .space_address
-                        .clone()
-                        .expect("Got response before we're initialized?! That can't happen."),
+                    space_address: self.space_address.clone(),
                     entry_address: entry_address.clone(),
                     // When we get back the result as Lib3hToClientResponse::FetchEntryResult,
                     // this will tell us that we should go ahead and publish the fetched entry:
                     // TODO: not do that in the future
                     request_id: String::from("fetch-and-publish"),
-                    provider_agent_id: self
-                        .agent_id
-                        .clone()
-                        .expect("Got response before we're initialized?! That can't happen."),
+                    provider_agent_id: self.agent_id.clone(),
                     aspect_address_list: Some(aspect_addresses.clone()),
                 }));
         }

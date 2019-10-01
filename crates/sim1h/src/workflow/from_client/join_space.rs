@@ -12,11 +12,10 @@ impl Sim1hState {
     /// create space if not exists
     /// touch agent
     pub fn join_space(
-        &mut self,
         log_context: &LogContext,
         client: &Client,
         join_space_data: &SpaceData,
-    ) -> BbDhtResult<ClientToLib3hResponse> {
+    ) -> BbDhtResult<(ClientToLib3hResponse, Sim1hState)> {
         tracer(&log_context, "join_space");
 
         let table_name = String::from(join_space_data.space_address.clone());
@@ -29,10 +28,12 @@ impl Sim1hState {
             &join_space_data.agent_id,
         )?;
 
-        self.space_address = Some(join_space_data.space_address.clone());
-        self.agent_id = Some(join_space_data.agent_id.clone());
+        let state = Sim1hState::new(
+            join_space_data.space_address.clone(),
+            join_space_data.agent_id.clone(),
+        );
 
-        Ok(ClientToLib3hResponse::JoinSpaceResult)
+        Ok((ClientToLib3hResponse::JoinSpaceResult, state))
     }
 }
 
@@ -53,13 +54,12 @@ pub mod tests {
         tracer(&log_context, "fixtures");
         let local_client = local_client();
         let space_data = space_data_fresh();
-        let mut state = Sim1hState::default();
 
         tracer(&log_context, "check response");
 
-        match state.join_space(&log_context, &local_client, &space_data) {
-            Ok(ClientToLib3hResponse::JoinSpaceResult) => {}
-            Ok(result) => {
+        match Sim1hState::join_space(&log_context, &local_client, &space_data) {
+            Ok((ClientToLib3hResponse::JoinSpaceResult, _)) => {}
+            Ok((result, _)) => {
                 panic!("test OK panic: {:?} {:?}", result, &space_data);
             }
             Err(err) => {
@@ -76,14 +76,13 @@ pub mod tests {
         tracer(&log_context, "fixtures");
         let bad_client = bad_client();
         let space_data = space_data_fresh();
-        let mut state = Sim1hState::default();
 
         tracer(&log_context, "check response");
-        match state.join_space(&log_context, &bad_client, &space_data) {
+        match Sim1hState::join_space(&log_context, &bad_client, &space_data) {
             Err(_) => {
                 tracer(&log_context, "👌");
             }
-            Ok(v) => {
+            Ok((v, _)) => {
                 panic!("bad Ok {:?}", v);
             }
         }

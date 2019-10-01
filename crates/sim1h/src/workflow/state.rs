@@ -23,8 +23,8 @@ const MIN_TOLERABLE_TICK_INTERVAL_MS: u128 = 80;
 #[derive(Default)]
 pub struct Sim1hState {
     pub initialized: bool,
-    pub space_address: Option<Address>,
-    pub agent_id: Option<Address>,
+    pub space_address: Address,
+    pub agent_id: Address,
     pub client_request_outbox: Vec<Lib3hToClient>,
     pub client_response_outbox: Vec<ClientToLib3hResponse>,
     pub held_aspects: AspectAddressMap,
@@ -34,44 +34,28 @@ pub struct Sim1hState {
 }
 
 impl Sim1hState {
+
+    pub fn new(space_address: Address, agent_id: Address) -> Self {
+        Self {
+            space_address, agent_id,
+            ..Self::default()
+        }
+    }
+
     fn should_get_authoring_list(&mut self) -> bool {
-        self.initialized == false && self.space_address.is_some() && self.agent_id.is_some()
-    }
-
-    pub fn space_address(&self) -> Sim1hResult<&Address> {
-        self.space_address
-            .as_ref()
-            .ok_or("Cannot get space_address: Sim1hState is not initialized".to_string())
-    }
-
-    pub fn agent_id(&self) -> Sim1hResult<&Address> {
-        self.agent_id
-            .as_ref()
-            .ok_or("Cannot get agent_id: Sim1hState is not initialized".to_string())
+        self.initialized == false
     }
 
     fn create_authoring_gossip_list_requests(&self) -> Vec<Lib3hToClient> {
         let mut requests = Vec::new();
         requests.push(Lib3hToClient::HandleGetAuthoringEntryList(GetListData {
-            space_address: self
-                .space_address
-                .clone()
-                .expect("Must be some because of if-condition"),
-            provider_agent_id: self
-                .agent_id
-                .clone()
-                .expect("Must be some because of if-condition"),
+            space_address: self.space_address.clone(),
+            provider_agent_id: self.agent_id.clone(),
             request_id: "".into(),
         }));
         requests.push(Lib3hToClient::HandleGetGossipingEntryList(GetListData {
-            space_address: self
-                .space_address
-                .clone()
-                .expect("Must be some because of if-condition"),
-            provider_agent_id: self
-                .agent_id
-                .clone()
-                .expect("Must be some because of if-condition"),
+            space_address: self.space_address.clone(),
+            provider_agent_id: self.agent_id.clone(),
             request_id: "".into(),
         }));
 
@@ -79,40 +63,30 @@ impl Sim1hState {
     }
 
     fn create_direct_message_requests(&self, client: &Client) -> Vec<Lib3hToClient> {
-        if self.space_address.is_some() && self.agent_id.is_some() {
-            let log_context = "Sim1hState::create_direct_message_requests";
-            match check_inbox(
-                &log_context,
-                client,
-                &self
-                    .space_address
-                    .clone()
-                    .expect("Must be some because of if-condition")
-                    .to_string(),
-                &Address::from(
-                    self.agent_id
-                        .clone()
-                        .expect("Must be some because of if-condition")
-                        .to_string(),
-                ),
-            ) {
-                Ok(direct_messages) => direct_messages
-                    .into_iter()
-                    .map(|(message, is_response)| {
-                        if is_response {
-                            Lib3hToClient::SendDirectMessageResult(message)
-                        } else {
-                            Lib3hToClient::HandleSendDirectMessage(message)
-                        }
-                    })
-                    .collect(),
-                Err(error) => {
-                    error!("Error checking inbox: {:?}", error);
-                    Vec::new()
-                }
+        if !self.initialized {
+            return Vec::new();
+        }
+        let log_context = "Sim1hState::create_direct_message_requests";
+        match check_inbox(
+            &log_context,
+            client,
+            &self.space_address.to_string(),
+            &Address::from(self.agent_id.to_string()),
+        ) {
+            Ok(direct_messages) => direct_messages
+                .into_iter()
+                .map(|(message, is_response)| {
+                    if is_response {
+                        Lib3hToClient::SendDirectMessageResult(message)
+                    } else {
+                        Lib3hToClient::HandleSendDirectMessage(message)
+                    }
+                })
+                .collect(),
+            Err(error) => {
+                error!("Error checking inbox: {:?}", error);
+                Vec::new()
             }
-        } else {
-            Vec::new()
         }
     }
 
@@ -122,8 +96,8 @@ impl Sim1hState {
         }
 
         let log_context = "create_store_requests";
-        let agent_id = self.agent_id()?.clone();
-        let space_address = self.space_address()?.clone();
+        let agent_id = self.agent_id.clone();
+        let space_address = self.space_address.clone();
         let table_name = space_address.to_string();
         let (incoming, last_evaluated_key) = scan_aspects(
             log_context,
