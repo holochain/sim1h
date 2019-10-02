@@ -89,7 +89,7 @@ pub fn ensure_content(
 ) -> BbDhtResult<()> {
     tracer(&log_context, "ensure_content");
 
-    let retry = should_put_item_retry(
+    if should_put_item_retry(
         log_context,
         client
             .put_item(PutItemInput {
@@ -97,10 +97,8 @@ pub fn ensure_content(
                 table_name: table_name.to_string(),
                 ..Default::default()
             })
-            .sync(),
-    )?;
-
-    if retry {
+            .sync()
+    )? {
         ensure_content(log_context, client, table_name, content)
     } else {
         Ok(())

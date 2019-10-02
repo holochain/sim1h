@@ -11,14 +11,13 @@ use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::string_set_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::dht::bbdht::error::BbDhtResult;
+use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::EntryAspectData;
-use rusoto_core::RusotoError;
 use rusoto_dynamodb::AttributeValue;
 use rusoto_dynamodb::DynamoDb;
-use rusoto_dynamodb::PutItemError;
 use rusoto_dynamodb::PutItemInput;
 use rusoto_dynamodb::UpdateItemInput;
 use std::collections::HashMap;
@@ -66,57 +65,18 @@ pub fn put_aspect(
         number_attribute_value(&aspect.publish_ts),
     );
 
-    match client
-        .put_item(PutItemInput {
-            table_name: table_name.to_string(),
-            item: aspect_item,
-            ..Default::default()
-        })
-        .sync()
-    {
-        Ok(_) => Ok(()),
-        // brute force retryable failures
-        // TODO do not brute force failures
-        // use transactions upstream instead
-        Err(RusotoError::Service(err)) => match err {
-            PutItemError::InternalServerError(err) => {
-                tracer(
-                    &log_context,
-                    &format!("retry put_aspect Service InternalServerError {:?}", err),
-                );
-                put_aspect(&log_context, &client, &table_name, &aspect)
-            }
-            PutItemError::ProvisionedThroughputExceeded(err) => {
-                tracer(
-                    &log_context,
-                    &format!(
-                        "retry put_aspect Service ProvisionedThroughputExceeded {:?}",
-                        err
-                    ),
-                );
-                put_aspect(&log_context, &client, &table_name, &aspect)
-            }
-            PutItemError::RequestLimitExceeded(err) => {
-                tracer(
-                    &log_context,
-                    &format!("retry put_aspect Service RequestLimitExceeded {:?}", err),
-                );
-                put_aspect(&log_context, &client, &table_name, &aspect)
-            }
-            PutItemError::TransactionConflict(err) => {
-                tracer(
-                    &log_context,
-                    &format!("retry put_aspect Service TransactionConflict {:?}", err),
-                );
-                put_aspect(&log_context, &client, &table_name, &aspect)
-            }
-            _ => Err(err.into()),
-        },
-        Err(RusotoError::Unknown(err)) => {
-            tracer(&log_context, &format!("retry put_aspect Unknown {:?}", err));
-            put_aspect(&log_context, &client, &table_name, &aspect)
-        }
-        Err(err) => Err(err.into()),
+    if should_put_item_retry(
+        log_context,
+        client.put_item(PutItemInput {
+        table_name: table_name.to_string(),
+        item: aspect_item,
+        ..Default::default()
+    })
+    .sync())? {
+        put_aspect(log_context, client, table_name, aspect)
+    }
+    else {
+        Ok(())
     }
 }
 
