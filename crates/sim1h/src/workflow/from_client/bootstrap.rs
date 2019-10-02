@@ -1,9 +1,9 @@
 use crate::dht::bbdht::dynamodb::account::describe_limits;
 use crate::dht::bbdht::dynamodb::client::Client;
+use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
-use crate::dht::bbdht::error::BbDhtResult;
 
 /// check database connection
 /// optional

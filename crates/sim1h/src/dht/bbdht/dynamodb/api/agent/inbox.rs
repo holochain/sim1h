@@ -1,7 +1,5 @@
 use crate::dht::bbdht::dynamodb::api::item::Item;
 use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::dynamodb::schema::{blob_attribute_value, bool_attribute_value};
-use crate::dht::bbdht::dynamodb::schema::cas::{inbox_key, MESSAGE_IS_RESPONSE_KEY};
 use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_CONTENT_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_FROM_KEY;
@@ -9,9 +7,11 @@ use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_SPACE_ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_TO_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_SEEN_KEY;
+use crate::dht::bbdht::dynamodb::schema::cas::{inbox_key, MESSAGE_IS_RESPONSE_KEY};
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::string_set_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::TableName;
+use crate::dht::bbdht::dynamodb::schema::{blob_attribute_value, bool_attribute_value};
 use crate::dht::bbdht::error::BbDhtError;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
@@ -357,13 +357,16 @@ pub fn item_to_direct_message_data(item: &Item) -> BbDhtResult<(DirectMessageDat
         }
     };
 
-    Ok((DirectMessageData {
-        content: content.into(),
-        from_agent_id: from_agent_id.into(),
-        to_agent_id: to_agent_id.into(),
-        request_id: request_id,
-        space_address: space_address.into(),
-    }, is_response))
+    Ok((
+        DirectMessageData {
+            content: content.into(),
+            from_agent_id: from_agent_id.into(),
+            to_agent_id: to_agent_id.into(),
+            request_id: request_id,
+            space_address: space_address.into(),
+        },
+        is_response,
+    ))
 }
 
 pub fn request_ids_to_messages(

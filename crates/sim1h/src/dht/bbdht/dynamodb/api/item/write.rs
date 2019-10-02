@@ -1,3 +1,4 @@
+use crate::dht::bbdht::dynamodb::api::item::Item;
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::CONTENT_KEY;
@@ -9,8 +10,10 @@ use crate::trace::LogContext;
 use holochain_persistence_api::cas::content::AddressableContent;
 use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::PutItemInput;
-use crate::dht::bbdht::dynamodb::api::item::Item;
 use std::collections::HashMap;
+use rusoto_dynamodb::PutItemError;
+use rusoto_dynamodb::PutItemOutput;
+use rusoto_core::RusotoError;
 
 pub fn content_to_item(content: &dyn AddressableContent) -> Item {
     let mut item = HashMap::new();
@@ -25,6 +28,59 @@ pub fn content_to_item(content: &dyn AddressableContent) -> Item {
     item
 }
 
+pub fn should_put_item_retry(
+    log_context: &LogContext,
+    put_item_result: Result<PutItemOutput, RusotoError<PutItemError>>,
+) -> BbDhtResult<bool> {
+    match put_item_result {
+        // no need to retry any success
+        Ok(_) => Ok(false),
+        Err(RusotoError::Service(err)) => match err {
+            PutItemError::InternalServerError(err) => {
+                // retry InternalServerErrors as these often seem to be temporary
+                tracer(
+                    &log_context,
+                    &format!("retry Service InternalServerError {:?}", err),
+                );
+                Ok(true)
+            }
+            PutItemError::ProvisionedThroughputExceeded(err) => {
+                // retry throughput issues as these will hopefully recover
+                tracer(
+                    &log_context,
+                    &format!("retry Service ProvisionedThroughputExceeded {:?}", err),
+                );
+                Ok(true)
+            }
+            PutItemError::RequestLimitExceeded(err) => {
+                // retry request limits as these will hopefully recover
+                tracer(
+                    &log_context,
+                    &format!("retry put_aspect Service RequestLimitExceeded {:?}", err),
+                );
+                Ok(true)
+            }
+            PutItemError::TransactionConflict(err) => {
+                // retry transaction conflicts
+                tracer(
+                    &log_context,
+                    &format!("retry Service TransactionConflict {:?}", err),
+                );
+                Ok(true)
+            }
+            // forward other put item errors back up the stack
+            _ => Err(err.into()),
+        },
+        Err(RusotoError::Unknown(err)) => {
+            // retry anything we don't know about
+            tracer(&log_context, &format!("retry Unknown {:?}", err));
+            Ok(true)
+        }
+        // forward other errors back up the stack
+        Err(err) => Err(err.into()),
+    }
+}
+
 pub fn ensure_content(
     log_context: &LogContext,
     client: &Client,
@@ -33,31 +89,39 @@ pub fn ensure_content(
 ) -> BbDhtResult<()> {
     tracer(&log_context, "ensure_content");
 
-    client
-        .put_item(PutItemInput {
-            item: content_to_item(content),
-            table_name: table_name.to_string(),
-            ..Default::default()
-        })
-        .sync()?;
-    Ok(())
+    let retry = should_put_item_retry(
+        log_context,
+        client
+            .put_item(PutItemInput {
+                item: content_to_item(content),
+                table_name: table_name.to_string(),
+                ..Default::default()
+            })
+            .sync(),
+    )?;
+
+    if retry {
+        ensure_content(log_context, client, table_name, content)
+    } else {
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 pub mod tests {
 
     use crate::dht::bbdht::dynamodb::api::item::fixture::content_fresh;
+    use crate::dht::bbdht::dynamodb::api::item::write::content_to_item;
     use crate::dht::bbdht::dynamodb::api::item::write::ensure_content;
     use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
     use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
     use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::dht::bbdht::dynamodb::api::item::write::content_to_item;
+    use crate::trace::tracer;
     use rusoto_dynamodb::DynamoDb;
     use rusoto_dynamodb::Put;
-    use rusoto_dynamodb::TransactWriteItemsInput;
     use rusoto_dynamodb::TransactWriteItem;
-    use crate::trace::tracer;
+    use rusoto_dynamodb::TransactWriteItemsInput;
 
     #[test]
     /// older versions of dynamodb don't support transact writes
@@ -76,31 +140,33 @@ pub mod tests {
 
         // cas exists
         assert!(table_exists(&log_context, &local_client, &table_name)
-        .expect("could not check table exists"));
+            .expect("could not check table exists"));
 
         // transact
-        local_client.transact_write_items(TransactWriteItemsInput {
-            transact_items: vec![
-                TransactWriteItem {
-                    put: Some(Put {
-                        table_name: table_name.clone(),
-                        item: content_to_item(&content_a),
+        local_client
+            .transact_write_items(TransactWriteItemsInput {
+                transact_items: vec![
+                    TransactWriteItem {
+                        put: Some(Put {
+                            table_name: table_name.clone(),
+                            item: content_to_item(&content_a),
+                            ..Default::default()
+                        }),
                         ..Default::default()
-                    }),
-                    ..Default::default()
-                },
-                TransactWriteItem {
-                    put: Some(Put {
-                        table_name: table_name.clone(),
-                        item: content_to_item(&content_b),
+                    },
+                    TransactWriteItem {
+                        put: Some(Put {
+                            table_name: table_name.clone(),
+                            item: content_to_item(&content_b),
+                            ..Default::default()
+                        }),
                         ..Default::default()
-                    }),
-                    ..Default::default()
-                }
-            ],
-            ..Default::default()
-        }).sync().expect("could not transact write items");
-
+                    },
+                ],
+                ..Default::default()
+            })
+            .sync()
+            .expect("could not transact write items");
     }
 
     #[test]
