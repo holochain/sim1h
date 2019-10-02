@@ -128,11 +128,9 @@ pub mod tests {
         let entry_address = entry_address_fresh();
         let query_entry_data = query_entry_data_fresh(&space_data, &entry_address);
         let provided_entry_data = provided_entry_data_fresh(&space_data, &entry_address);
-        let mut state = Sim1hState::default();
 
         // join space
-        assert!(state
-            .join_space(&log_context, &local_client, &space_data)
+        assert!(Sim1hState::join_space(&log_context, &local_client, &space_data)
             .is_ok());
 
         // publish entry

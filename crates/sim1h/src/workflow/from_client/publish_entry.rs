@@ -48,12 +48,10 @@ pub mod tests {
         let space_data = space_data_fresh();
         let entry_address = entry_address_fresh();
         let provided_entry_data = provided_entry_data_fresh(&space_data, &entry_address);
-        let mut state = Sim1hState::default();
 
         tracer(&log_context, "check response");
 
-        assert!(state
-            .join_space(&log_context, &local_client, &space_data)
+        assert!(Sim1hState::join_space(&log_context, &local_client, &space_data)
             .is_ok());
 
         match publish_entry(&log_context, &local_client, &provided_entry_data) {
