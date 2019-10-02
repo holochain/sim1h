@@ -277,6 +277,7 @@ pub fn get_inbox_request_ids(
     );
     let get_item_output = client
         .get_item(GetItemInput {
+            consistent_read: Some(true),
             table_name: table_name.into(),
             key: key,
             ..Default::default()
@@ -384,6 +385,7 @@ pub fn request_ids_to_messages(
 
         let get_item_output = client
             .get_item(GetItemInput {
+                consistent_read: Some(true),
                 table_name: table_name.into(),
                 key: key,
                 ..Default::default()
