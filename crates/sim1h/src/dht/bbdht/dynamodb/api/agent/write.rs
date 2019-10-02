@@ -1,3 +1,4 @@
+use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
@@ -23,14 +24,21 @@ pub fn touch_agent(
         String::from(ADDRESS_KEY),
         string_attribute_value(&String::from(agent_id.to_owned())),
     );
-    client
-        .put_item(PutItemInput {
-            item: item,
-            table_name: table_name.to_string(),
-            ..Default::default()
-        })
-        .sync()?;
-    Ok(())
+
+    if should_put_item_retry(
+        log_context,
+        client
+            .put_item(PutItemInput {
+                table_name: table_name.to_string(),
+                item: item,
+                ..Default::default()
+            })
+            .sync(),
+    )? {
+        touch_agent(log_context, client, table_name, agent_id)
+    } else {
+        Ok(())
+    }
 }
 
 #[cfg(test)]

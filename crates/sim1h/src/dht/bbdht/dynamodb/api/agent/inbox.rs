@@ -1,7 +1,5 @@
 use crate::dht::bbdht::dynamodb::api::item::Item;
 use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::dynamodb::schema::{blob_attribute_value, bool_attribute_value};
-use crate::dht::bbdht::dynamodb::schema::cas::{inbox_key, MESSAGE_IS_RESPONSE_KEY};
 use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_CONTENT_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_FROM_KEY;
@@ -9,19 +7,20 @@ use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_SPACE_ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_TO_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_SEEN_KEY;
+use crate::dht::bbdht::dynamodb::schema::cas::{inbox_key, MESSAGE_IS_RESPONSE_KEY};
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::string_set_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::TableName;
+use crate::dht::bbdht::dynamodb::schema::{blob_attribute_value, bool_attribute_value};
 use crate::dht::bbdht::error::BbDhtError;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::DirectMessageData;
-use rusoto_core::RusotoError;
 use rusoto_dynamodb::DynamoDb;
+use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
 use rusoto_dynamodb::GetItemInput;
-use rusoto_dynamodb::PutItemError;
 use rusoto_dynamodb::PutItemInput;
 use rusoto_dynamodb::UpdateItemInput;
 use std::collections::HashMap;
@@ -71,114 +70,28 @@ pub fn put_inbox_message(
         bool_attribute_value(response),
     );
 
-    match client
-        .put_item(PutItemInput {
-            table_name: table_name.to_string(),
-            item: message_item,
-            ..Default::default()
-        })
-        .sync()
-    {
-        Ok(_) => Ok(()),
-        // brute force retryable failures
-        // TODO do not brute force failures
-        // use transactions upstream instead
-        Err(RusotoError::Service(err)) => match err {
-            PutItemError::InternalServerError(err) => {
-                tracer(
-                    &log_context,
-                    &format!(
-                        "retry put_inbox_message Service InternalServerError {:?}",
-                        err
-                    ),
-                );
-                put_inbox_message(
-                    log_context,
-                    client,
-                    table_name,
-                    request_id,
-                    from,
-                    to,
-                    content,
-                    response,
-                )
-            }
-            PutItemError::ProvisionedThroughputExceeded(err) => {
-                tracer(
-                    &log_context,
-                    &format!(
-                        "retry put_inbox_message Service ProvisionedThroughputExceeded {:?}",
-                        err
-                    ),
-                );
-                put_inbox_message(
-                    log_context,
-                    client,
-                    table_name,
-                    request_id,
-                    from,
-                    to,
-                    content,
-                    response,
-                )
-            }
-            PutItemError::RequestLimitExceeded(err) => {
-                tracer(
-                    &log_context,
-                    &format!(
-                        "retry put_inbox_message Service RequestLimitExceeded {:?}",
-                        err
-                    ),
-                );
-                put_inbox_message(
-                    log_context,
-                    client,
-                    table_name,
-                    request_id,
-                    from,
-                    to,
-                    content,
-                    response,
-                )
-            }
-            PutItemError::TransactionConflict(err) => {
-                tracer(
-                    &log_context,
-                    &format!(
-                        "retry put_inbox_message Service TransactionConflict {:?}",
-                        err
-                    ),
-                );
-                put_inbox_message(
-                    log_context,
-                    client,
-                    table_name,
-                    request_id,
-                    from,
-                    to,
-                    content,
-                    response,
-                )
-            }
-            _ => Err(err.into()),
-        },
-        Err(RusotoError::Unknown(err)) => {
-            tracer(
-                &log_context,
-                &format!("retry put_inbox_message Unknown {:?}", err),
-            );
-            put_inbox_message(
-                log_context,
-                client,
-                table_name,
-                request_id,
-                from,
-                to,
-                content,
-                response,
-            )
-        }
-        Err(err) => Err(err.into()),
+    if should_put_item_retry(
+        log_context,
+        client
+            .put_item(PutItemInput {
+                table_name: table_name.to_string(),
+                item: message_item,
+                ..Default::default()
+            })
+            .sync(),
+    )? {
+        put_inbox_message(
+            log_context,
+            client,
+            table_name,
+            request_id,
+            from,
+            to,
+            content,
+            response,
+        )
+    } else {
+        Ok(())
     }
 }
 
@@ -277,6 +190,7 @@ pub fn get_inbox_request_ids(
     );
     let get_item_output = client
         .get_item(GetItemInput {
+            consistent_read: Some(true),
             table_name: table_name.into(),
             key: key,
             ..Default::default()
@@ -356,13 +270,16 @@ pub fn item_to_direct_message_data(item: &Item) -> BbDhtResult<(DirectMessageDat
         }
     };
 
-    Ok((DirectMessageData {
-        content: content.into(),
-        from_agent_id: from_agent_id.into(),
-        to_agent_id: to_agent_id.into(),
-        request_id: request_id,
-        space_address: space_address.into(),
-    }, is_response))
+    Ok((
+        DirectMessageData {
+            content: content.into(),
+            from_agent_id: from_agent_id.into(),
+            to_agent_id: to_agent_id.into(),
+            request_id: request_id,
+            space_address: space_address.into(),
+        },
+        is_response,
+    ))
 }
 
 pub fn request_ids_to_messages(
@@ -384,6 +301,7 @@ pub fn request_ids_to_messages(
 
         let get_item_output = client
             .get_item(GetItemInput {
+                consistent_read: Some(true),
                 table_name: table_name.into(),
                 key: key,
                 ..Default::default()

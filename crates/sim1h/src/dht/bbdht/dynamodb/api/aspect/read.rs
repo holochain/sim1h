@@ -152,6 +152,7 @@ pub fn scan_aspects(
 ) -> BbDhtResult<(AspectAddressMap, Option<Item>)> {
     client
         .scan(ScanInput {
+            consistent_read: Some(true),
             table_name: table_name.to_string(),
             projection_expression: projection_expression(vec![ADDRESS_KEY, ASPECT_LIST_KEY]),
             exclusive_start_key,
