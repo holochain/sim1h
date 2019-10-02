@@ -18,10 +18,9 @@ use crate::trace::tracer;
 use crate::trace::LogContext;
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::DirectMessageData;
-use rusoto_core::RusotoError;
 use rusoto_dynamodb::DynamoDb;
+use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
 use rusoto_dynamodb::GetItemInput;
-use rusoto_dynamodb::PutItemError;
 use rusoto_dynamodb::PutItemInput;
 use rusoto_dynamodb::UpdateItemInput;
 use std::collections::HashMap;
@@ -71,114 +70,28 @@ pub fn put_inbox_message(
         bool_attribute_value(response),
     );
 
-    match client
-        .put_item(PutItemInput {
-            table_name: table_name.to_string(),
-            item: message_item,
-            ..Default::default()
-        })
-        .sync()
-    {
-        Ok(_) => Ok(()),
-        // brute force retryable failures
-        // TODO do not brute force failures
-        // use transactions upstream instead
-        Err(RusotoError::Service(err)) => match err {
-            PutItemError::InternalServerError(err) => {
-                tracer(
-                    &log_context,
-                    &format!(
-                        "retry put_inbox_message Service InternalServerError {:?}",
-                        err
-                    ),
-                );
-                put_inbox_message(
-                    log_context,
-                    client,
-                    table_name,
-                    request_id,
-                    from,
-                    to,
-                    content,
-                    response,
-                )
-            }
-            PutItemError::ProvisionedThroughputExceeded(err) => {
-                tracer(
-                    &log_context,
-                    &format!(
-                        "retry put_inbox_message Service ProvisionedThroughputExceeded {:?}",
-                        err
-                    ),
-                );
-                put_inbox_message(
-                    log_context,
-                    client,
-                    table_name,
-                    request_id,
-                    from,
-                    to,
-                    content,
-                    response,
-                )
-            }
-            PutItemError::RequestLimitExceeded(err) => {
-                tracer(
-                    &log_context,
-                    &format!(
-                        "retry put_inbox_message Service RequestLimitExceeded {:?}",
-                        err
-                    ),
-                );
-                put_inbox_message(
-                    log_context,
-                    client,
-                    table_name,
-                    request_id,
-                    from,
-                    to,
-                    content,
-                    response,
-                )
-            }
-            PutItemError::TransactionConflict(err) => {
-                tracer(
-                    &log_context,
-                    &format!(
-                        "retry put_inbox_message Service TransactionConflict {:?}",
-                        err
-                    ),
-                );
-                put_inbox_message(
-                    log_context,
-                    client,
-                    table_name,
-                    request_id,
-                    from,
-                    to,
-                    content,
-                    response,
-                )
-            }
-            _ => Err(err.into()),
-        },
-        Err(RusotoError::Unknown(err)) => {
-            tracer(
-                &log_context,
-                &format!("retry put_inbox_message Unknown {:?}", err),
-            );
-            put_inbox_message(
-                log_context,
-                client,
-                table_name,
-                request_id,
-                from,
-                to,
-                content,
-                response,
-            )
-        }
-        Err(err) => Err(err.into()),
+    if should_put_item_retry(
+        log_context,
+        client
+            .put_item(PutItemInput {
+                table_name: table_name.to_string(),
+                item: message_item,
+                ..Default::default()
+            })
+            .sync(),
+    )? {
+        put_inbox_message(
+            log_context,
+            client,
+            table_name,
+            request_id,
+            from,
+            to,
+            content,
+            response,
+        )
+    } else {
+        Ok(())
     }
 }
 

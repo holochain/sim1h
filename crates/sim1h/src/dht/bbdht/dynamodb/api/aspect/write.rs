@@ -1,3 +1,4 @@
+use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::dht::bbdht::dynamodb::schema::blob_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
@@ -11,7 +12,6 @@ use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::string_set_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::dht::bbdht::error::BbDhtResult;
-use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use holochain_persistence_api::cas::content::Address;
@@ -67,15 +67,16 @@ pub fn put_aspect(
 
     if should_put_item_retry(
         log_context,
-        client.put_item(PutItemInput {
-        table_name: table_name.to_string(),
-        item: aspect_item,
-        ..Default::default()
-    })
-    .sync())? {
+        client
+            .put_item(PutItemInput {
+                table_name: table_name.to_string(),
+                item: aspect_item,
+                ..Default::default()
+            })
+            .sync(),
+    )? {
         put_aspect(log_context, client, table_name, aspect)
-    }
-    else {
+    } else {
         Ok(())
     }
 }

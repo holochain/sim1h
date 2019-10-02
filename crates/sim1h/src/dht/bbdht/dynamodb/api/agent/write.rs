@@ -1,3 +1,4 @@
+use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
@@ -9,7 +10,6 @@ use holochain_persistence_api::cas::content::Address;
 use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::PutItemInput;
 use std::collections::HashMap;
-use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
 
 pub fn touch_agent(
     log_context: &LogContext,
@@ -27,15 +27,16 @@ pub fn touch_agent(
 
     if should_put_item_retry(
         log_context,
-        client.put_item(PutItemInput {
-        table_name: table_name.to_string(),
-        item: item,
-        ..Default::default()
-    })
-    .sync())? {
+        client
+            .put_item(PutItemInput {
+                table_name: table_name.to_string(),
+                item: item,
+                ..Default::default()
+            })
+            .sync(),
+    )? {
         touch_agent(log_context, client, table_name, agent_id)
-    }
-    else {
+    } else {
         Ok(())
     }
 }

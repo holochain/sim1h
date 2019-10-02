@@ -8,12 +8,12 @@ use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use holochain_persistence_api::cas::content::AddressableContent;
-use rusoto_dynamodb::DynamoDb;
-use rusoto_dynamodb::PutItemInput;
-use std::collections::HashMap;
-use rusoto_dynamodb::PutItemError;
-use rusoto_dynamodb::PutItemOutput;
 use rusoto_core::RusotoError;
+use rusoto_dynamodb::DynamoDb;
+use rusoto_dynamodb::PutItemError;
+use rusoto_dynamodb::PutItemInput;
+use rusoto_dynamodb::PutItemOutput;
+use std::collections::HashMap;
 
 pub fn content_to_item(content: &dyn AddressableContent) -> Item {
     let mut item = HashMap::new();
@@ -97,7 +97,7 @@ pub fn ensure_content(
                 table_name: table_name.to_string(),
                 ..Default::default()
             })
-            .sync()
+            .sync(),
     )? {
         ensure_content(log_context, client, table_name, content)
     } else {
