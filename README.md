@@ -17,8 +17,9 @@ This makes certain things difficult debug.
 
 There is no "global store" to audit to see what has been published.
 
-This is great for scalability/decentralisation but problematic for:
+Which is great for scalability/decentralisation but problematic for:
 
+- Holochain Core devs distinguishing what's a networking error from what's a core error
 - Conductor devs verifying the crossover between wasm and network workflows
 - Zome devs reviewing how data is published and recieved across nodes
 - Hardware (e.g. holoport) devs wanting to test OS level concerns decoupled from DHT network health etc.
@@ -28,7 +29,7 @@ One small step towards this being more "protocol" than "implementation detail".
 
 ## How?
 
-This is a sandbox/centralised network implementation.
+Sim1h is a sandbox/centralised network implementation.
 
 It implements the same `Lib3hProtocol` interface as `lib3h` so that conductors
 can send all the same data through, but then handles them "network free".
@@ -38,20 +39,22 @@ from senders pushing over a direct network connection.
 
 This means everything hitting "the network" gets dumped into a database.
 
-Devs can open up the database with a GUI like [dynamodb-admin](https://github.com/aaronshaf/dynamodb-admin) to inspect what happened "globally".
-
 All operations are idempotent/append-only meaning all data written is available
 for review at all times.
 
+Devs can open up the database with a GUI like [dynamodb-admin](https://github.com/aaronshaf/dynamodb-admin) to inspect what happened "globally".
+
 ## What?
 
-Currently wrapping dynamodb from AWS for the key/value store.
+Currently wrapping dynamodb from AWS for the key/value store because:
 
 - has a cloud option to support nodes in different locations
-- has a local option for local development/CI/testing
+- has a local/self-install option for local development/CI/testing
 - has a 25GB free tier with no monthly fees
 - it's pretty popular and does what you'd expect for basic key/value stuff
 - provides a stream client that shows an ordered history of all recent writes
+
+## Implementation Details
 
 ### Entry data
 
@@ -106,7 +109,8 @@ locally in the `dynamodb` jar but is tricky on the managed AWS service.
 
 ## Scaling
 
-Dynamodb itself is ridiculously scalable in terms of raw storage/read/write
+For the purposes of testing hApps with large numbers of "nodes" sim1h should
+scale well because Dynamodb itself is ridiculously scalable in terms of raw storage/read/write
 metrics (e.g. 25GB storage in the free tier).
 
 There are some details to be aware of.
@@ -167,10 +171,8 @@ In summary Sim1h is for "internal use only", whatever that means to you.
 
 ## Usage
 
-Currently supported on the [sim1h-integration branch](https://github.com/holochain/holochain-rust/tree/sim1h-integration) of the Rust conductor.
-That branch supports a new `sim1h` network type, as well as a nix command to run a local dynamodb instance.
-
-This branch will be merged "soon", at which point there will be native `sim1h` from the next conductor binary release.
+Sim1h is available as of v0.0.31 of the [holochain-rust conductor](https://github.com/holochain/holochain-rust)
+as a new `sim1h` network type, as well as a nix command to run a local dynamodb instance.
 
 In your conductor config, use the following for the `network` config section:
 
@@ -189,6 +191,8 @@ You can run a local dynamodb instance at port 8000 by [entering a nix-shell](htt
 If you want to expose your local dynamodb instance over the internet, we suggest using a tunneling service like [ngrok](https://ngrok.com/) to map a public URL to your local port. Then, your friends can use that public URL as their `dynamo_url` instead of localhost.
 
 Ngrok is included in the `sim1h` nix-shell.
+
+Please note that the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables are passed through to [rusoto](https://github.com/rusoto/rusoto) (the underlying library we use to access dynamodb).  Setting the `AWS_ACCESS_KEY_ID` value when running conductors allows you to create completely different name-spaces for tests.
 
 That's it!
 
