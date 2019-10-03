@@ -1,16 +1,14 @@
 use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
-use crate::dht::bbdht::dynamodb::client::Client;
 use crate::dht::bbdht::dynamodb::schema::blob_attribute_value;
-use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_LIST_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_PUBLISH_TS_KEY;
+use crate::dht::bbdht::dynamodb::schema::cas::ITEM_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_TYPE_HINT_KEY;
 use crate::dht::bbdht::dynamodb::schema::number_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::string_set_attribute_value;
-use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
@@ -21,6 +19,8 @@ use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::PutItemInput;
 use rusoto_dynamodb::UpdateItemInput;
 use std::collections::HashMap;
+use crate::space::Space;
+use crate::dht::bbdht::dynamodb::api::item::keyed_item;
 
 pub fn aspect_list_to_attribute(aspect_list: &Vec<EntryAspectData>) -> AttributeValue {
     string_set_attribute_value(
@@ -33,49 +33,44 @@ pub fn aspect_list_to_attribute(aspect_list: &Vec<EntryAspectData>) -> Attribute
 
 pub fn put_aspect(
     log_context: &LogContext,
-    client: &Client,
-    table_name: &TableName,
+    space: &Space,
     aspect: &EntryAspectData,
 ) -> BbDhtResult<()> {
     tracer(&log_context, "put_aspect");
 
-    let mut aspect_item = HashMap::new();
-    aspect_item.insert(
-        String::from(ADDRESS_KEY),
-        string_attribute_value(&aspect.aspect_address.to_string()),
-    );
+    let mut item = keyed_item(space, &aspect.aspect_address.to_string());
 
-    aspect_item.insert(
+    item.insert(
         String::from(ASPECT_ADDRESS_KEY),
         string_attribute_value(&aspect.aspect_address.to_string()),
     );
 
-    aspect_item.insert(
+    item.insert(
         String::from(ASPECT_TYPE_HINT_KEY),
         string_attribute_value(&aspect.type_hint),
     );
 
-    aspect_item.insert(
+    item.insert(
         String::from(ASPECT_KEY),
         blob_attribute_value(&aspect.aspect),
     );
 
-    aspect_item.insert(
+    item.insert(
         String::from(ASPECT_PUBLISH_TS_KEY),
         number_attribute_value(&aspect.publish_ts),
     );
 
     if should_put_item_retry(
         log_context,
-        client
+        space.client
             .put_item(PutItemInput {
-                table_name: table_name.to_string(),
-                item: aspect_item,
+                table_name: space.table_name.to_string(),
+                item: item,
                 ..Default::default()
             })
             .sync(),
     )? {
-        put_aspect(log_context, client, table_name, aspect)
+        put_aspect(log_context, space, aspect)
     } else {
         Ok(())
     }
@@ -83,8 +78,7 @@ pub fn put_aspect(
 
 pub fn append_aspect_list_to_entry(
     log_context: &LogContext,
-    client: &Client,
-    table_name: &TableName,
+    space: &Space,
     entry_address: &Address,
     aspect_list: &Vec<EntryAspectData>,
 ) -> BbDhtResult<()> {
@@ -92,13 +86,13 @@ pub fn append_aspect_list_to_entry(
 
     // need to append all the aspects before making them discoverable under the entry
     for aspect in aspect_list {
-        put_aspect(&log_context, &client, &table_name, &aspect)?;
+        put_aspect(log_context, space, &aspect)?;
     }
 
     // the aspect addressses live under the entry address
     let mut aspect_addresses_key = HashMap::new();
     aspect_addresses_key.insert(
-        String::from(ADDRESS_KEY),
+        String::from(ITEM_KEY),
         string_attribute_value(&String::from(entry_address.to_owned())),
     );
 
@@ -114,16 +108,15 @@ pub fn append_aspect_list_to_entry(
     // https://stackoverflow.com/questions/31288085/how-to-append-a-value-to-list-attribute-on-aws-dynamodb
     let update_expression = "ADD #aspect_list :aspects";
 
-    let aspect_list_update = UpdateItemInput {
-        table_name: table_name.to_string(),
+    space.client.update_item(UpdateItemInput {
+        table_name: space.table_name.to_string(),
         key: aspect_addresses_key,
         update_expression: Some(update_expression.to_string()),
         expression_attribute_names: Some(expression_attribute_names),
         expression_attribute_values: Some(expression_attribute_values),
         ..Default::default()
-    };
+    }).sync()?;
 
-    client.update_item(aspect_list_update).sync()?;
     Ok(())
 }
 
@@ -135,12 +128,11 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::api::aspect::write::append_aspect_list_to_entry;
     use crate::dht::bbdht::dynamodb::api::aspect::write::aspect_list_to_attribute;
     use crate::dht::bbdht::dynamodb::api::aspect::write::put_aspect;
-    use crate::dht::bbdht::dynamodb::api::item::read::get_item_by_address;
+    use crate::dht::bbdht::dynamodb::api::item::read::get_item_from_space;
     use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
     use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
     use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
     use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_LIST_KEY;
     use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
     use crate::entry::fixture::entry_address_fresh;
@@ -205,7 +197,7 @@ pub mod tests {
             .is_ok());
 
             // get matches
-            match get_item_by_address(&log_context, &local_client, &table_name, &entry_address) {
+            match get_item_from_space(&log_context, &local_client, &table_name, &entry_address) {
                 Ok(get_item_output) => match get_item_output {
                     Some(item) => {
                         assert_eq!(expected["address"], item["address"],);

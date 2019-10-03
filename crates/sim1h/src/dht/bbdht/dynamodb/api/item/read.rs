@@ -1,32 +1,25 @@
 use crate::dht::bbdht::dynamodb::api::item::Item;
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
-use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use holochain_persistence_api::cas::content::Address;
 use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::GetItemInput;
-use std::collections::HashMap;
+use crate::space::Space;
+use crate::dht::bbdht::dynamodb::api::item::keyed_item;
 
-pub fn get_item_by_address(
+pub fn get_item_from_space(
     log_context: &LogContext,
-    client: &Client,
-    table_name: &str,
+    space: &Space,
     address: &Address,
 ) -> BbDhtResult<Option<Item>> {
-    tracer(&log_context, "get_item_by_address");
+    tracer(&log_context, "get_item_from_space");
 
-    let mut key = HashMap::new();
-    key.insert(
-        String::from(ADDRESS_KEY),
-        string_attribute_value(&String::from(address.to_owned())),
-    );
-    Ok(client
+    let key = keyed_item(space, address);
+    Ok(space.client
         .get_item(GetItemInput {
             consistent_read: Some(true),
-            table_name: table_name.into(),
+            table_name: space.table_name.into(),
             key: key,
             ..Default::default()
         })
@@ -46,8 +39,8 @@ pub mod tests {
     use crate::trace::tracer;
 
     #[test]
-    fn get_item_by_address_test() {
-        let log_context = "get_item_by_address_test";
+    fn get_item_from_space_test() {
+        let log_context = "get_item_from_space_test";
 
         tracer(&log_context, "fixtures");
         let local_client = local_client();
@@ -67,7 +60,7 @@ pub mod tests {
         // TODO: get content
         // assert!(
         //     "{:?}",
-        //     get_item_by_address(&local_client, &table_name, &content.address())
+        //     get_item_from_space(&local_client, &table_name, &content.address())
         // );
     }
 

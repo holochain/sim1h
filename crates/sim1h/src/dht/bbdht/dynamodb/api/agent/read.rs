@@ -1,23 +1,21 @@
-use crate::dht::bbdht::dynamodb::api::item::read::get_item_by_address;
+use crate::dht::bbdht::dynamodb::api::item::read::get_item_from_space;
 use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use holochain_persistence_api::cas::content::Address;
+use crate::space::Space;
+use crate::dht::bbdht::dynamodb::api::agent::AgentAddress;
 
 pub fn agent_exists(
     log_context: &LogContext,
-    client: &Client,
-    table_name: &TableName,
-    agent_id: &Address,
+    space: &Space,
+    agent_address: &AgentAddress,
 ) -> BbDhtResult<bool> {
     tracer(&log_context, "agent_exists");
 
     // agent only exists in the space if the space exists
-    Ok(if table_exists(log_context, client, table_name)? {
-        get_item_by_address(log_context, client, table_name, agent_id)?.is_some()
+    Ok(if table_exists(log_context, space)? {
+        get_item_from_space(log_context, space, agent_address)?.is_some()
     } else {
         false
     })

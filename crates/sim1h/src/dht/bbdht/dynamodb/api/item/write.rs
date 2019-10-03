@@ -1,11 +1,9 @@
 use crate::dht::bbdht::dynamodb::api::item::Item;
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::CONTENT_KEY;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
-use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
+use crate::dht::bbdht::dynamodb::api::item::keyed_item;
 use crate::trace::LogContext;
 use holochain_persistence_api::cas::content::AddressableContent;
 use rusoto_core::RusotoError;
@@ -13,14 +11,10 @@ use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::PutItemError;
 use rusoto_dynamodb::PutItemInput;
 use rusoto_dynamodb::PutItemOutput;
-use std::collections::HashMap;
+use crate::space::Space;
 
-pub fn content_to_item(content: &dyn AddressableContent) -> Item {
-    let mut item = HashMap::new();
-    item.insert(
-        String::from(ADDRESS_KEY),
-        string_attribute_value(&String::from(content.address())),
-    );
+pub fn content_to_item(space: &Space, content: &dyn AddressableContent) -> Item {
+    let mut item = keyed_item(space, content.address().to_string());
     item.insert(
         String::from(CONTENT_KEY),
         string_attribute_value(&String::from(content.content())),
@@ -83,23 +77,22 @@ pub fn should_put_item_retry(
 
 pub fn ensure_content(
     log_context: &LogContext,
-    client: &Client,
-    table_name: &TableName,
+    space: &Space,
     content: &dyn AddressableContent,
 ) -> BbDhtResult<()> {
     tracer(&log_context, "ensure_content");
 
     if should_put_item_retry(
         log_context,
-        client
+        space.client
             .put_item(PutItemInput {
                 item: content_to_item(content),
-                table_name: table_name.to_string(),
+                table_name: space.table_name.to_string(),
                 ..Default::default()
             })
             .sync(),
     )? {
-        ensure_content(log_context, client, table_name, content)
+        ensure_content(log_context, space, content)
     } else {
         Ok(())
     }

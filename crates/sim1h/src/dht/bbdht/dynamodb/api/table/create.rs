@@ -13,11 +13,12 @@ use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::KeySchemaElement;
 use rusoto_dynamodb::ProvisionedThroughput;
 use rusoto_dynamodb::TableDescription;
+use crate::dht::bbdht::dynamodb::schema::TableName;
 
 pub fn create_table(
     log_context: &LogContext,
     client: &Client,
-    table_name: &str,
+    table_name: &TableName,
     key_schema: &Vec<KeySchemaElement>,
     attribute_definitions: &Vec<AttributeDefinition>,
 ) -> BbDhtResult<Option<TableDescription>> {
@@ -42,7 +43,7 @@ pub fn create_table(
 pub fn ensure_table(
     log_context: &LogContext,
     client: &Client,
-    table_name: &str,
+    table_name: &TableName,
     key_schema: &Vec<KeySchemaElement>,
     attribute_definitions: &Vec<AttributeDefinition>,
 ) -> BbDhtResult<Option<TableDescription>> {
@@ -114,7 +115,7 @@ pub fn ensure_table(
 pub fn ensure_cas_table(
     log_context: &LogContext,
     client: &Client,
-    table_name: &str,
+    table_name: &TableName,
 ) -> BbDhtResult<Option<TableDescription>> {
     tracer(&log_context, &format!("ensure_cas_table {}", &table_name));
 

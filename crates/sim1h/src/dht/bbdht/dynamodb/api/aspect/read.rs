@@ -1,18 +1,17 @@
-use crate::dht::bbdht::dynamodb::api::item::read::get_item_by_address;
+use crate::dht::bbdht::dynamodb::api::item::read::get_item_from_space;
 use crate::dht::bbdht::dynamodb::api::item::Item;
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_LIST_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_PUBLISH_TS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_TYPE_HINT_KEY;
-use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::dht::bbdht::error::BbDhtError;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
+use crate::dht::bbdht::dynamodb::schema::cas::ITEM_KEY;
 use crate::trace::LogContext;
 use crate::workflow::state::AspectAddressMap;
+use crate::space::Space;
 
 use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::ScanInput;
@@ -96,13 +95,12 @@ pub fn try_aspect_list_from_item(item: Item) -> BbDhtResult<Vec<Address>> {
 
 pub fn get_aspect(
     log_context: &LogContext,
-    client: &Client,
-    table_name: &TableName,
+    space: &Space,
     aspect_address: &Address,
 ) -> BbDhtResult<Option<EntryAspectData>> {
     tracer(&log_context, "read_aspect");
 
-    match get_item_by_address(&log_context, &client, &table_name, &aspect_address) {
+    match get_item_from_space(&log_context, &space, &aspect_address) {
         Ok(get_output) => match get_output {
             Some(aspect_item) => Ok(Some(try_aspect_from_item(aspect_item)?)),
             None => Ok(None),
@@ -113,18 +111,17 @@ pub fn get_aspect(
 
 pub fn get_entry_aspects(
     log_context: &LogContext,
-    client: &Client,
-    table_name: &TableName,
+    space: &Space,
     entry_address: &Address,
 ) -> BbDhtResult<Vec<EntryAspectData>> {
-    match get_item_by_address(log_context, client, table_name, entry_address) {
+    match get_item_from_space(log_context, space, entry_address) {
         Ok(get_item_output) => match get_item_output {
             Some(item) => {
                 let aspect_list = try_aspect_list_from_item(item)?;
                 let mut aspects = Vec::new();
                 for aspect_address in aspect_list {
                     aspects.push(
-                        match get_aspect(log_context, client, table_name, &aspect_address) {
+                        match get_aspect(log_context, space, &aspect_address) {
                             Ok(Some(aspect)) => aspect,
                             Ok(None) => {
                                 return Err(BbDhtError::MissingData(format!(
@@ -145,16 +142,16 @@ pub fn get_entry_aspects(
 }
 
 pub fn scan_aspects(
-    _log_context: LogContext,
-    client: &Client,
-    table_name: &TableName,
+    log_context: LogContext,
+    space: &Space,
     exclusive_start_key: Option<Item>,
 ) -> BbDhtResult<(AspectAddressMap, Option<Item>)> {
-    client
+    tracer(log_context, "scan_aspects");
+    space.client
         .scan(ScanInput {
             consistent_read: Some(true),
-            table_name: table_name.to_string(),
-            projection_expression: projection_expression(vec![ADDRESS_KEY, ASPECT_LIST_KEY]),
+            table_name: space.table_name.to_string(),
+            projection_expression: projection_expression(vec![ITEM_KEY, ASPECT_LIST_KEY]),
             exclusive_start_key,
             ..Default::default()
         })
@@ -167,7 +164,7 @@ pub fn scan_aspects(
                 .into_iter()
                 .filter_map(|mut item: Item| {
                     Some((
-                        Address::from(item.remove(ADDRESS_KEY)?.s?),
+                        Address::from(item.remove(ITEM_KEY)?.s?),
                         item.remove(ASPECT_LIST_KEY)?
                             .ss?
                             .into_iter()

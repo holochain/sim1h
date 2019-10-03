@@ -1,71 +1,66 @@
 use crate::dht::bbdht::dynamodb::api::item::Item;
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_CONTENT_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_FROM_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_SPACE_ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_TO_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_SEEN_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::{inbox_key, MESSAGE_IS_RESPONSE_KEY};
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::string_set_attribute_value;
-use crate::dht::bbdht::dynamodb::schema::TableName;
+use crate::dht::bbdht::dynamodb::client::client;
 use crate::dht::bbdht::dynamodb::schema::{blob_attribute_value, bool_attribute_value};
+use crate::dht::bbdht::dynamodb::api::item::keyed_item;
+use crate::dht::bbdht::dynamodb::schema::cas::SPACE_KEY;
+use crate::dht::bbdht::dynamodb::schema::cas::ITEM_KEY;
 use crate::dht::bbdht::error::BbDhtError;
 use crate::dht::bbdht::error::BbDhtResult;
+use crate::dht::bbdht::dynamodb::api::item::read::get_item_from_space;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::DirectMessageData;
 use rusoto_dynamodb::DynamoDb;
 use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
-use rusoto_dynamodb::GetItemInput;
 use rusoto_dynamodb::PutItemInput;
 use rusoto_dynamodb::UpdateItemInput;
 use std::collections::HashMap;
+use crate::space::Space;
+use crate::network::RequestId;
+
+pub struct FromAddress(Address);
+pub struct ToAddress(Address);
+pub struct Folder(String);
 
 /// put an item that can be reconstructed to DirectMessageData against the request id
 pub fn put_inbox_message(
     log_context: &LogContext,
-    client: &Client,
-    table_name: &TableName,
-    request_id: &String,
-    from: &Address,
-    to: &Address,
+    space: &Space,
+    request_id: &RequestId,
+    from: &FromAddress,
+    to: &ToAddress,
     content: &Vec<u8>,
     response: bool,
 ) -> BbDhtResult<()> {
     tracer(&log_context, "put_inbox_message");
 
-    let mut message_item = HashMap::new();
+    let mut item = keyed_item(space, request_id);
 
-    message_item.insert(
-        String::from(ADDRESS_KEY),
-        string_attribute_value(request_id),
-    );
-
-    message_item.insert(
+    item.insert(
         String::from(MESSAGE_FROM_KEY),
         string_attribute_value(&from.to_string()),
     );
 
-    message_item.insert(
+    item.insert(
         String::from(MESSAGE_TO_KEY),
         string_attribute_value(&to.to_string()),
     );
 
-    message_item.insert(
-        String::from(MESSAGE_SPACE_ADDRESS_KEY),
-        string_attribute_value(&table_name.to_string()),
-    );
-
-    message_item.insert(
+    item.insert(
         String::from(MESSAGE_CONTENT_KEY),
         blob_attribute_value(&content),
     );
 
-    message_item.insert(
+    item.insert(
         String::from(MESSAGE_IS_RESPONSE_KEY),
         bool_attribute_value(response),
     );
@@ -74,8 +69,8 @@ pub fn put_inbox_message(
         log_context,
         client
             .put_item(PutItemInput {
-                table_name: table_name.to_string(),
-                item: message_item,
+                table_name: space.table_name.to_string(),
+                item: item,
                 ..Default::default()
             })
             .sync(),
@@ -83,7 +78,7 @@ pub fn put_inbox_message(
         put_inbox_message(
             log_context,
             client,
-            table_name,
+            space.table_name,
             request_id,
             from,
             to,
@@ -97,21 +92,14 @@ pub fn put_inbox_message(
 
 pub fn append_request_id_to_inbox(
     log_context: &LogContext,
-    client: &Client,
-    table_name: &TableName,
-    folder: &String,
-    request_id: &String,
-    to: &Address,
+    space: &Space,
+    folder: &Folder,
+    request_id: &RequestId,
+    to: &ToAddress,
 ) -> BbDhtResult<()> {
     tracer(&log_context, "append_request_id_to_inbox");
 
-    let mut inbox_address_key = HashMap::new();
-
-    // primary key is the inbox name "inbox_<agent_id>"
-    inbox_address_key.insert(
-        String::from(ADDRESS_KEY),
-        string_attribute_value(&inbox_key(to)),
-    );
+    let inbox_address_key = keyed_item(space, &inbox_key(to));
 
     // the request id appended under the inbox address
     let mut inbox_attribute_values = HashMap::new();
@@ -127,7 +115,7 @@ pub fn append_request_id_to_inbox(
     let update_expression = "ADD #request_ids :request_ids";
 
     let request_ids_update = UpdateItemInput {
-        table_name: table_name.to_string(),
+        table_name: space.table_name.to_string(),
         key: inbox_address_key,
         update_expression: Some(update_expression.to_string()),
         expression_attribute_names: Some(inbox_attribute_names),
@@ -141,11 +129,10 @@ pub fn append_request_id_to_inbox(
 
 pub fn send_to_agent_inbox(
     log_context: &LogContext,
-    client: &Client,
-    table_name: &TableName,
-    request_id: &String,
-    from: &Address,
-    to: &Address,
+    space: &Space,
+    request_id: &RequestId,
+    from: &FromAddress,
+    to: &ToAddress,
     content: &Vec<u8>,
     response: bool,
 ) -> BbDhtResult<()> {
@@ -153,8 +140,7 @@ pub fn send_to_agent_inbox(
 
     put_inbox_message(
         log_context,
-        client,
-        table_name,
+        space,
         request_id,
         from,
         to,
@@ -164,8 +150,7 @@ pub fn send_to_agent_inbox(
 
     append_request_id_to_inbox(
         log_context,
-        client,
-        table_name,
+        space,
         &REQUEST_IDS_KEY.to_string(),
         request_id,
         to,
@@ -176,28 +161,13 @@ pub fn send_to_agent_inbox(
 
 pub fn get_inbox_request_ids(
     log_context: &LogContext,
-    client: &Client,
-    table_name: &TableName,
-    inbox_folder: &String,
-    to: &Address,
+    space: &Space,
+    inbox_folder: &Folder,
+    to: &ToAddress,
 ) -> BbDhtResult<Vec<String>> {
     tracer(log_context, "get_inbox_request_ids");
 
-    let mut key = HashMap::new();
-    key.insert(
-        String::from(ADDRESS_KEY),
-        string_attribute_value(&inbox_key(to)),
-    );
-    let get_item_output = client
-        .get_item(GetItemInput {
-            consistent_read: Some(true),
-            table_name: table_name.into(),
-            key: key,
-            ..Default::default()
-        })
-        .sync()?
-        .item;
-    Ok(match get_item_output {
+    Ok(match get_item_from_space(log_context, space, &inbox_key(to))? {
         Some(item) => match item.get(inbox_folder) {
             Some(attribute) => match attribute.ss.clone() {
                 Some(ss) => ss,
@@ -240,7 +210,7 @@ pub fn item_to_direct_message_data(item: &Item) -> BbDhtResult<(DirectMessageDat
         }
     };
 
-    let space_address = match item[MESSAGE_SPACE_ADDRESS_KEY].s.clone() {
+    let space_address = match item[SPACE_KEY].s.clone() {
         Some(v) => v,
         None => {
             return Err(BbDhtError::MissingData(format!(
@@ -250,7 +220,7 @@ pub fn item_to_direct_message_data(item: &Item) -> BbDhtResult<(DirectMessageDat
         }
     };
 
-    let request_id = match item[ADDRESS_KEY].s.clone() {
+    let request_id = match item[ITEM_KEY].s.clone() {
         Some(v) => v,
         None => {
             return Err(BbDhtError::MissingData(format!(
@@ -284,32 +254,15 @@ pub fn item_to_direct_message_data(item: &Item) -> BbDhtResult<(DirectMessageDat
 
 pub fn request_ids_to_messages(
     log_context: &LogContext,
-    client: &Client,
-    table_name: &TableName,
-    request_ids: &Vec<String>,
+    space: &Space,
+    request_ids: &Vec<RequestId>,
 ) -> BbDhtResult<Vec<(DirectMessageData, bool)>> {
     tracer(log_context, "request_ids_to_messages");
 
     let mut direct_message_datas = Vec::new();
 
     for request_id in request_ids {
-        let mut key = HashMap::new();
-        key.insert(
-            String::from(ADDRESS_KEY),
-            string_attribute_value(&request_id),
-        );
-
-        let get_item_output = client
-            .get_item(GetItemInput {
-                consistent_read: Some(true),
-                table_name: table_name.into(),
-                key: key,
-                ..Default::default()
-            })
-            .sync()?
-            .item;
-
-        match get_item_output {
+        match get_item_from_space(log_context, space, request_id)? {
             Some(item) => {
                 direct_message_datas.push(item_to_direct_message_data(&item)?);
             }
@@ -328,23 +281,20 @@ pub fn request_ids_to_messages(
 
 pub fn check_inbox(
     log_context: &LogContext,
-    client: &Client,
-    table_name: &TableName,
-    to: &Address,
+    space: &Space,
+    to: &ToAddress,
 ) -> BbDhtResult<Vec<(DirectMessageData, bool)>> {
     tracer(&log_context, "check_inbox");
 
     let inbox_request_ids = get_inbox_request_ids(
         log_context,
-        client,
-        table_name,
+        space,
         &REQUEST_IDS_KEY.to_string(),
         to,
     )?;
     let seen_request_ids = get_inbox_request_ids(
         log_context,
-        client,
-        table_name,
+        space,
         &REQUEST_IDS_SEEN_KEY.to_string(),
         to,
     )?;
@@ -355,14 +305,13 @@ pub fn check_inbox(
         .cloned()
         .collect();
 
-    let messages = request_ids_to_messages(log_context, client, table_name, &unseen_request_ids);
+    let messages = request_ids_to_messages(log_context, space, &unseen_request_ids);
 
     // record that we have now seen the unseen without errors (so far)
     for unseen in unseen_request_ids.clone() {
         append_request_id_to_inbox(
             log_context,
-            client,
-            table_name,
+            space,
             &REQUEST_IDS_SEEN_KEY.to_string(),
             &unseen,
             &to,

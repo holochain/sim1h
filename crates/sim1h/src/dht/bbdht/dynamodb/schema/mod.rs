@@ -5,7 +5,7 @@ use rusoto_dynamodb::AttributeDefinition;
 use rusoto_dynamodb::AttributeValue;
 use rusoto_dynamodb::KeySchemaElement;
 
-pub type TableName = String;
+pub struct TableName(pub String);
 
 pub fn hash_key(attribute_name: &str) -> KeySchemaElement {
     KeySchemaElement {
