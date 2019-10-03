@@ -192,7 +192,7 @@ If you want to expose your local dynamodb instance over the internet, we suggest
 
 Ngrok is included in the `sim1h` nix-shell.
 
-Please note that the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables are passed through to [rusoto](https://github.com/rusoto/rusoto) (the underlying library we use to access dynamodb).  Setting the `AWS_ACCESS_KEY_ID` value when running conductors allows you to create completely different name-spaces for tests.
+Please note that you must `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables when running your conductor which are passed to [rusoto](https://github.com/rusoto/rusoto) (the underlying library we use to access dynamodb).  When running your own instance of dynamodb, these two values can be what ever you want, but they must be set.  Additionally in this case you can use the value of the `AWS_ACCESS_KEY_ID` to create completely different name-spaces for different conductor sets.
 
 That's it!
 
