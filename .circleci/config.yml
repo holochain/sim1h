@@ -16,7 +16,7 @@ jobs:
 
    - run:
       name: run the tests
-      command: cargo test
+      command: nix-shell --run 'cargo test'
 
 workflows:
  version: 2
