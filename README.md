@@ -17,7 +17,7 @@ This makes certain things difficult debug.
 
 There is no "global store" to audit to see what has been published.
 
-This is great for production but problematic for:
+This is great for scalability/decentralisation but problematic for:
 
 - Conductor devs verifying the crossover between wasm and network workflows
 - Zome devs reviewing how data is published and recieved across nodes
@@ -28,7 +28,7 @@ One small step towards this being more "protocol" than "implementation detail".
 
 ## How?
 
-This is a sandbox network implementation.
+This is a sandbox/centralised network implementation.
 
 It implements the same `Lib3hProtocol` interface as `lib3h` so that conductors
 can send all the same data through, but then handles them "network free".
