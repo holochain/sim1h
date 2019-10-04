@@ -19,12 +19,12 @@ There is no "global store" to audit to see what has been published.
 
 Which is great for scalability/decentralisation but problematic for:
 
-- Holochain Core devs distinguishing what's a networking error from what's a core error
+- Holochain Core devs trying to distinguishing a networking error from a core error
 - Conductor devs verifying the crossover between wasm and network workflows
 - Zome devs reviewing how data is published and recieved across nodes
 - Hardware (e.g. holoport) devs wanting to test OS level concerns decoupled from DHT network health etc.
 
-It's also nice to have at least one other implementation of `Lib3hProtocol`.
+It's also nice to have another implementation of `Lib3hProtocol`.
 One small step towards this being more "protocol" than "implementation detail".
 
 ## How?
@@ -32,12 +32,14 @@ One small step towards this being more "protocol" than "implementation detail".
 Sim1h is a sandbox/centralised network implementation.
 
 It implements the same `Lib3hProtocol` interface as `lib3h` so that conductors
-can send all the same data through, but then handles them "network free".
+can send all the same data through, but handles them centrally.
 
-Notably send/receive is handled by recipients polling the database rather than
-from senders pushing over a direct network connection.
+Notably send/receive is handled by recipients writing to and polling the
+database rather than senders pushing over direct network connections.
 
-This means everything hitting "the network" gets dumped into a database.
+This means everything hitting "the network" gets dumped into a database where
+it can be inspected by devs. It also delays our requirements of solving the
+tough challenges of NAT traversal, gossip, node discovery, and DHT sharding.
 
 All operations are idempotent/append-only meaning all data written is available
 for review at all times.
@@ -110,7 +112,7 @@ locally in the `dynamodb` jar but is tricky on the managed AWS service.
 ## Scaling
 
 For the purposes of testing hApps with large numbers of "nodes" sim1h should
-scale well because Dynamodb itself is ridiculously scalable in terms of raw storage/read/write
+scale well because Dynamodb itself is very scalable in terms of raw storage/read/write
 metrics (e.g. 25GB storage in the free tier).
 
 There are some details to be aware of.
@@ -153,7 +155,7 @@ and some are unlikely to change (e.g. the read consistency model).
 
 For well written zomes and the standard conductor software this works fine.
 
-Zomes always validate data locally before it is commited to the local source
+Zomes always validate data locally before committing it to the local source
 chain so it is safe in the sense that honest nodes will always send valid data.
 
 As long as every node with AWS credentials runs up-to-date conductors and zomes
@@ -167,12 +169,12 @@ For example, if Alice was sending Bob direct messages to Bob's inbox, and Carol
 wanted to block them, Carol could simply record "seen" IDs directly to Bob's
 inbox then Bob would never retrieve them.
 
-In summary Sim1h is for "internal use only", whatever that means to you.
+In summary, Sim1h is for "internal use only", whatever that means to you.
 
 ## Usage
 
 Sim1h is available in the v0.0.31 of the [holochain-rust conductor](https://github.com/holochain/holochain-rust)
-as is a new `sim1h` network type.  Also you there is a nix command to run a local dynamodb instance.
+as is a new `sim1h` network type.  Also, there is a nix command to run a local dynamodb instance.
 
 In your conductor config, use the following for the `network` config section:
 
@@ -197,7 +199,7 @@ If you want to expose your local dynamodb instance over the internet, we suggest
 
 Ngrok is also included in the `sim1h` nix-shell.
 
-Please note that you must `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables when running your conductor which are passed to [rusoto](https://github.com/rusoto/rusoto) (the underlying library we use to access dynamodb).  When running your own instance of dynamodb, these two values can be what ever you want, but they must be set.  Additionally in this case you can use the value of the `AWS_ACCESS_KEY_ID` to create completely different name-spaces for different conductor sets.
+Please note that you must define `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables when running your conductor which are passed to [rusoto](https://github.com/rusoto/rusoto) (the underlying library we use to access dynamodb).  When running your own instance of dynamodb, these two values can be what ever you want, but they must be set.  Additionally in this case you can use the value of the `AWS_ACCESS_KEY_ID` to create completely different name-spaces for different conductor sets.
 
 That's it!
 
