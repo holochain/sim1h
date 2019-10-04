@@ -2,8 +2,8 @@ use crate::dht::bbdht::dynamodb::api::item::Item;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use holochain_persistence_api::cas::content::Address;
 use rusoto_dynamodb::DynamoDb;
+use crate::dht::bbdht::dynamodb::api::item::ItemKey;
 use rusoto_dynamodb::GetItemInput;
 use crate::space::Space;
 use crate::dht::bbdht::dynamodb::api::item::keyed_item;
@@ -11,11 +11,11 @@ use crate::dht::bbdht::dynamodb::api::item::keyed_item;
 pub fn get_item_from_space(
     log_context: &LogContext,
     space: &Space,
-    address: &Address,
+    item_key: &ItemKey,
 ) -> BbDhtResult<Option<Item>> {
     tracer(&log_context, "get_item_from_space");
 
-    let key = keyed_item(space, address);
+    let key = keyed_item(space, item_key);
     Ok(space.client
         .get_item(GetItemInput {
             consistent_read: Some(true),

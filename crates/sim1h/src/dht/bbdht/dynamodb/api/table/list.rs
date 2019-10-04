@@ -3,13 +3,16 @@ use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::dht::bbdht::error::BbDhtResult;
 use dynomite::dynamodb::{DynamoDb, ListTablesInput};
 
-pub fn list_tables(client: &Client) -> BbDhtResult<Option<Vec<TableName>>> {
-    Ok(client
+pub fn list_tables(client: &Client) -> BbDhtResult<Vec<TableName>> {
+    Ok(match client
         .list_tables(ListTablesInput {
             ..Default::default()
         })
         .sync()?
-        .table_names)
+        .table_names {
+            Some(tables) => tables.iter().map(|&s| s.into()).collect(),
+            None => Vec::new(),
+        })
 }
 
 #[cfg(test)]

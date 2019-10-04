@@ -14,10 +14,10 @@ use rusoto_dynamodb::PutItemOutput;
 use crate::space::Space;
 
 pub fn content_to_item(space: &Space, content: &dyn AddressableContent) -> Item {
-    let mut item = keyed_item(space, content.address().to_string());
+    let mut item = keyed_item(space, &content.address().into());
     item.insert(
         String::from(CONTENT_KEY),
-        string_attribute_value(&String::from(content.content())),
+        string_attribute_value(&content.content().into()),
     );
     item
 }
@@ -86,8 +86,8 @@ pub fn ensure_content(
         log_context,
         space.client
             .put_item(PutItemInput {
-                item: content_to_item(content),
-                table_name: space.table_name.to_string(),
+                item: content_to_item(space, content),
+                table_name: space.table_name.into(),
                 ..Default::default()
             })
             .sync(),

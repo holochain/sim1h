@@ -5,7 +5,7 @@ use crate::trace::LogContext;
 use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::PutItemInput;
 use crate::dht::bbdht::dynamodb::api::item::keyed_item;
-use crate::dht::bbdht::dynamodb::api::agent::AgentAddress;
+use crate::agent::AgentAddress;
 use crate::space::Space;
 
 pub fn touch_agent(
@@ -15,13 +15,13 @@ pub fn touch_agent(
 ) -> BbDhtResult<()> {
     tracer(&log_context, "touch_agent");
 
-    let item = keyed_item(log_context, space, &String::from(agent_address.to_owned()));
+    let item = keyed_item(space, &agent_address.into());
 
     if should_put_item_retry(
         log_context,
         space.client
             .put_item(PutItemInput {
-                table_name: space.table_name.to_string(),
+                table_name: space.table_name.into(),
                 item: item,
                 ..Default::default()
             })

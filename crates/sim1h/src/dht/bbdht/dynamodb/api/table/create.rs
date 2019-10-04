@@ -22,10 +22,10 @@ pub fn create_table(
     key_schema: &Vec<KeySchemaElement>,
     attribute_definitions: &Vec<AttributeDefinition>,
 ) -> BbDhtResult<Option<TableDescription>> {
-    tracer(&log_context, &format!("create_table {}", table_name));
+    tracer(&log_context, &format!("create_table {:?}", table_name));
 
     let create_table_input = CreateTableInput {
-        table_name: table_name.to_string(),
+        table_name: table_name.into(),
         key_schema: key_schema.clone(),
         attribute_definitions: attribute_definitions.clone(),
         provisioned_throughput: Some(ProvisionedThroughput {
@@ -47,7 +47,7 @@ pub fn ensure_table(
     key_schema: &Vec<KeySchemaElement>,
     attribute_definitions: &Vec<AttributeDefinition>,
 ) -> BbDhtResult<Option<TableDescription>> {
-    tracer(log_context, &format!("ensure_table {}", &table_name));
+    tracer(log_context, &format!("ensure_table {:?}", &table_name));
 
     // well in reality we end up with concurrency issues if we do a list or describe
     // there is a specific error returned for a table that already exists so we defuse to None
@@ -117,7 +117,7 @@ pub fn ensure_cas_table(
     client: &Client,
     table_name: &TableName,
 ) -> BbDhtResult<Option<TableDescription>> {
-    tracer(&log_context, &format!("ensure_cas_table {}", &table_name));
+    tracer(&log_context, &format!("ensure_cas_table {:?}", &table_name));
 
     ensure_table(
         log_context,

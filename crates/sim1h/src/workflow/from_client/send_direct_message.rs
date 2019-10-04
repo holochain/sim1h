@@ -16,7 +16,7 @@ pub fn send_direct_message(
     send_to_agent_inbox(
         &log_context,
         &client,
-        &direct_message_data.space_address.to_string(),
+        &direct_message_data.space_address.into(),
         &direct_message_data.request_id,
         &direct_message_data.from_agent_id,
         &direct_message_data.to_agent_id,

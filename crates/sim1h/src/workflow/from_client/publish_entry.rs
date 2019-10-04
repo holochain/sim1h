@@ -20,7 +20,7 @@ pub fn publish_entry(
     append_aspect_list_to_entry(
         &log_context,
         &client,
-        &provided_entry_data.space_address.to_string(),
+        &provided_entry_data.space_address.into(),
         &provided_entry_data.entry.entry_address,
         &provided_entry_data.entry.aspect_list,
     )?;

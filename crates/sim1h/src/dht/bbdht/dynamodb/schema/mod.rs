@@ -5,7 +5,26 @@ use rusoto_dynamodb::AttributeDefinition;
 use rusoto_dynamodb::AttributeValue;
 use rusoto_dynamodb::KeySchemaElement;
 
-pub struct TableName(pub String);
+#[derive(Debug)]
+pub struct TableName(String);
+
+impl From<TableName> for String {
+    fn from(table_name: TableName) -> Self {
+        table_name.0
+    }
+}
+
+impl From<String> for TableName {
+    fn from(string: String) -> Self {
+        TableName(string)
+    }
+}
+
+impl From<&TableName> for String {
+    fn from(table_name: &TableName) -> Self {
+        table_name.to_owned().into()
+    }
+}
 
 pub fn hash_key(attribute_name: &str) -> KeySchemaElement {
     KeySchemaElement {
@@ -21,9 +40,9 @@ pub fn string_attribute_definition(attribute_name: &str) -> AttributeDefinition 
     }
 }
 
-pub fn string_attribute_value(value: &str) -> AttributeValue {
+pub fn string_attribute_value(value: &String) -> AttributeValue {
     AttributeValue {
-        s: Some(value.to_string()),
+        s: Some(value.to_owned()),
         ..Default::default()
     }
 }
@@ -82,7 +101,7 @@ pub mod test {
 
         assert_eq!(
             KeySchemaElement {
-                attribute_name: attribute_name.to_string(),
+                attribute_name: attribute_name.into(),
                 key_type: String::from("HASH"),
             },
             result,

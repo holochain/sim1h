@@ -1,11 +1,13 @@
 use crate::dht::bbdht::dynamodb::api::item::read::get_item_from_space;
 use crate::dht::bbdht::dynamodb::api::item::Item;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_ADDRESS_KEY;
+use crate::aspect::AspectAddress;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_LIST_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_PUBLISH_TS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_TYPE_HINT_KEY;
 use crate::dht::bbdht::error::BbDhtError;
+use crate::aspect::EntryAddress;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::dht::bbdht::dynamodb::schema::cas::ITEM_KEY;
@@ -31,8 +33,8 @@ fn get_or_err<'a, V: Debug>(item: &'a HashMap<String, V>, key: &'a str) -> BbDht
 }
 
 fn try_aspect_from_item(item: Item) -> BbDhtResult<EntryAspectData> {
-    let aspect_address = match get_or_err(&item, ASPECT_ADDRESS_KEY)?.s.clone() {
-        Some(address) => Address::from(address),
+    let aspect_address: AspectAddress = match get_or_err(&item, ASPECT_ADDRESS_KEY)?.s.clone() {
+        Some(address) => address.into(),
         None => {
             return Err(BbDhtError::MissingData(format!(
                 "Missing aspect_address: {:?}",
@@ -72,16 +74,16 @@ fn try_aspect_from_item(item: Item) -> BbDhtResult<EntryAspectData> {
     };
 
     Ok(EntryAspectData {
-        aspect_address: aspect_address,
+        aspect_address: aspect_address.into(),
         aspect: aspect,
         publish_ts: publish_ts,
         type_hint: type_hint,
     })
 }
 
-pub fn try_aspect_list_from_item(item: Item) -> BbDhtResult<Vec<Address>> {
+pub fn try_aspect_list_from_item(item: Item) -> BbDhtResult<Vec<AspectAddress>> {
     let addresses = match get_or_err(&item, ASPECT_LIST_KEY)?.ss.clone() {
-        Some(addresses) => addresses.iter().map(|s| Address::from(s.clone())).collect(),
+        Some(addresses) => addresses.iter().map(|&s| s.into()).collect(),
         None => {
             return Err(BbDhtError::MissingData(format!(
                 "Missing aspect_list: {:?}",
@@ -96,11 +98,11 @@ pub fn try_aspect_list_from_item(item: Item) -> BbDhtResult<Vec<Address>> {
 pub fn get_aspect(
     log_context: &LogContext,
     space: &Space,
-    aspect_address: &Address,
+    aspect_address: &AspectAddress,
 ) -> BbDhtResult<Option<EntryAspectData>> {
     tracer(&log_context, "read_aspect");
 
-    match get_item_from_space(&log_context, &space, &aspect_address) {
+    match get_item_from_space(&log_context, &space, &aspect_address.into()) {
         Ok(get_output) => match get_output {
             Some(aspect_item) => Ok(Some(try_aspect_from_item(aspect_item)?)),
             None => Ok(None),
@@ -112,16 +114,16 @@ pub fn get_aspect(
 pub fn get_entry_aspects(
     log_context: &LogContext,
     space: &Space,
-    entry_address: &Address,
+    entry_address: &EntryAddress,
 ) -> BbDhtResult<Vec<EntryAspectData>> {
-    match get_item_from_space(log_context, space, entry_address) {
+    match get_item_from_space(log_context, space, &entry_address.into()) {
         Ok(get_item_output) => match get_item_output {
             Some(item) => {
                 let aspect_list = try_aspect_list_from_item(item)?;
                 let mut aspects = Vec::new();
                 for aspect_address in aspect_list {
                     aspects.push(
-                        match get_aspect(log_context, space, &aspect_address) {
+                        match get_aspect(log_context, space, &aspect_address.into()) {
                             Ok(Some(aspect)) => aspect,
                             Ok(None) => {
                                 return Err(BbDhtError::MissingData(format!(
@@ -142,7 +144,7 @@ pub fn get_entry_aspects(
 }
 
 pub fn scan_aspects(
-    log_context: LogContext,
+    log_context: &LogContext,
     space: &Space,
     exclusive_start_key: Option<Item>,
 ) -> BbDhtResult<(AspectAddressMap, Option<Item>)> {
@@ -150,7 +152,7 @@ pub fn scan_aspects(
     space.client
         .scan(ScanInput {
             consistent_read: Some(true),
-            table_name: space.table_name.to_string(),
+            table_name: space.table_name.into(),
             projection_expression: projection_expression(vec![ITEM_KEY, ASPECT_LIST_KEY]),
             exclusive_start_key,
             ..Default::default()

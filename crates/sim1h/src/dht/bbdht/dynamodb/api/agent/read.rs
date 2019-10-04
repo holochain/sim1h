@@ -1,10 +1,10 @@
 use crate::dht::bbdht::dynamodb::api::item::read::get_item_from_space;
-use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use crate::space::Space;
-use crate::dht::bbdht::dynamodb::api::agent::AgentAddress;
+use crate::dht::bbdht::dynamodb::api::space::exist::space_exists;
+use crate::agent::AgentAddress;
 
 pub fn agent_exists(
     log_context: &LogContext,
@@ -14,8 +14,8 @@ pub fn agent_exists(
     tracer(&log_context, "agent_exists");
 
     // agent only exists in the space if the space exists
-    Ok(if table_exists(log_context, space)? {
-        get_item_from_space(log_context, space, agent_address)?.is_some()
+    Ok(if space_exists(log_context, space)? {
+        get_item_from_space(log_context, space, &agent_address.into())?.is_some()
     } else {
         false
     })

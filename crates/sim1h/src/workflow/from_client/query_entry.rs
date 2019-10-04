@@ -24,7 +24,7 @@ pub fn query_entry_aspects(
 ) -> BbDhtResult<Vec<EntryAspectData>> {
     tracer(&log_context, "publish_entry");
 
-    let table_name = query_entry_data.space_address.to_string();
+    let table_name = query_entry_data.space_address.into();
     let entry_address = query_entry_data.entry_address.clone();
 
     let query_raw = query_entry_data.query.as_slice();

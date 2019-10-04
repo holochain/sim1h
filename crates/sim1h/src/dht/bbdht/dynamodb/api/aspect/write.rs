@@ -26,7 +26,7 @@ pub fn aspect_list_to_attribute(aspect_list: &Vec<EntryAspectData>) -> Attribute
     string_set_attribute_value(
         aspect_list
             .iter()
-            .map(|aspect| aspect.aspect_address.to_string())
+            .map(|aspect| aspect.aspect_address.into())
             .collect(),
     )
 }
@@ -38,7 +38,7 @@ pub fn put_aspect(
 ) -> BbDhtResult<()> {
     tracer(&log_context, "put_aspect");
 
-    let mut item = keyed_item(space, &aspect.aspect_address.to_string());
+    let mut item = keyed_item(space, &aspect.into());
 
     item.insert(
         String::from(ASPECT_ADDRESS_KEY),
@@ -64,7 +64,7 @@ pub fn put_aspect(
         log_context,
         space.client
             .put_item(PutItemInput {
-                table_name: space.table_name.to_string(),
+                table_name: space.table_name.into(),
                 item: item,
                 ..Default::default()
             })
@@ -109,7 +109,7 @@ pub fn append_aspect_list_to_entry(
     let update_expression = "ADD #aspect_list :aspects";
 
     space.client.update_item(UpdateItemInput {
-        table_name: space.table_name.to_string(),
+        table_name: space.table_name.into(),
         key: aspect_addresses_key,
         update_expression: Some(update_expression.to_string()),
         expression_attribute_names: Some(expression_attribute_names),

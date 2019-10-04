@@ -2,12 +2,11 @@ use crate::dht::bbdht::dynamodb::api::item::Item;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_CONTENT_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_FROM_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_TO_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_SEEN_KEY;
+use crate::dht::bbdht::dynamodb::schema::cas::ALL_MESSAGES_FOLDER;
+use crate::dht::bbdht::dynamodb::schema::cas::SEEN_MESSAGES_FOLDER;
 use crate::dht::bbdht::dynamodb::schema::cas::{inbox_key, MESSAGE_IS_RESPONSE_KEY};
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::string_set_attribute_value;
-use crate::dht::bbdht::dynamodb::client::client;
 use crate::dht::bbdht::dynamodb::schema::{blob_attribute_value, bool_attribute_value};
 use crate::dht::bbdht::dynamodb::api::item::keyed_item;
 use crate::dht::bbdht::dynamodb::schema::cas::SPACE_KEY;
@@ -31,6 +30,72 @@ pub struct FromAddress(Address);
 pub struct ToAddress(Address);
 pub struct Folder(String);
 
+impl From<FromAddress> for String {
+    fn from(from_address: FromAddress) -> Self {
+        from_address.0.into()
+    }
+}
+
+impl From<&FromAddress> for String {
+    fn from(from_address: &FromAddress) -> Self {
+        from_address.to_owned().into()
+    }
+}
+
+impl From<ToAddress> for String {
+    fn from(to_address: ToAddress) -> Self {
+        to_address.0.into()
+    }
+}
+
+impl From<&ToAddress> for String {
+    fn from(to_address: &ToAddress) -> Self {
+        to_address.to_owned().into()
+    }
+}
+
+impl From<ToAddress> for Address {
+    fn from(to_address: ToAddress) -> Self {
+        to_address.0
+    }
+}
+
+impl From<&ToAddress> for Address {
+    fn from(to_address: &ToAddress) -> Self {
+        to_address.to_owned().into()
+    }
+}
+
+impl From<Folder> for String {
+    fn from(folder: Folder) -> Self {
+        folder.0
+    }
+}
+
+impl ToString for Folder {
+    fn to_string(&self) -> String {
+        self.into()
+    }
+}
+
+impl From<&str> for Folder {
+    fn from(str: &str) -> Self {
+        str.to_string().into()
+    }
+}
+
+impl From<String> for Folder {
+    fn from(string: String) -> Self {
+        Folder(string)
+    }
+}
+
+impl From<&Folder> for String {
+    fn from(folder: &Folder) -> Self {
+        folder.to_owned().into()
+    }
+}
+
 /// put an item that can be reconstructed to DirectMessageData against the request id
 pub fn put_inbox_message(
     log_context: &LogContext,
@@ -43,16 +108,16 @@ pub fn put_inbox_message(
 ) -> BbDhtResult<()> {
     tracer(&log_context, "put_inbox_message");
 
-    let mut item = keyed_item(space, request_id);
+    let mut item = keyed_item(space, &request_id.into());
 
     item.insert(
         String::from(MESSAGE_FROM_KEY),
-        string_attribute_value(&from.to_string()),
+        string_attribute_value(&from.into()),
     );
 
     item.insert(
         String::from(MESSAGE_TO_KEY),
-        string_attribute_value(&to.to_string()),
+        string_attribute_value(&to.into()),
     );
 
     item.insert(
@@ -67,9 +132,9 @@ pub fn put_inbox_message(
 
     if should_put_item_retry(
         log_context,
-        client
+        space.client()
             .put_item(PutItemInput {
-                table_name: space.table_name.to_string(),
+                table_name: space.table_name.into(),
                 item: item,
                 ..Default::default()
             })
@@ -77,8 +142,7 @@ pub fn put_inbox_message(
     )? {
         put_inbox_message(
             log_context,
-            client,
-            space.table_name,
+            space,
             request_id,
             from,
             to,
@@ -99,23 +163,23 @@ pub fn append_request_id_to_inbox(
 ) -> BbDhtResult<()> {
     tracer(&log_context, "append_request_id_to_inbox");
 
-    let inbox_address_key = keyed_item(space, &inbox_key(to));
+    let inbox_address_key = keyed_item(space, &inbox_key(&to.into()).into());
 
     // the request id appended under the inbox address
     let mut inbox_attribute_values = HashMap::new();
     inbox_attribute_values.insert(
         ":request_ids".to_string(),
-        string_set_attribute_value(vec![request_id.to_string()]),
+        string_set_attribute_value(vec![request_id.into()]),
     );
 
     let mut inbox_attribute_names = HashMap::new();
-    inbox_attribute_names.insert("#request_ids".to_string(), folder.to_string());
+    inbox_attribute_names.insert("#request_ids".to_string(), folder.into());
 
     // https://stackoverflow.com/questions/31288085/how-to-append-a-value-to-list-attribute-on-aws-dynamodb
     let update_expression = "ADD #request_ids :request_ids";
 
     let request_ids_update = UpdateItemInput {
-        table_name: space.table_name.to_string(),
+        table_name: space.table_name.into(),
         key: inbox_address_key,
         update_expression: Some(update_expression.to_string()),
         expression_attribute_names: Some(inbox_attribute_names),
@@ -123,7 +187,7 @@ pub fn append_request_id_to_inbox(
         ..Default::default()
     };
 
-    client.update_item(request_ids_update).sync()?;
+    space.client.update_item(request_ids_update).sync()?;
     Ok(())
 }
 
@@ -151,7 +215,7 @@ pub fn send_to_agent_inbox(
     append_request_id_to_inbox(
         log_context,
         space,
-        &REQUEST_IDS_KEY.to_string(),
+        &ALL_MESSAGES_FOLDER.into(),
         request_id,
         to,
     )?;
@@ -164,13 +228,13 @@ pub fn get_inbox_request_ids(
     space: &Space,
     inbox_folder: &Folder,
     to: &ToAddress,
-) -> BbDhtResult<Vec<String>> {
+) -> BbDhtResult<Vec<RequestId>> {
     tracer(log_context, "get_inbox_request_ids");
 
-    Ok(match get_item_from_space(log_context, space, &inbox_key(to))? {
-        Some(item) => match item.get(inbox_folder) {
+    Ok(match get_item_from_space(log_context, space, &inbox_key(&to.into()).into())? {
+        Some(item) => match item.get(&inbox_folder.to_string()) {
             Some(attribute) => match attribute.ss.clone() {
-                Some(ss) => ss,
+                Some(ss) => ss.iter().map(|&s| s.into()).collect(),
                 None => Vec::new(),
             },
             None => Vec::new(),
@@ -262,7 +326,7 @@ pub fn request_ids_to_messages(
     let mut direct_message_datas = Vec::new();
 
     for request_id in request_ids {
-        match get_item_from_space(log_context, space, request_id)? {
+        match get_item_from_space(log_context, space, &request_id.into())? {
             Some(item) => {
                 direct_message_datas.push(item_to_direct_message_data(&item)?);
             }
@@ -289,17 +353,17 @@ pub fn check_inbox(
     let inbox_request_ids = get_inbox_request_ids(
         log_context,
         space,
-        &REQUEST_IDS_KEY.to_string(),
+        &ALL_MESSAGES_FOLDER.into(),
         to,
     )?;
     let seen_request_ids = get_inbox_request_ids(
         log_context,
         space,
-        &REQUEST_IDS_SEEN_KEY.to_string(),
+        &SEEN_MESSAGES_FOLDER.into(),
         to,
     )?;
 
-    let unseen_request_ids: Vec<String> = inbox_request_ids
+    let unseen_request_ids: Vec<RequestId> = inbox_request_ids
         .iter()
         .filter(|request_id| !seen_request_ids.contains(request_id))
         .cloned()
@@ -312,7 +376,7 @@ pub fn check_inbox(
         append_request_id_to_inbox(
             log_context,
             space,
-            &REQUEST_IDS_SEEN_KEY.to_string(),
+            &SEEN_MESSAGES_FOLDER.into(),
             &unseen,
             &to,
         )?;
@@ -334,8 +398,8 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
     use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_KEY;
-    use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_SEEN_KEY;
+    use crate::dht::bbdht::dynamodb::schema::cas::ALL_MESSAGES_FOLDER;
+    use crate::dht::bbdht::dynamodb::schema::cas::SEEN_MESSAGES_FOLDER;
     use crate::network::fixture::request_id_fresh;
     use crate::trace::tracer;
     use lib3h_protocol::data_types::DirectMessageData;

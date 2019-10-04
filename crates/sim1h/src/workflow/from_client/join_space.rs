@@ -1,36 +1,36 @@
 use crate::dht::bbdht::dynamodb::api::agent::write::touch_agent;
-use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
-use crate::dht::bbdht::dynamodb::client::Client;
+use crate::dht::bbdht::dynamodb::client::Connection;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use crate::workflow::state::Sim1hState;
-use lib3h_protocol::data_types::SpaceData;
+use crate::agent::AgentAddress;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
+use crate::dht::bbdht::dynamodb::api::space::create::ensure_space;
+use crate::space::Space;
 
 impl Sim1hState {
     /// create space if not exists
     /// touch agent
     pub fn join_space(
         log_context: &LogContext,
-        client: &Client,
-        join_space_data: &SpaceData,
+        connection: &Connection,
+        space: &Space,
+        agent_address: &AgentAddress,
     ) -> BbDhtResult<(ClientToLib3hResponse, Sim1hState)> {
         tracer(&log_context, "join_space");
 
-        let table_name = String::from(join_space_data.space_address.clone());
-
-        ensure_cas_table(&log_context, &client, &table_name)?;
+        ensure_space(&log_context, &connection, &space)?;
         touch_agent(
             &log_context,
-            &client,
-            &table_name,
-            &join_space_data.agent_id,
+            &connection,
+            &space,
+            &agent_address,
         )?;
 
         let state = Sim1hState::new(
-            join_space_data.space_address.clone(),
-            join_space_data.agent_id.clone(),
+            space,
+            agent_address,
         );
 
         Ok((ClientToLib3hResponse::JoinSpaceResult, state))

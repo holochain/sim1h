@@ -22,8 +22,8 @@ pub const ASPECT_PUBLISH_TS_KEY: &str = "aspect_publish_ts";
 
 // direct messaging keys
 pub const INBOX_KEY_PREFIX: &str = "inbox_";
-pub const REQUEST_IDS_KEY: &str = "request_ids";
-pub const REQUEST_IDS_SEEN_KEY: &str = "request_ids_seen";
+pub const ALL_MESSAGES_FOLDER: &str = "all_messages";
+pub const SEEN_MESSAGES_FOLDER: &str = "seen_messages";
 pub const MESSAGE_FROM_KEY: &str = "message_from";
 pub const MESSAGE_TO_KEY: &str = "message_to";
 pub const MESSAGE_CONTENT_KEY: &str = "message_content";
