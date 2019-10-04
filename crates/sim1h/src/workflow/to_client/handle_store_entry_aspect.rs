@@ -1,4 +1,4 @@
-use crate::dht::bbdht::dynamodb::client::Client;
+use crate::space::Space;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use lib3h_protocol::data_types::StoreEntryAspectData;
@@ -8,7 +8,7 @@ use lib3h_protocol::data_types::StoreEntryAspectData;
 /// no-op
 pub fn handle_store_entry_aspect(
     log_context: &LogContext,
-    _client: &Client,
+    _space: &Space,
     store_entry_aspect_data: &StoreEntryAspectData,
 ) {
     tracer(

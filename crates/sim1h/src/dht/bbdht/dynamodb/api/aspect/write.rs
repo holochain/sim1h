@@ -1,32 +1,32 @@
+use crate::dht::bbdht::dynamodb::api::item::keyed_item;
 use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
 use crate::dht::bbdht::dynamodb::schema::blob_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_ADDRESS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_LIST_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_PUBLISH_TS_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::ITEM_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_TYPE_HINT_KEY;
+use crate::dht::bbdht::dynamodb::schema::cas::ITEM_KEY;
 use crate::dht::bbdht::dynamodb::schema::number_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::string_set_attribute_value;
 use crate::dht::bbdht::error::BbDhtResult;
+use crate::entry::EntryAddress;
+use crate::space::Space;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::EntryAspectData;
 use rusoto_dynamodb::AttributeValue;
 use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::PutItemInput;
 use rusoto_dynamodb::UpdateItemInput;
 use std::collections::HashMap;
-use crate::space::Space;
-use crate::dht::bbdht::dynamodb::api::item::keyed_item;
 
 pub fn aspect_list_to_attribute(aspect_list: &Vec<EntryAspectData>) -> AttributeValue {
     string_set_attribute_value(
         aspect_list
             .iter()
-            .map(|aspect| aspect.aspect_address.into())
+            .map(|aspect| aspect.aspect_address.clone().into())
             .collect(),
     )
 }
@@ -62,9 +62,11 @@ pub fn put_aspect(
 
     if should_put_item_retry(
         log_context,
-        space.client
+        space
+            .connection()
+            .client()
             .put_item(PutItemInput {
-                table_name: space.table_name.into(),
+                table_name: space.connection().table_name().into(),
                 item: item,
                 ..Default::default()
             })
@@ -79,7 +81,7 @@ pub fn put_aspect(
 pub fn append_aspect_list_to_entry(
     log_context: &LogContext,
     space: &Space,
-    entry_address: &Address,
+    entry_address: &EntryAddress,
     aspect_list: &Vec<EntryAspectData>,
 ) -> BbDhtResult<()> {
     tracer(&log_context, "append_aspects");
@@ -93,7 +95,7 @@ pub fn append_aspect_list_to_entry(
     let mut aspect_addresses_key = HashMap::new();
     aspect_addresses_key.insert(
         String::from(ITEM_KEY),
-        string_attribute_value(&String::from(entry_address.to_owned())),
+        string_attribute_value(&entry_address.into()),
     );
 
     let mut expression_attribute_values = HashMap::new();
@@ -108,14 +110,18 @@ pub fn append_aspect_list_to_entry(
     // https://stackoverflow.com/questions/31288085/how-to-append-a-value-to-list-attribute-on-aws-dynamodb
     let update_expression = "ADD #aspect_list :aspects";
 
-    space.client.update_item(UpdateItemInput {
-        table_name: space.table_name.into(),
-        key: aspect_addresses_key,
-        update_expression: Some(update_expression.to_string()),
-        expression_attribute_names: Some(expression_attribute_names),
-        expression_attribute_values: Some(expression_attribute_values),
-        ..Default::default()
-    }).sync()?;
+    space
+        .connection()
+        .client()
+        .update_item(UpdateItemInput {
+            table_name: space.connection().table_name().into(),
+            key: aspect_addresses_key,
+            update_expression: Some(update_expression.to_string()),
+            expression_attribute_names: Some(expression_attribute_names),
+            expression_attribute_values: Some(expression_attribute_values),
+            ..Default::default()
+        })
+        .sync()?;
 
     Ok(())
 }
@@ -134,6 +140,7 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_LIST_KEY;
+    use crate::dht::bbdht::dynamodb::schema::cas::ITEM_KEY;
     use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
     use crate::entry::fixture::entry_address_fresh;
     use crate::trace::tracer;
@@ -174,7 +181,7 @@ pub mod tests {
             aspect_list_to_attribute(&aspect_list),
         );
         expected.insert(
-            ADDRESS_KEY.to_string(),
+            ITEM_KEY.to_string(),
             string_attribute_value(&String::from(entry_address.clone())),
         );
 

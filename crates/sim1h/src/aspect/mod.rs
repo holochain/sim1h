@@ -1,19 +1,24 @@
 pub mod fixture;
 use holochain_core_types::network::entry_aspect::EntryAspect;
 use holochain_json_api::json::JsonString;
+use holochain_persistence_api::cas::content::Address;
 use holochain_persistence_api::cas::content::AddressableContent;
 use lib3h_protocol::data_types::EntryAspectData;
-use holochain_persistence_api::cas::content::Address;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AspectAddress(Address);
-pub struct EntryAddress(Address);
 
 impl From<String> for AspectAddress {
     fn from(string: String) -> Self {
         AspectAddress(string.into())
+    }
+}
+
+impl From<&String> for AspectAddress {
+    fn from(string: &String) -> Self {
+        string.to_owned().into()
     }
 }
 
@@ -29,9 +34,9 @@ impl From<AspectAddress> for Address {
     }
 }
 
-impl From<EntryAddress> for String {
-    fn from(entry_address: EntryAddress) -> Self {
-        entry_address.0.into()
+impl From<Address> for AspectAddress {
+    fn from(address: Address) -> Self {
+        AspectAddress(address)
     }
 }
 

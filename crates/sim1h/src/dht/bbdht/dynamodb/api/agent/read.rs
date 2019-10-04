@@ -1,10 +1,10 @@
+use crate::agent::AgentAddress;
 use crate::dht::bbdht::dynamodb::api::item::read::get_item_from_space;
+use crate::dht::bbdht::dynamodb::api::space::exist::space_exists;
 use crate::dht::bbdht::error::BbDhtResult;
+use crate::space::Space;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use crate::space::Space;
-use crate::dht::bbdht::dynamodb::api::space::exist::space_exists;
-use crate::agent::AgentAddress;
 
 pub fn agent_exists(
     log_context: &LogContext,
@@ -24,12 +24,11 @@ pub fn agent_exists(
 #[cfg(test)]
 pub mod tests {
 
-    use crate::agent::fixture::agent_id_fresh;
+    use crate::space::fixture::space_fresh;
+    use crate::dht::bbdht::dynamodb::api::space::create::ensure_space;
+    use crate::agent::fixture::agent_address_fresh;
     use crate::dht::bbdht::dynamodb::api::agent::read::agent_exists;
     use crate::dht::bbdht::dynamodb::api::agent::write::touch_agent;
-    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
-    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::trace::tracer;
 
     #[test]
@@ -37,12 +36,11 @@ pub mod tests {
         let log_context = "agent_exists";
 
         tracer(&log_context, "fixtures");
-        let local_client = local_client();
-        let table_name = table_name_fresh();
-        let agent_id = agent_id_fresh();
+        let space = space_fresh();
+        let agent_id = agent_address_fresh();
 
         // agent not exists if space not exists
-        match agent_exists(&log_context, &local_client, &table_name, &agent_id) {
+        match agent_exists(&log_context, &space, &agent_id) {
             Ok(false) => {
                 tracer(&log_context, "👌");
             }
@@ -55,10 +53,10 @@ pub mod tests {
         };
 
         // ensure cas
-        assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
+        assert!(ensure_space(&log_context, &space).is_ok());
 
         // agent not exists if not join space
-        match agent_exists(&log_context, &local_client, &table_name, &agent_id) {
+        match agent_exists(&log_context, &space, &agent_id) {
             Ok(false) => {
                 tracer(&log_context, "👌");
             }
@@ -71,10 +69,10 @@ pub mod tests {
         };
 
         // join
-        assert!(touch_agent(&log_context, &local_client, &table_name, &agent_id).is_ok());
+        assert!(touch_agent(&log_context, &space, &agent_id).is_ok());
 
         // agent exists now
-        match agent_exists(&log_context, &local_client, &table_name, &agent_id) {
+        match agent_exists(&log_context, &space, &agent_id) {
             Ok(false) => {
                 panic!("agent not exists after join");
             }

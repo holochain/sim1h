@@ -1,5 +1,5 @@
-use crate::dht::bbdht::dynamodb::client::Client;
 use crate::dht::bbdht::error::BbDhtResult;
+use crate::space::Space;
 use crate::trace::LogContext;
 use crate::workflow::from_client::query_entry::query_entry_aspects;
 use holochain_core_types::network::query::NetworkQuery;
@@ -14,7 +14,7 @@ use lib3h_protocol::protocol::ClientToLib3hResponse;
 /// query entry but hardcoded to entry query right?
 pub fn fetch_entry(
     log_context: &LogContext,
-    client: &Client,
+    space: &Space,
     fetch_entry_data: &FetchEntryData,
 ) -> BbDhtResult<ClientToLib3hResponse> {
     let query_entry_data = QueryEntryData {
@@ -25,7 +25,7 @@ pub fn fetch_entry(
         entry_address: fetch_entry_data.entry_address.clone(),
         query: JsonString::from(NetworkQuery::GetEntry).to_bytes().into(),
     };
-    let query_aspect_list = query_entry_aspects(log_context, client, &query_entry_data)?;
+    let query_aspect_list = query_entry_aspects(log_context, space, &query_entry_data)?;
     let fetch_entry_result_data = FetchEntryResultData {
         // i think this works??
         entry: EntryData {

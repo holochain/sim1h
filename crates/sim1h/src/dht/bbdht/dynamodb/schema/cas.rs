@@ -46,19 +46,17 @@ pub fn partition_key_attribute_definition() -> AttributeDefinition {
 }
 
 pub fn attribute_definitions_cas() -> Vec<AttributeDefinition> {
-    vec![
-        partition_key_attribute_definition(),
-    ]
+    vec![partition_key_attribute_definition()]
 }
 
 #[cfg(test)]
 pub mod tests {
 
-    use crate::dht::bbdht::dynamodb::schema::cas::partition_key_attribute_definition;
-    use crate::dht::bbdht::dynamodb::schema::cas::partition_key_schema;
     use crate::dht::bbdht::dynamodb::schema::cas::attribute_definitions_cas;
     use crate::dht::bbdht::dynamodb::schema::cas::key_schema_cas;
-    use crate::dht::bbdht::dynamodb::schema::cas::CONTENT_KEY;
+    use crate::dht::bbdht::dynamodb::schema::cas::partition_key_attribute_definition;
+    use crate::dht::bbdht::dynamodb::schema::cas::partition_key_schema;
+    use crate::dht::bbdht::dynamodb::schema::cas::ITEM_KEY;
     use crate::trace::tracer;
     use rusoto_dynamodb::AttributeDefinition;
     use rusoto_dynamodb::KeySchemaElement;
@@ -70,24 +68,10 @@ pub mod tests {
         tracer(&log_context, "compare values");
         assert_eq!(
             KeySchemaElement {
-                attribute_name: ADDRESS_KEY.to_string(),
+                attribute_name: ITEM_KEY.into(),
                 key_type: "HASH".into(),
             },
-            address_key_schema(),
-        );
-    }
-
-    #[test]
-    fn content_key_schema_test() {
-        let log_context = "context_key_schema_test";
-
-        tracer(&log_context, "compare values");
-        assert_eq!(
-            KeySchemaElement {
-                attribute_name: CONTENT_KEY.to_string(),
-                key_type: "HASH".into(),
-            },
-            content_key_schema(),
+            partition_key_schema(),
         );
     }
 
@@ -98,7 +82,7 @@ pub mod tests {
         tracer(&log_context, "compare values");
         assert_eq!(
             vec![KeySchemaElement {
-                attribute_name: ADDRESS_KEY.to_string(),
+                attribute_name: ITEM_KEY.into(),
                 key_type: "HASH".into(),
             }],
             key_schema_cas()
@@ -106,30 +90,16 @@ pub mod tests {
     }
 
     #[test]
-    fn address_attribute_definition_test() {
+    fn partition_key_attribute_definition_test() {
         let log_context = "address_attribute_definition_test";
 
         tracer(&log_context, "compare values");
         assert_eq!(
             AttributeDefinition {
-                attribute_name: ADDRESS_KEY.to_string(),
+                attribute_name: ITEM_KEY.into(),
                 attribute_type: "S".into(),
             },
-            address_attribute_definition(),
-        );
-    }
-
-    #[test]
-    fn content_attribute_definition_test() {
-        let log_context = "content_attribute_definition_test";
-
-        tracer(&log_context, "compare values");
-        assert_eq!(
-            AttributeDefinition {
-                attribute_name: CONTENT_KEY.to_string(),
-                attribute_type: "S".into(),
-            },
-            content_attribute_definition(),
+            partition_key_attribute_definition(),
         );
     }
 
@@ -139,7 +109,7 @@ pub mod tests {
 
         tracer(&log_context, "compare values");
         assert_eq!(
-            address_attribute_definition(),
+            partition_key_attribute_definition(),
             attribute_definitions_cas()[0]
         );
     }

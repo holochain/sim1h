@@ -1,5 +1,5 @@
-use crate::dht::bbdht::dynamodb::client::Client;
 use crate::dht::bbdht::error::BbDhtResult;
+use crate::space::Space;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use crate::workflow::from_client::publish_entry::publish_entry;
@@ -9,7 +9,7 @@ use lib3h_protocol::data_types::{FetchEntryResultData, ProvidedEntryData};
 /// result of no-op is no-op
 pub fn handle_fetch_entry_result(
     log_context: &LogContext,
-    client: &Client,
+    space: &Space,
     fetch_entry_result_data: &FetchEntryResultData,
 ) -> BbDhtResult<()> {
     tracer(
@@ -20,7 +20,7 @@ pub fn handle_fetch_entry_result(
     if fetch_entry_result_data.request_id == String::from("fetch-and-publish") {
         publish_entry(
             log_context,
-            client,
+            space,
             &ProvidedEntryData {
                 space_address: fetch_entry_result_data.space_address.clone(),
                 provider_agent_id: fetch_entry_result_data.provider_agent_id.clone(),

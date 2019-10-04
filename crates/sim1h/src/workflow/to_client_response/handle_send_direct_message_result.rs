@@ -1,3 +1,4 @@
+use crate::space::Space;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use lib3h_protocol::data_types::DirectMessageData;
@@ -7,6 +8,7 @@ use lib3h_protocol::data_types::DirectMessageData;
 /// B told A it received the message
 pub fn handle_send_direct_message_result(
     log_context: &LogContext,
+    _space: &Space,
     direct_message_data: &DirectMessageData,
 ) {
     tracer(

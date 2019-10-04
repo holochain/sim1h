@@ -1,12 +1,12 @@
 pub mod fixture;
 pub mod local;
+pub mod connection;
 
 use dynomite::dynamodb::DynamoDbClient;
 use dynomite::retry::Policy;
 use dynomite::retry::RetryingDynamoDb;
 use dynomite::Retries;
 use rusoto_core::Region;
-use crate::dht::bbdht::dynamodb::schema::TableName;
 use std::time::Duration;
 
 pub type Client = RetryingDynamoDb<DynamoDbClient>;
@@ -20,11 +20,6 @@ pub fn client_from_endpoint(endpoint: String, region: String) -> Client {
         name: region,
         endpoint,
     })
-}
-
-pub struct Connection {
-    client: Client,
-    table: TableName,
 }
 
 #[cfg(test)]

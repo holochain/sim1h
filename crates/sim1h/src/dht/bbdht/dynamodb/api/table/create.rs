@@ -3,6 +3,7 @@ use crate::dht::bbdht::dynamodb::api::table::exist::until_table_exists;
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::dht::bbdht::dynamodb::schema::cas::attribute_definitions_cas;
 use crate::dht::bbdht::dynamodb::schema::cas::key_schema_cas;
+use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::dht::bbdht::error::BbDhtError;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
@@ -13,7 +14,6 @@ use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::KeySchemaElement;
 use rusoto_dynamodb::ProvisionedThroughput;
 use rusoto_dynamodb::TableDescription;
-use crate::dht::bbdht::dynamodb::schema::TableName;
 
 pub fn create_table(
     log_context: &LogContext,

@@ -1,6 +1,6 @@
 use crate::dht::bbdht::dynamodb::api::aspect::read::get_entry_aspects;
-use crate::dht::bbdht::dynamodb::client::Client;
 use crate::dht::bbdht::error::{BbDhtError, BbDhtResult};
+use crate::space::Space;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use crate::workflow::state::Sim1hState;
@@ -19,13 +19,12 @@ pub fn get_entry_aspect_filter_fn(aspect: &EntryAspectData) -> bool {
 
 pub fn query_entry_aspects(
     log_context: &LogContext,
-    client: &Client,
+    space: &Space,
     query_entry_data: &QueryEntryData,
 ) -> BbDhtResult<Vec<EntryAspectData>> {
     tracer(&log_context, "publish_entry");
 
-    let table_name = query_entry_data.space_address.into();
-    let entry_address = query_entry_data.entry_address.clone();
+    let entry_address = query_entry_data.entry_address.clone().into();
 
     let query_raw = query_entry_data.query.as_slice();
     let utf8_result = std::str::from_utf8(&query_raw.clone());
@@ -39,7 +38,7 @@ pub fn query_entry_aspects(
         Err(err) => Err(BbDhtError::CorruptData(err.to_string()))?,
     };
 
-    let entry_aspects = get_entry_aspects(log_context, client, &table_name, &entry_address)?;
+    let entry_aspects = get_entry_aspects(log_context, space, &entry_address)?;
 
     Ok(entry_aspects)
 }
@@ -57,7 +56,7 @@ impl Sim1hState {
     pub fn query_entry(
         &mut self,
         log_context: &LogContext,
-        _client: &Client,
+        _space: &Space,
         query_entry_data: &QueryEntryData,
     ) -> BbDhtResult<()> {
         tracer(&log_context, "query_entry");
@@ -130,8 +129,7 @@ pub mod tests {
         let provided_entry_data = provided_entry_data_fresh(&space_data, &entry_address);
 
         // join space
-        assert!(Sim1hState::join_space(&log_context, &local_client, &space_data)
-            .is_ok());
+        assert!(Sim1hState::join_space(&log_context, &local_client, &space_data).is_ok());
 
         // publish entry
         assert!(publish_entry(&log_context, &local_client, &provided_entry_data).is_ok());

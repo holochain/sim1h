@@ -1,9 +1,10 @@
+use crate::dht::bbdht::dynamodb::api::item::keyed_item;
 use crate::dht::bbdht::dynamodb::api::item::Item;
 use crate::dht::bbdht::dynamodb::schema::cas::CONTENT_KEY;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::dht::bbdht::error::BbDhtResult;
+use crate::space::Space;
 use crate::trace::tracer;
-use crate::dht::bbdht::dynamodb::api::item::keyed_item;
 use crate::trace::LogContext;
 use holochain_persistence_api::cas::content::AddressableContent;
 use rusoto_core::RusotoError;
@@ -11,7 +12,6 @@ use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::PutItemError;
 use rusoto_dynamodb::PutItemInput;
 use rusoto_dynamodb::PutItemOutput;
-use crate::space::Space;
 
 pub fn content_to_item(space: &Space, content: &dyn AddressableContent) -> Item {
     let mut item = keyed_item(space, &content.address().into());
@@ -84,10 +84,12 @@ pub fn ensure_content(
 
     if should_put_item_retry(
         log_context,
-        space.client
+        space
+            .connection()
+            .client()
             .put_item(PutItemInput {
                 item: content_to_item(space, content),
-                table_name: space.table_name.into(),
+                table_name: space.connection().table_name().into(),
                 ..Default::default()
             })
             .sync(),

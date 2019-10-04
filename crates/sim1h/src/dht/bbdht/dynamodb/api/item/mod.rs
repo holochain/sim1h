@@ -1,17 +1,17 @@
-use rusoto_dynamodb::AttributeValue;
-use std::collections::HashMap;
-use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
-use lib3h_protocol::data_types::EntryAspectData;
-use crate::dht::bbdht::dynamodb::schema::cas::PARTITION_KEY;
-use holochain_persistence_api::cas::content::Address;
-use crate::aspect::EntryAddress;
+use crate::agent::AgentAddress;
 use crate::aspect::AspectAddress;
 use crate::dht::bbdht::dynamodb::schema::cas::ITEM_KEY;
+use crate::entry::EntryAddress;
 use crate::dht::bbdht::dynamodb::schema::cas::NETWORK_KEY;
-use crate::agent::AgentAddress;
+use crate::dht::bbdht::dynamodb::schema::cas::PARTITION_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::SPACE_KEY;
-use crate::space::Space;
+use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::network::RequestId;
+use crate::space::Space;
+use holochain_persistence_api::cas::content::Address;
+use lib3h_protocol::data_types::EntryAspectData;
+use rusoto_dynamodb::AttributeValue;
+use std::collections::HashMap;
 
 pub mod fixture;
 pub mod read;
@@ -119,31 +119,23 @@ pub fn keyed_item(space: &Space, item_key: &ItemKey) -> Item {
     let mut item = HashMap::new();
     item.insert(
         String::from(PARTITION_KEY),
-        string_attribute_value(
-            &partition_key(
-                &space.network_id.into(),
-                &space.space_address.into(),
-                &item_key.into(),
-            )
-        ),
+        string_attribute_value(&partition_key(
+            &space.network_id().into(),
+            &space.space_address().into(),
+            &item_key.into(),
+        )),
     );
     item.insert(
         String::from(ITEM_KEY),
-        string_attribute_value(
-                &item_key.into(),
-        ),
+        string_attribute_value(&item_key.into()),
     );
     item.insert(
         String::from(NETWORK_KEY),
-        string_attribute_value(
-            &space.network_id.into(),
-        ),
+        string_attribute_value(&space.network_id().into()),
     );
     item.insert(
         String::from(SPACE_KEY),
-        string_attribute_value(
-            &space.space_address.into(),
-        ),
+        string_attribute_value(&space.space_address().into()),
     );
     item
 }

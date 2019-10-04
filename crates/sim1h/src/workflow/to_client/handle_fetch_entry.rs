@@ -1,4 +1,4 @@
-use crate::dht::bbdht::dynamodb::client::Client;
+use crate::space::Space;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use lib3h_protocol::data_types::FetchEntryResultData;
@@ -9,7 +9,7 @@ use lib3h_protocol::data_types::FetchEntryResultData;
 // no-op
 pub fn handle_fetch_entry(
     log_context: &LogContext,
-    _client: &Client,
+    _space: &Space,
     fetch_entry_data: &FetchEntryResultData,
 ) {
     tracer(

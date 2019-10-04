@@ -5,7 +5,7 @@ use rusoto_dynamodb::AttributeDefinition;
 use rusoto_dynamodb::AttributeValue;
 use rusoto_dynamodb::KeySchemaElement;
 
-#[derive(Debug)]
+#[derive(Debug, Default, Clone)]
 pub struct TableName(String);
 
 impl From<TableName> for String {
@@ -17,6 +17,12 @@ impl From<TableName> for String {
 impl From<String> for TableName {
     fn from(string: String) -> Self {
         TableName(string)
+    }
+}
+
+impl From<&String> for TableName {
+    fn from(string: &String) -> Self {
+        string.to_owned().into()
     }
 }
 

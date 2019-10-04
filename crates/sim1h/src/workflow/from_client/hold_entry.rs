@@ -1,5 +1,5 @@
-use crate::dht::bbdht::dynamodb::client::Client;
 use crate::dht::bbdht::error::BbDhtResult;
+use crate::space::Space;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use crate::workflow::state::Sim1hState;
@@ -8,7 +8,7 @@ use lib3h_protocol::data_types::ProvidedEntryData;
 impl Sim1hState {
     pub fn hold_entry(
         log_context: &LogContext,
-        _client: &Client,
+        _space: &Space,
         _data: &ProvidedEntryData,
     ) -> BbDhtResult<()> {
         tracer(&log_context, "hold_entry");

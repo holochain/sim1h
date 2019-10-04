@@ -1,6 +1,6 @@
 use crate::dht::bbdht::dynamodb::api::agent::inbox::send_to_agent_inbox;
-use crate::dht::bbdht::dynamodb::client::Client;
 use crate::dht::bbdht::error::BbDhtResult;
+use crate::space::Space;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use lib3h_protocol::data_types::DirectMessageData;
@@ -11,7 +11,7 @@ use lib3h_protocol::data_types::DirectMessageData;
 // works exactly the same as the original send
 pub fn send_direct_message_result(
     log_context: &LogContext,
-    client: &Client,
+    space: &Space,
     direct_message_data: &DirectMessageData,
 ) -> BbDhtResult<()> {
     tracer(
@@ -20,11 +20,10 @@ pub fn send_direct_message_result(
     );
     send_to_agent_inbox(
         &log_context,
-        &client,
-        &direct_message_data.space_address.to_string(),
-        &direct_message_data.request_id,
-        &direct_message_data.from_agent_id,
-        &direct_message_data.to_agent_id,
+        &space,
+        &direct_message_data.request_id.clone().into(),
+        &direct_message_data.from_agent_id.clone().into(),
+        &direct_message_data.to_agent_id.clone().into(),
         &direct_message_data.content,
         true,
     )?;

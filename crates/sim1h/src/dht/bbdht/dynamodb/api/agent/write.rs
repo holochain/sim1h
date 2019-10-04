@@ -1,12 +1,12 @@
+use crate::agent::AgentAddress;
+use crate::dht::bbdht::dynamodb::api::item::keyed_item;
 use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
 use crate::dht::bbdht::error::BbDhtResult;
+use crate::space::Space;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::PutItemInput;
-use crate::dht::bbdht::dynamodb::api::item::keyed_item;
-use crate::agent::AgentAddress;
-use crate::space::Space;
 
 pub fn touch_agent(
     log_context: &LogContext,
@@ -19,9 +19,11 @@ pub fn touch_agent(
 
     if should_put_item_retry(
         log_context,
-        space.client
+        space
+            .connection()
+            .client()
             .put_item(PutItemInput {
-                table_name: space.table_name.into(),
+                table_name: space.connection().table_name().into(),
                 item: item,
                 ..Default::default()
             })
@@ -36,12 +38,10 @@ pub fn touch_agent(
 #[cfg(test)]
 pub mod tests {
 
-    use crate::agent::fixture::agent_id_fresh;
+    use crate::agent::fixture::agent_address_fresh;
     use crate::dht::bbdht::dynamodb::api::agent::write::touch_agent;
-    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
-    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
-    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
+    use crate::space::fixture::space_fresh;
+    use crate::dht::bbdht::dynamodb::api::space::create::ensure_space;
     use crate::trace::tracer;
 
     #[test]
@@ -49,18 +49,14 @@ pub mod tests {
         let log_context = "touch_agent_test";
 
         tracer(&log_context, "fixtures");
-        let local_client = local_client();
-        let table_name = table_name_fresh();
-        let agent_id = agent_id_fresh();
+        let space = space_fresh();
+        let agent_id = agent_address_fresh();
 
         // ensure cas
-        assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
-
-        // cas exists
-        assert!(table_exists(&log_context, &local_client, &table_name).is_ok());
+        assert!(ensure_space(&log_context, &space).is_ok());
 
         // touch agent
-        assert!(touch_agent(&log_context, &local_client, &table_name, &agent_id).is_ok());
+        assert!(touch_agent(&log_context, &space, &agent_id).is_ok());
     }
 
 }

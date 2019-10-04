@@ -23,13 +23,13 @@ impl Sim1hState {
         for (entry_address, aspect_addresses) in entry_list_data.address_map.iter() {
             self.client_request_outbox
                 .push(Lib3hToClient::HandleFetchEntry(FetchEntryData {
-                    space_address: self.space_address.clone(),
+                    space_address: self.space().space_address().into(),
                     entry_address: entry_address.clone(),
                     // When we get back the result as Lib3hToClientResponse::FetchEntryResult,
                     // this will tell us that we should go ahead and publish the fetched entry:
                     // TODO: not do that in the future
                     request_id: String::from("fetch-and-publish"),
-                    provider_agent_id: self.agent_id.clone(),
+                    provider_agent_id: self.agent_address().into(),
                     aspect_address_list: Some(aspect_addresses.clone()),
                 }));
         }

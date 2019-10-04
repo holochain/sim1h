@@ -1,4 +1,4 @@
-use crate::dht::bbdht::dynamodb::client::Client;
+use crate::space::Space;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use lib3h_protocol::data_types::QueryEntryResultData;
@@ -8,7 +8,7 @@ use lib3h_protocol::data_types::QueryEntryResultData;
 // no-op
 pub fn handle_query_entry(
     log_context: &LogContext,
-    _client: &Client,
+    _space: &Space,
     query_entry_data: &QueryEntryResultData,
 ) {
     tracer(

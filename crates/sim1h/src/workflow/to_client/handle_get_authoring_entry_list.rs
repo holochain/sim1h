@@ -1,4 +1,4 @@
-use crate::dht::bbdht::dynamodb::client::Client;
+use crate::space::Space;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use lib3h_protocol::data_types::EntryListData;
@@ -8,7 +8,7 @@ use lib3h_protocol::data_types::EntryListData;
 // no-op
 pub fn handle_get_authoring_entry_list(
     log_context: &LogContext,
-    _client: &Client,
+    _space: &Space,
     get_list_data: &EntryListData,
 ) {
     tracer(

@@ -1,6 +1,6 @@
 use crate::dht::bbdht::dynamodb::api::aspect::write::append_aspect_list_to_entry;
-use crate::dht::bbdht::dynamodb::client::Client;
 use crate::dht::bbdht::error::BbDhtResult;
+use crate::space::Space;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use lib3h_protocol::data_types::ProvidedEntryData;
@@ -12,15 +12,14 @@ use lib3h_protocol::data_types::ProvidedEntryData;
 /// make all this in a transaction
 pub fn publish_entry(
     log_context: &LogContext,
-    client: &Client,
+    space: &Space,
     provided_entry_data: &ProvidedEntryData,
 ) -> BbDhtResult<()> {
     tracer(&log_context, "publish_entry");
 
     append_aspect_list_to_entry(
         &log_context,
-        &client,
-        &provided_entry_data.space_address.into(),
+        &space,
         &provided_entry_data.entry.entry_address,
         &provided_entry_data.entry.aspect_list,
     )?;
@@ -51,8 +50,7 @@ pub mod tests {
 
         tracer(&log_context, "check response");
 
-        assert!(Sim1hState::join_space(&log_context, &local_client, &space_data)
-            .is_ok());
+        assert!(Sim1hState::join_space(&log_context, &local_client, &space_data).is_ok());
 
         match publish_entry(&log_context, &local_client, &provided_entry_data) {
             Ok(()) => {

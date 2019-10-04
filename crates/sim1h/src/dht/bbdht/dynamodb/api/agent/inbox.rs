@@ -1,30 +1,31 @@
+use crate::dht::bbdht::dynamodb::api::item::keyed_item;
+use crate::dht::bbdht::dynamodb::api::item::read::get_item_from_space;
+use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
 use crate::dht::bbdht::dynamodb::api::item::Item;
+use crate::dht::bbdht::dynamodb::schema::cas::ALL_MESSAGES_FOLDER;
+use crate::dht::bbdht::dynamodb::schema::cas::ITEM_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_CONTENT_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_FROM_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_TO_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::ALL_MESSAGES_FOLDER;
+use crate::agent::AgentAddress;
 use crate::dht::bbdht::dynamodb::schema::cas::SEEN_MESSAGES_FOLDER;
+use crate::dht::bbdht::dynamodb::schema::cas::SPACE_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::{inbox_key, MESSAGE_IS_RESPONSE_KEY};
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::string_set_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::{blob_attribute_value, bool_attribute_value};
-use crate::dht::bbdht::dynamodb::api::item::keyed_item;
-use crate::dht::bbdht::dynamodb::schema::cas::SPACE_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::ITEM_KEY;
 use crate::dht::bbdht::error::BbDhtError;
 use crate::dht::bbdht::error::BbDhtResult;
-use crate::dht::bbdht::dynamodb::api::item::read::get_item_from_space;
+use crate::network::RequestId;
+use crate::space::Space;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::DirectMessageData;
 use rusoto_dynamodb::DynamoDb;
-use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
 use rusoto_dynamodb::PutItemInput;
 use rusoto_dynamodb::UpdateItemInput;
 use std::collections::HashMap;
-use crate::space::Space;
-use crate::network::RequestId;
 
 pub struct FromAddress(Address);
 pub struct ToAddress(Address);
@@ -39,6 +40,36 @@ impl From<FromAddress> for String {
 impl From<&FromAddress> for String {
     fn from(from_address: &FromAddress) -> Self {
         from_address.to_owned().into()
+    }
+}
+
+impl From<Address> for FromAddress {
+    fn from(address: Address) -> Self {
+        FromAddress(address)
+    }
+}
+
+impl From<Address> for ToAddress {
+    fn from(address: Address) -> Self {
+        ToAddress(address)
+    }
+}
+
+impl From<AgentAddress> for ToAddress {
+    fn from(agent_address: AgentAddress) -> Self {
+        ToAddress(agent_address.into())
+    }
+}
+
+impl From<AgentAddress> for FromAddress {
+    fn from(agent_address: AgentAddress) -> Self {
+        FromAddress(agent_address.into())
+    }
+}
+
+impl From<&AgentAddress> for ToAddress {
+    fn from(agent_address: &AgentAddress) -> Self {
+        agent_address.to_owned().into()
     }
 }
 
@@ -132,23 +163,17 @@ pub fn put_inbox_message(
 
     if should_put_item_retry(
         log_context,
-        space.client()
+        space
+            .connection()
+            .client()
             .put_item(PutItemInput {
-                table_name: space.table_name.into(),
+                table_name: space.connection().table_name().into(),
                 item: item,
                 ..Default::default()
             })
             .sync(),
     )? {
-        put_inbox_message(
-            log_context,
-            space,
-            request_id,
-            from,
-            to,
-            content,
-            response,
-        )
+        put_inbox_message(log_context, space, request_id, from, to, content, response)
     } else {
         Ok(())
     }
@@ -179,7 +204,7 @@ pub fn append_request_id_to_inbox(
     let update_expression = "ADD #request_ids :request_ids";
 
     let request_ids_update = UpdateItemInput {
-        table_name: space.table_name.into(),
+        table_name: space.connection().table_name().into(),
         key: inbox_address_key,
         update_expression: Some(update_expression.to_string()),
         expression_attribute_names: Some(inbox_attribute_names),
@@ -187,7 +212,11 @@ pub fn append_request_id_to_inbox(
         ..Default::default()
     };
 
-    space.client.update_item(request_ids_update).sync()?;
+    space
+        .connection()
+        .client()
+        .update_item(request_ids_update)
+        .sync()?;
     Ok(())
 }
 
@@ -202,15 +231,7 @@ pub fn send_to_agent_inbox(
 ) -> BbDhtResult<()> {
     tracer(&log_context, "send_to_agent_inbox");
 
-    put_inbox_message(
-        log_context,
-        space,
-        request_id,
-        from,
-        to,
-        content,
-        response,
-    )?;
+    put_inbox_message(log_context, space, request_id, from, to, content, response)?;
 
     append_request_id_to_inbox(
         log_context,
@@ -231,16 +252,18 @@ pub fn get_inbox_request_ids(
 ) -> BbDhtResult<Vec<RequestId>> {
     tracer(log_context, "get_inbox_request_ids");
 
-    Ok(match get_item_from_space(log_context, space, &inbox_key(&to.into()).into())? {
-        Some(item) => match item.get(&inbox_folder.to_string()) {
-            Some(attribute) => match attribute.ss.clone() {
-                Some(ss) => ss.iter().map(|&s| s.into()).collect(),
+    Ok(
+        match get_item_from_space(log_context, space, &inbox_key(&to.into()).into())? {
+            Some(item) => match item.get(&inbox_folder.to_string()) {
+                Some(attribute) => match attribute.ss.clone() {
+                    Some(ss) => ss.iter().map(|s| s.into()).collect(),
+                    None => Vec::new(),
+                },
                 None => Vec::new(),
             },
             None => Vec::new(),
         },
-        None => Vec::new(),
-    })
+    )
 }
 
 pub fn item_to_direct_message_data(item: &Item) -> BbDhtResult<(DirectMessageData, bool)> {
@@ -350,18 +373,10 @@ pub fn check_inbox(
 ) -> BbDhtResult<Vec<(DirectMessageData, bool)>> {
     tracer(&log_context, "check_inbox");
 
-    let inbox_request_ids = get_inbox_request_ids(
-        log_context,
-        space,
-        &ALL_MESSAGES_FOLDER.into(),
-        to,
-    )?;
-    let seen_request_ids = get_inbox_request_ids(
-        log_context,
-        space,
-        &SEEN_MESSAGES_FOLDER.into(),
-        to,
-    )?;
+    let inbox_request_ids =
+        get_inbox_request_ids(log_context, space, &ALL_MESSAGES_FOLDER.into(), to)?;
+    let seen_request_ids =
+        get_inbox_request_ids(log_context, space, &SEEN_MESSAGES_FOLDER.into(), to)?;
 
     let unseen_request_ids: Vec<RequestId> = inbox_request_ids
         .iter()
@@ -388,26 +403,25 @@ pub fn check_inbox(
 #[cfg(test)]
 pub mod tests {
 
-    use crate::agent::fixture::agent_id_fresh;
+    use crate::agent::fixture::agent_address_fresh;
     use crate::agent::fixture::message_content_fresh;
     use crate::dht::bbdht::dynamodb::api::agent::inbox::append_request_id_to_inbox;
     use crate::dht::bbdht::dynamodb::api::agent::inbox::check_inbox;
     use crate::dht::bbdht::dynamodb::api::agent::inbox::get_inbox_request_ids;
+    use crate::dht::bbdht::dynamodb::api::space::create::ensure_space;
     use crate::dht::bbdht::dynamodb::api::agent::inbox::put_inbox_message;
     use crate::dht::bbdht::dynamodb::api::agent::inbox::send_to_agent_inbox;
-    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
-    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::dht::bbdht::dynamodb::schema::cas::ALL_MESSAGES_FOLDER;
     use crate::dht::bbdht::dynamodb::schema::cas::SEEN_MESSAGES_FOLDER;
     use crate::network::fixture::request_id_fresh;
+    use crate::space::fixture::space_fresh;
     use crate::trace::tracer;
     use lib3h_protocol::data_types::DirectMessageData;
 
     fn folders() -> Vec<String> {
         vec![
-            REQUEST_IDS_KEY.to_string(),
-            REQUEST_IDS_SEEN_KEY.to_string(),
+            ALL_MESSAGES_FOLDER.to_string(),
+            SEEN_MESSAGES_FOLDER.to_string(),
         ]
     }
 
@@ -416,23 +430,21 @@ pub mod tests {
         let log_context = "append_request_id_to_inbox_test";
 
         tracer(&log_context, "fixtures");
-        let local_client = local_client();
-        let table_name = table_name_fresh();
+        let space = space_fresh();
         let request_id = request_id_fresh();
-        let to = agent_id_fresh();
+        let to = agent_address_fresh();
 
         for folder in folders() {
             // ensure cas
-            assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
+            assert!(ensure_space(&log_context, &space).is_ok());
 
             // append request_id
             assert!(append_request_id_to_inbox(
                 &log_context,
-                &local_client,
-                &table_name,
-                &folder,
+                &space,
+                &folder.into(),
                 &request_id,
-                &to
+                &to.into()
             )
             .is_ok());
         }
@@ -443,25 +455,23 @@ pub mod tests {
         let log_context = "put_inbox_message_test";
 
         tracer(&log_context, "fixtures");
-        let local_client = local_client();
-        let table_name = table_name_fresh();
+        let space = space_fresh();
         let request_id = request_id_fresh();
-        let from = agent_id_fresh();
-        let to = agent_id_fresh();
+        let from = agent_address_fresh();
+        let to = agent_address_fresh();
         let content = message_content_fresh();
         let is_response = false;
 
         // ensure cas
-        assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
+        assert!(ensure_space(&log_context, &space).is_ok());
 
         // pub inbox message
         assert!(put_inbox_message(
             &log_context,
-            &local_client,
-            &table_name,
+            &space,
             &request_id,
-            &from,
-            &to,
+            &from.into(),
+            &to.into(),
             &content,
             is_response,
         )
@@ -473,25 +483,23 @@ pub mod tests {
         let log_context = "send_to_agent_inbox_test";
 
         tracer(&log_context, "fixtures");
-        let local_client = local_client();
-        let table_name = table_name_fresh();
+        let space = space_fresh();
         let request_id = request_id_fresh();
-        let from = agent_id_fresh();
-        let to = agent_id_fresh();
+        let from = agent_address_fresh();
+        let to = agent_address_fresh();
         let content = message_content_fresh();
         let is_response = false;
 
         // ensure cas
-        assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
+        assert!(ensure_space(&log_context, &space).is_ok());
 
         // pub inbox message
         assert!(send_to_agent_inbox(
             &log_context,
-            &local_client,
-            &table_name,
+            &space,
             &request_id,
-            &from,
-            &to,
+            &from.into(),
+            &to.into(),
             &content,
             is_response,
         )
@@ -503,25 +511,23 @@ pub mod tests {
         let log_context = "get_inbox_request_ids_test";
 
         tracer(&log_context, "fixtures");
-        let local_client = local_client();
-        let table_name = table_name_fresh();
+        let space = space_fresh();
         let request_id = request_id_fresh();
-        let from = agent_id_fresh();
-        let to = agent_id_fresh();
+        let from = agent_address_fresh();
+        let to = agent_address_fresh();
         let content = message_content_fresh();
         let is_response = false;
 
         // ensure cas
-        assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
+        assert!(ensure_space(&log_context, &space).is_ok());
 
         // pub inbox message
         assert!(send_to_agent_inbox(
             &log_context,
-            &local_client,
-            &table_name,
-            &request_id.clone(),
-            &from,
-            &to,
+            &space,
+            &request_id,
+            &from.into(),
+            &to.into(),
             &content,
             is_response,
         )
@@ -530,10 +536,9 @@ pub mod tests {
         // get inbox message
         match get_inbox_request_ids(
             &log_context,
-            &local_client,
-            &table_name,
-            &REQUEST_IDS_KEY.to_string(),
-            &to,
+            &space,
+            &ALL_MESSAGES_FOLDER.into(),
+            &to.into(),
         ) {
             Ok(request_ids) => assert_eq!(vec![request_id.clone()], request_ids),
             Err(err) => panic!("incorrect request id {:?}", err),
@@ -545,46 +550,44 @@ pub mod tests {
         let log_context = "get_inbox_request_ids_test";
 
         tracer(&log_context, "fixtures");
-        let local_client = local_client();
-        let table_name = table_name_fresh();
+        let space = space_fresh();
         let request_id = request_id_fresh();
-        let from = agent_id_fresh();
-        let to = agent_id_fresh();
+        let from = agent_address_fresh();
+        let to = agent_address_fresh();
         let content = message_content_fresh();
         let is_response = false;
 
         let direct_message_data = DirectMessageData {
             content: content.clone().into(),
-            from_agent_id: from.clone(),
-            to_agent_id: to.clone(),
-            request_id: request_id.clone(),
-            space_address: table_name.clone().into(),
+            from_agent_id: from.into(),
+            to_agent_id: to.into(),
+            request_id: request_id.into(),
+            space_address: space.space_address().into(),
         };
 
         // ensure cas
-        assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
+        assert!(ensure_space(&log_context, &space).is_ok());
 
         // pub inbox message
         assert!(send_to_agent_inbox(
             &log_context,
-            &local_client,
-            &table_name,
-            &request_id.clone(),
-            &from,
-            &to,
+            &space,
+            &request_id,
+            &from.into(),
+            &to.into(),
             &content,
             is_response,
         )
         .is_ok());
 
         // check inbox
-        match check_inbox(&log_context, &local_client, &table_name, &to) {
+        match check_inbox(&log_context, &space, &to.into()) {
             Ok(messages) => assert_eq!(vec![(direct_message_data.clone(), is_response)], messages),
             Err(err) => panic!("incorrect request id {:?}", err),
         };
 
         // check again, should be empty
-        match check_inbox(&log_context, &local_client, &table_name, &to) {
+        match check_inbox(&log_context, &space, &to.into()) {
             Ok(request_ids) => {
                 let v: Vec<(DirectMessageData, bool)> = Vec::new();
                 assert_eq!(v, request_ids);

@@ -1,12 +1,12 @@
+use crate::dht::bbdht::dynamodb::api::item::keyed_item;
 use crate::dht::bbdht::dynamodb::api::item::Item;
+use crate::dht::bbdht::dynamodb::api::item::ItemKey;
 use crate::dht::bbdht::error::BbDhtResult;
+use crate::space::Space;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use rusoto_dynamodb::DynamoDb;
-use crate::dht::bbdht::dynamodb::api::item::ItemKey;
 use rusoto_dynamodb::GetItemInput;
-use crate::space::Space;
-use crate::dht::bbdht::dynamodb::api::item::keyed_item;
 
 pub fn get_item_from_space(
     log_context: &LogContext,
@@ -16,10 +16,12 @@ pub fn get_item_from_space(
     tracer(&log_context, "get_item_from_space");
 
     let key = keyed_item(space, item_key);
-    Ok(space.client
+    Ok(space
+        .connection()
+        .client()
         .get_item(GetItemInput {
             consistent_read: Some(true),
-            table_name: space.table_name.into(),
+            table_name: space.connection().table_name().into(),
             key: key,
             ..Default::default()
         })
