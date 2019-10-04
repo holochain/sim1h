@@ -171,8 +171,8 @@ In summary Sim1h is for "internal use only", whatever that means to you.
 
 ## Usage
 
-Sim1h will be available in the v0.0.31 of the [holochain-rust conductor](https://github.com/holochain/holochain-rust)
-as a new `sim1h` network type.  As as will be a nix command to run a local dynamodb instance.
+Sim1h is available in the v0.0.31 of the [holochain-rust conductor](https://github.com/holochain/holochain-rust)
+as is a new `sim1h` network type.  Also you there is a nix command to run a local dynamodb instance.
 
 In your conductor config, use the following for the `network` config section:
 
@@ -187,10 +187,15 @@ You can run a local dynamodb instance at port 8000 by [entering a nix-shell](htt
 ```shell
     dynamodb
 ```
+or
+```shell
+    dynamodb-memory
+```
+The latter is for a non-persistent instance of the database.
 
 If you want to expose your local dynamodb instance over the internet, we suggest using a tunneling service like [ngrok](https://ngrok.com/) to map a public URL to your local port. Then, your friends can use that public URL as their `dynamo_url` instead of localhost.
 
-Ngrok is included in the `sim1h` nix-shell.
+Ngrok is also included in the `sim1h` nix-shell.
 
 Please note that you must `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables when running your conductor which are passed to [rusoto](https://github.com/rusoto/rusoto) (the underlying library we use to access dynamodb).  When running your own instance of dynamodb, these two values can be what ever you want, but they must be set.  Additionally in this case you can use the value of the `AWS_ACCESS_KEY_ID` to create completely different name-spaces for different conductor sets.
 
