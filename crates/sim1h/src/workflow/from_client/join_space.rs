@@ -5,6 +5,7 @@ use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use crate::workflow::state::Sim1hState;
+use holochain_persistence_api::hash::HashString;
 use lib3h_protocol::data_types::SpaceData;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
 
@@ -18,7 +19,7 @@ impl Sim1hState {
     ) -> BbDhtResult<(ClientToLib3hResponse, Sim1hState)> {
         tracer(&log_context, "join_space");
 
-        let table_name = String::from(join_space_data.space_address.clone());
+        let table_name = String::from(HashString::from(join_space_data.space_address.clone()));
 
         ensure_cas_table(&log_context, &client, &table_name)?;
         touch_agent(
@@ -29,7 +30,7 @@ impl Sim1hState {
         )?;
 
         let state = Sim1hState::new(
-            join_space_data.space_address.clone(),
+            join_space_data.space_address.clone().into(),
             join_space_data.agent_id.clone(),
         );
 
