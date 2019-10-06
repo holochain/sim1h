@@ -35,7 +35,9 @@ with holonix.pkgs;
   holonix.shell.shellHook
   ];
 
-  buildInputs = [ ]
+  buildInputs = [
+   holonix.pkgs.ngrok
+  ]
    ++ holonix.shell.buildInputs
    ++ config.buildInputs
 
