@@ -1,3 +1,4 @@
+use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
 use crate::dht::bbdht::dynamodb::api::item::Item;
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
@@ -17,9 +18,9 @@ use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use holochain_persistence_api::cas::content::Address;
+use holochain_persistence_api::hash::HashString;
 use lib3h_protocol::data_types::DirectMessageData;
 use rusoto_dynamodb::DynamoDb;
-use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
 use rusoto_dynamodb::GetItemInput;
 use rusoto_dynamodb::PutItemInput;
 use rusoto_dynamodb::UpdateItemInput;
@@ -276,7 +277,7 @@ pub fn item_to_direct_message_data(item: &Item) -> BbDhtResult<(DirectMessageDat
             from_agent_id: from_agent_id.into(),
             to_agent_id: to_agent_id.into(),
             request_id: request_id,
-            space_address: space_address.into(),
+            space_address: HashString::from(space_address).into(),
         },
         is_response,
     ))
@@ -389,6 +390,7 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_SEEN_KEY;
     use crate::network::fixture::request_id_fresh;
     use crate::trace::tracer;
+    use holochain_persistence_api::hash::HashString;
     use lib3h_protocol::data_types::DirectMessageData;
 
     fn folders() -> Vec<String> {
@@ -545,7 +547,7 @@ pub mod tests {
             from_agent_id: from.clone(),
             to_agent_id: to.clone(),
             request_id: request_id.clone(),
-            space_address: table_name.clone().into(),
+            space_address: HashString::from(table_name.clone()).into(),
         };
 
         // ensure cas

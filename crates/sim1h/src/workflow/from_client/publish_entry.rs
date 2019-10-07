@@ -51,8 +51,7 @@ pub mod tests {
 
         tracer(&log_context, "check response");
 
-        assert!(Sim1hState::join_space(&log_context, &local_client, &space_data)
-            .is_ok());
+        assert!(Sim1hState::join_space(&log_context, &local_client, &space_data).is_ok());
 
         match publish_entry(&log_context, &local_client, &provided_entry_data) {
             Ok(()) => {

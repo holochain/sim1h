@@ -34,10 +34,10 @@ pub struct Sim1hState {
 }
 
 impl Sim1hState {
-
     pub fn new(space_address: Address, agent_id: Address) -> Self {
         Self {
-            space_address, agent_id,
+            space_address,
+            agent_id,
             ..Self::default()
         }
     }
@@ -49,12 +49,12 @@ impl Sim1hState {
     fn create_authoring_gossip_list_requests(&self) -> Vec<Lib3hToClient> {
         let mut requests = Vec::new();
         requests.push(Lib3hToClient::HandleGetAuthoringEntryList(GetListData {
-            space_address: self.space_address.clone(),
+            space_address: self.space_address.clone().into(),
             provider_agent_id: self.agent_id.clone(),
             request_id: "".into(),
         }));
         requests.push(Lib3hToClient::HandleGetGossipingEntryList(GetListData {
-            space_address: self.space_address.clone(),
+            space_address: self.space_address.clone().into(),
             provider_agent_id: self.agent_id.clone(),
             request_id: "".into(),
         }));
@@ -131,7 +131,7 @@ impl Sim1hState {
                     .map(|entry_aspect| {
                         Lib3hToClient::HandleStoreEntryAspect(StoreEntryAspectData {
                             request_id: Uuid::new_v4().to_string(), // XXX: well, is this so bad?
-                            space_address: space_address.clone(),
+                            space_address: space_address.clone().into(),
                             provider_agent_id: agent_id.clone(), // TODO: is this OK?
                             entry_address: entry_address.clone(),
                             entry_aspect,
