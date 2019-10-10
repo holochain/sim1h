@@ -17,9 +17,9 @@ rusoto_dynamodb = "0.40.0"
 dynomite = "0.5"
 futures = "0.1.21"
 #lib3h = { git = "https://github.com/holochain/lib3h", branch = "develop" }
-lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "transport-disconnect" }
+lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "crypto-system-fix" }
 #lib3h_zombie_actor = { git = "https://github.com/holochain/lib3h", branch = "develop" }
-detach = { git = "https://github.com/holochain/lib3h", branch = "transport-disconnect" }
+detach = { git = "https://github.com/holochain/lib3h", branch = "crypto-system-fix" }
 holochain_tracing = { version = "=0.0.1" }
 uuid = { version = "0.4", features = ["v4"] }
 log = "0.4.8"
@@ -29,6 +29,6 @@ holochain_persistence_api = "=0.0.8"
 holochain_json_api = "0.0.17"
 url = "=2.1.0"
 crossbeam-channel = "0.3.8"
-holochain_core_types = { git = "https://github.com/holochain/holochain-rust", branch = "2019-10-03-update-lib3h" }
+holochain_core_types = { git = "https://github.com/holochain/holochain-rust", branch = "crypto-system" }
 parking_lot = "0.9.0"
 snowflake = "1.3.0"
