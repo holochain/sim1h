@@ -19,6 +19,7 @@ pub mod write;
 
 pub type Item = HashMap<String, AttributeValue>;
 
+#[derive(Debug, Clone)]
 pub struct ItemKey(String);
 
 impl From<&RequestId> for String {
@@ -53,7 +54,7 @@ impl From<ItemKey> for String {
 
 impl From<&ItemKey> for String {
     fn from(item_key: &ItemKey) -> String {
-        item_key.to_owned().into()
+        (*item_key).clone().into()
     }
 }
 
