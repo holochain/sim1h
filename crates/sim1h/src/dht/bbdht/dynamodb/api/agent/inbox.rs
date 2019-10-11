@@ -15,6 +15,7 @@ use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::string_set_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::{blob_attribute_value, bool_attribute_value};
 use crate::dht::bbdht::error::BbDhtError;
+use crate::dht::bbdht::dynamodb::api::item::partition_key;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::network::RequestId;
 use crate::space::Space;
@@ -203,7 +204,7 @@ pub fn append_request_id_to_inbox(
     let mut inbox_attribute_values = HashMap::new();
     inbox_attribute_values.insert(
         ":request_ids".to_string(),
-        string_set_attribute_value(vec![request_id.into()]),
+        string_set_attribute_value(vec![partition_key(space, &request_id.into())]),
     );
 
     let mut inbox_attribute_names = HashMap::new();
@@ -450,14 +451,16 @@ pub mod tests {
             assert!(ensure_space(&log_context, &space).is_ok());
 
             // append request_id
-            assert!(append_request_id_to_inbox(
+            match append_request_id_to_inbox(
                 &log_context,
                 &space,
                 &folder.into(),
                 &request_id,
                 &ToAddress::from(&to)
-            )
-            .is_ok());
+            ) {
+                Ok(_) => tracer(&log_context, "append_request_id_to_inbox Ok"),
+                Err(err) => panic!("{:?}", err),
+            }
         }
     }
 

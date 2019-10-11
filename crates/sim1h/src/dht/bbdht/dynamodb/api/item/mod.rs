@@ -1,10 +1,7 @@
 use crate::agent::AgentAddress;
 use crate::aspect::AspectAddress;
-use crate::dht::bbdht::dynamodb::schema::cas::ITEM_KEY;
 use crate::entry::EntryAddress;
-use crate::dht::bbdht::dynamodb::schema::cas::NETWORK_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::PARTITION_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::SPACE_KEY;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::network::RequestId;
 use crate::space::Space;
@@ -112,8 +109,8 @@ impl From<&EntryAddress> for ItemKey {
     }
 }
 
-fn partition_key(network: &String, space: &String, address: &String) -> String {
-    format!("{}:{}:{}", network, space, address)
+pub fn partition_key(space: &Space, address: &String) -> String {
+    format!("{}:{}:{}", String::from(space.network_id()), String::from(space.space_address()), address)
 }
 
 pub fn keyed_item(space: &Space, item_key: &ItemKey) -> Item {
@@ -121,22 +118,9 @@ pub fn keyed_item(space: &Space, item_key: &ItemKey) -> Item {
     item.insert(
         String::from(PARTITION_KEY),
         string_attribute_value(&partition_key(
-            &space.network_id().into(),
-            &space.space_address().into(),
+            &space,
             &item_key.into(),
         )),
-    );
-    item.insert(
-        String::from(ITEM_KEY),
-        string_attribute_value(&item_key.into()),
-    );
-    item.insert(
-        String::from(NETWORK_KEY),
-        string_attribute_value(&space.network_id().into()),
-    );
-    item.insert(
-        String::from(SPACE_KEY),
-        string_attribute_value(&space.space_address().into()),
     );
     item
 }
