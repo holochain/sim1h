@@ -196,9 +196,6 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::api::aspect::write::put_aspect;
     use crate::space::fixture::space_fresh;
     use crate::dht::bbdht::dynamodb::api::space::create::ensure_space;
-    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
-    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::entry::fixture::entry_address_fresh;
     use crate::test::unordered_vec_compare;
     use crate::trace::tracer;
@@ -265,7 +262,7 @@ pub mod tests {
         match get_aspect(
             &log_context,
             &space,
-            &entry_aspect_data.aspect_address,
+            &entry_aspect_data.aspect_address.clone().into(),
         ) {
             Ok(Some(v)) => {
                 println!("{:#?}", v);
@@ -290,8 +287,7 @@ pub mod tests {
         let log_context = "scan_aspects_test";
 
         tracer(&log_context, "fixtures");
-        let local_client = local_client();
-        let table_name = table_name_fresh();
+        let space = space_fresh();
         let entry_address = entry_address_fresh();
         let aspect_list = aspect_list_fresh();
         let aspect_addresses = aspect_list
@@ -299,29 +295,28 @@ pub mod tests {
             .map(|a| a.aspect_address.clone())
             .collect();
 
-        ensure_cas_table(&log_context, &local_client, &table_name).unwrap();
+        ensure_space(&log_context, &space).unwrap();
 
         {
-            let (items, _) = scan_aspects(&log_context, &local_client, &table_name, None)
+            let (items, _) = scan_aspects(&log_context, &space, None)
                 .unwrap_or_else(|err| panic!("error while scanning: {:?}", err));
             assert!(items.len() == 0);
         }
 
         append_aspect_list_to_entry(
             &log_context,
-            &local_client,
-            &table_name,
+            &space,
             &entry_address,
             &aspect_list,
         )
         .unwrap();
 
-        let (items, _) = scan_aspects(&log_context, &local_client, &table_name, None)
+        let (items, _) = scan_aspects(&log_context, &space, None)
             .unwrap_or_else(|err| panic!("error while scanning: {:?}", err));
 
         assert!(items.len() == 1);
         assert!(unordered_vec_compare(
-            items[&entry_address].clone().into_iter().collect(),
+            items[&entry_address.into()].clone().into_iter().collect(),
             aspect_addresses
         ));
     }

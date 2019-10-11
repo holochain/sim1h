@@ -79,10 +79,10 @@ pub mod tests {
     use crate::aspect::fixture::link_add_aspect_fresh;
     use crate::aspect::fixture::link_remove_aspect_fresh;
     use crate::aspect::fixture::update_aspect_fresh;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::entry::fixture::entry_address_fresh;
+    use crate::agent::fixture::agent_address_fresh;
+    use crate::space::fixture::space_fresh;
     use crate::entry::fixture::entry_fresh;
-    use crate::space::fixture::space_data_fresh;
     use crate::test::unordered_vec_compare;
     use crate::trace::tracer;
     use crate::workflow::from_client::fixture::provided_entry_data_fresh;
@@ -122,19 +122,19 @@ pub mod tests {
         let log_context = "query_entry_aspects_test";
 
         tracer(&log_context, "fixtures");
-        let local_client = local_client();
-        let space_data = space_data_fresh();
+        let space = space_fresh();
         let entry_address = entry_address_fresh();
-        let query_entry_data = query_entry_data_fresh(&space_data, &entry_address);
-        let provided_entry_data = provided_entry_data_fresh(&space_data, &entry_address);
+        let query_entry_data = query_entry_data_fresh(&space, &entry_address.clone().into());
+        let provided_entry_data = provided_entry_data_fresh(&space, &entry_address.into());
+        let agent_address = agent_address_fresh();
 
         // join space
-        assert!(Sim1hState::join_space(&log_context, &local_client, &space_data).is_ok());
+        assert!(Sim1hState::join_space(&log_context, &space, &agent_address).is_ok());
 
         // publish entry
-        assert!(publish_entry(&log_context, &local_client, &provided_entry_data).is_ok());
+        assert!(publish_entry(&log_context, &space, &provided_entry_data).is_ok());
 
-        match query_entry_aspects(&log_context, &local_client, &query_entry_data) {
+        match query_entry_aspects(&log_context, &space, &query_entry_data) {
             Ok(v) => assert!(unordered_vec_compare(
                 v,
                 provided_entry_data.entry.aspect_list

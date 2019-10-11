@@ -31,10 +31,10 @@ impl Sim1hState {
 pub mod tests {
 
     use super::Sim1hState;
-    use crate::dht::bbdht::dynamodb::client::fixture::bad_client;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::space::fixture::space_data_fresh;
+    use crate::space::fixture::space_fresh;
+    use crate::space::fixture::space_bad;
     use crate::trace::tracer;
+    use crate::agent::fixture::agent_address_fresh;
     use lib3h_protocol::protocol::ClientToLib3hResponse;
 
     #[test]
@@ -42,19 +42,19 @@ pub mod tests {
         let log_context = "join_space_test";
 
         tracer(&log_context, "fixtures");
-        let local_client = local_client();
-        let space_data = space_data_fresh();
+        let space = space_fresh();
+        let agent_address = agent_address_fresh();
 
         tracer(&log_context, "check response");
 
-        match Sim1hState::join_space(&log_context, &local_client, &space_data) {
+        match Sim1hState::join_space(&log_context, &space, &agent_address) {
             Ok((ClientToLib3hResponse::JoinSpaceResult, _)) => {}
             Ok((result, _)) => {
-                panic!("test OK panic: {:?} {:?}", result, &space_data);
+                panic!("test OK panic: {:?}", result);
             }
             Err(err) => {
                 tracer(&log_context, "join_space_test Err panic");
-                panic!("{:?} {:?}", err, &space_data);
+                panic!("{:?}", err);
             }
         }
     }
@@ -64,11 +64,11 @@ pub mod tests {
         let log_context = "join_space_bad_client_test";
 
         tracer(&log_context, "fixtures");
-        let bad_client = bad_client();
-        let space_data = space_data_fresh();
+        let space = space_bad();
+        let agent_address = agent_address_fresh();
 
         tracer(&log_context, "check response");
-        match Sim1hState::join_space(&log_context, &bad_client, &space_data) {
+        match Sim1hState::join_space(&log_context, &space, &agent_address) {
             Err(_) => {
                 tracer(&log_context, "👌");
             }

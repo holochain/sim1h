@@ -18,20 +18,20 @@ pub fn bootstrap(log_context: &LogContext, space: &Space) -> BbDhtResult<ClientT
 pub mod tests {
 
     use super::*;
-    use crate::dht::bbdht::dynamodb::client::fixture::bad_client;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::trace::tracer;
+    use crate::space::fixture::space_fresh;
     use crate::workflow::from_client::bootstrap::bootstrap;
+    use crate::space::fixture::space_bad;
 
     #[test]
     fn bootstrap_test() {
         let log_context = "bootstrap_test";
 
         tracer(&log_context, "fixtures");
-        let local_client = local_client();
+        let space = space_fresh();
 
         // success
-        match bootstrap(&log_context, &local_client) {
+        match bootstrap(&log_context, &space) {
             Ok(ClientToLib3hResponse::BootstrapSuccess) => {}
             Ok(v) => {
                 panic!("Bad Ok {:?}", v);
@@ -43,14 +43,14 @@ pub mod tests {
     }
 
     #[test]
-    fn bootstrap_bad_client_test() {
-        let log_context = "bootstrap_bad_client_test";
+    fn bootstrap_bad_space_test() {
+        let log_context = "bootstrap_bad_space_test";
 
         tracer(&log_context, "fixtures");
-        let bad_client = bad_client();
+        let space = space_bad();
 
         // fail
-        match bootstrap(&log_context, &bad_client) {
+        match bootstrap(&log_context, &space) {
             Err(_) => {
                 tracer(&log_context, "👌");
             }

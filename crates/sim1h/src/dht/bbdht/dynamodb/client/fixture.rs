@@ -30,6 +30,13 @@ pub fn local_connection_fresh() -> Connection {
     )
 }
 
+pub fn connection_bad() -> Connection {
+    Connection::new(
+        &bad_client(),
+        &table_name_fresh(),
+    )
+}
+
 #[cfg(test)]
 pub mod tests {
     use crate::dht::bbdht::dynamodb::client::fixture::bad_client;

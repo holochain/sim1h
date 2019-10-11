@@ -104,86 +104,32 @@ pub fn ensure_content(
 pub mod tests {
 
     use crate::dht::bbdht::dynamodb::api::item::fixture::content_fresh;
-    use crate::dht::bbdht::dynamodb::api::item::write::content_to_item;
     use crate::dht::bbdht::dynamodb::api::item::write::ensure_content;
-    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
-    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
-    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
+    use crate::dht::bbdht::dynamodb::api::space::exist::space_exists;
+    use crate::dht::bbdht::dynamodb::api::space::create::ensure_space;
+    use crate::space::fixture::space_fresh;
     use crate::trace::tracer;
-    use rusoto_dynamodb::DynamoDb;
-    use rusoto_dynamodb::Put;
-    use rusoto_dynamodb::TransactWriteItem;
-    use rusoto_dynamodb::TransactWriteItemsInput;
-
-    #[test]
-    /// older versions of dynamodb don't support transact writes
-    /// test that this version is supported
-    fn transact_write_item_test() {
-        let log_context = "transact_write_item_test";
-
-        tracer(&log_context, "fixtures");
-        let local_client = local_client();
-        let table_name = table_name_fresh();
-        let content_a = content_fresh();
-        let content_b = content_fresh();
-
-        // ensure cas
-        assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
-
-        // cas exists
-        assert!(table_exists(&log_context, &local_client, &table_name)
-            .expect("could not check table exists"));
-
-        // transact
-        local_client
-            .transact_write_items(TransactWriteItemsInput {
-                transact_items: vec![
-                    TransactWriteItem {
-                        put: Some(Put {
-                            table_name: table_name.clone(),
-                            item: content_to_item(&content_a),
-                            ..Default::default()
-                        }),
-                        ..Default::default()
-                    },
-                    TransactWriteItem {
-                        put: Some(Put {
-                            table_name: table_name.clone(),
-                            item: content_to_item(&content_b),
-                            ..Default::default()
-                        }),
-                        ..Default::default()
-                    },
-                ],
-                ..Default::default()
-            })
-            .sync()
-            .expect("could not transact write items");
-    }
 
     #[test]
     fn ensure_content_test() {
         let log_context = "ensure_content_test";
 
         tracer(&log_context, "fixtures");
-        let local_client = local_client();
-        let table_name = table_name_fresh();
+        let space = space_fresh();
         let content = content_fresh();
 
-        // ensure cas
-        assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
+        // ensure space
+        assert!(ensure_space(&log_context, &space).is_ok());
 
-        // cas exists
-        assert!(table_exists(&log_context, &local_client, &table_name)
-            .expect("could not check table exists"));
+        // space exists
+        assert!(space_exists(&log_context, &space).is_ok());
 
         // ensure content
-        assert!(ensure_content(&log_context, &local_client, &table_name, &content).is_ok());
+        assert!(ensure_content(&log_context, &space, &content).is_ok());
 
         // thrash a bit
         for _ in 0..100 {
-            assert!(ensure_content(&log_context, &local_client, &table_name, &content).is_ok());
+            assert!(ensure_content(&log_context, &space, &content).is_ok());
         }
     }
 

@@ -135,34 +135,32 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::api::aspect::write::aspect_list_to_attribute;
     use crate::dht::bbdht::dynamodb::api::aspect::write::put_aspect;
     use crate::dht::bbdht::dynamodb::api::item::read::get_item_from_space;
-    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
-    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
-    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
     use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_LIST_KEY;
     use crate::dht::bbdht::dynamodb::schema::cas::ITEM_KEY;
     use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
     use crate::entry::fixture::entry_address_fresh;
     use crate::trace::tracer;
     use std::collections::HashMap;
+    use crate::space::fixture::space_fresh;
+    use crate::dht::bbdht::dynamodb::api::space::exist::space_exists;
+    use crate::dht::bbdht::dynamodb::api::space::create::ensure_space;
 
     #[test]
     fn put_aspect_test() {
         let log_context = "put_aspect_test";
 
         tracer(&log_context, "fixtures");
-        let local_client = local_client();
-        let table_name = table_name_fresh();
+        let space = space_fresh();
         let entry_aspect = entry_aspect_data_fresh();
 
-        // ensure cas
-        assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
+        // ensure space
+        assert!(ensure_space(&log_context, &space).is_ok());
 
-        // cas exists
-        assert!(table_exists(&log_context, &local_client, &table_name).is_ok());
+        // space exists
+        assert!(space_exists(&log_context, &space).is_ok());
 
         // put aspect
-        assert!(put_aspect(&log_context, &local_client, &table_name, &entry_aspect).is_ok());
+        assert!(put_aspect(&log_context, &space, &entry_aspect).is_ok());
     }
 
     #[test]
@@ -170,8 +168,7 @@ pub mod tests {
         let log_context = "append_aspects_to_entry_test";
 
         tracer(&log_context, "fixtures");
-        let local_client = local_client();
-        let table_name = table_name_fresh();
+        let space = space_fresh();
         let entry_address = entry_address_fresh();
         let aspect_list = aspect_list_fresh();
 
@@ -185,26 +182,25 @@ pub mod tests {
             string_attribute_value(&String::from(entry_address.clone())),
         );
 
-        // ensure cas
-        assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
+        // ensure space
+        assert!(ensure_space(&log_context, &space).is_ok());
 
-        // cas exists
-        assert!(table_exists(&log_context, &local_client, &table_name).is_ok());
+        // space exists
+        assert!(space_exists(&log_context, &space).is_ok());
 
         // trash/idempotency loop
         for _ in 0..3 {
             // append aspects
             assert!(append_aspect_list_to_entry(
                 &log_context,
-                &local_client,
-                &table_name,
+                &space,
                 &entry_address,
                 &aspect_list
             )
             .is_ok());
 
             // get matches
-            match get_item_from_space(&log_context, &local_client, &table_name, &entry_address) {
+            match get_item_from_space(&log_context, &space, &entry_address.clone().into()) {
                 Ok(get_item_output) => match get_item_output {
                     Some(item) => {
                         assert_eq!(expected["address"], item["address"],);

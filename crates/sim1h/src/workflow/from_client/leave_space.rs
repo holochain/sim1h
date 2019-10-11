@@ -14,9 +14,8 @@ pub fn leave_space(log_context: &LogContext, _space: &Space) -> BbDhtResult<Clie
 #[cfg(test)]
 pub mod tests {
 
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::space::fixture::space_data_fresh;
     use crate::trace::tracer;
+    use crate::space::fixture::space_fresh;
     use crate::workflow::from_client::leave_space::leave_space;
     use lib3h_protocol::protocol::ClientToLib3hResponse;
 
@@ -25,11 +24,10 @@ pub mod tests {
         let log_context = "leave_space_test";
 
         tracer(&log_context, "fixtures");
-        let local_client = local_client();
-        let space_data = space_data_fresh();
+        let space = space_fresh();
 
         tracer(&log_context, "check response");
-        match leave_space(&log_context, &local_client, &space_data) {
+        match leave_space(&log_context, &space) {
             Ok(ClientToLib3hResponse::LeaveSpaceResult) => {
                 tracer(&log_context, "👌");
             }

@@ -73,6 +73,12 @@ impl From<&AgentAddress> for ToAddress {
     }
 }
 
+impl From<&AgentAddress> for FromAddress {
+    fn from(agent_address: &AgentAddress) -> Self {
+        agent_address.to_owned().into()
+    }
+}
+
 impl From<ToAddress> for String {
     fn from(to_address: ToAddress) -> Self {
         to_address.0.into()
@@ -416,6 +422,8 @@ pub mod tests {
     use crate::network::fixture::request_id_fresh;
     use crate::space::fixture::space_fresh;
     use crate::trace::tracer;
+    use super::ToAddress;
+    use super::FromAddress;
     use lib3h_protocol::data_types::DirectMessageData;
 
     fn folders() -> Vec<String> {
@@ -444,7 +452,7 @@ pub mod tests {
                 &space,
                 &folder.into(),
                 &request_id,
-                &to.into()
+                &ToAddress::from(&to)
             )
             .is_ok());
         }
@@ -498,8 +506,8 @@ pub mod tests {
             &log_context,
             &space,
             &request_id,
-            &from.into(),
-            &to.into(),
+            &FromAddress::from(&from),
+            &ToAddress::from(&to),
             &content,
             is_response,
         )
@@ -526,8 +534,8 @@ pub mod tests {
             &log_context,
             &space,
             &request_id,
-            &from.into(),
-            &to.into(),
+            &FromAddress::from(&from),
+            &ToAddress::from(&to),
             &content,
             is_response,
         )
@@ -559,9 +567,9 @@ pub mod tests {
 
         let direct_message_data = DirectMessageData {
             content: content.clone().into(),
-            from_agent_id: from.into(),
-            to_agent_id: to.into(),
-            request_id: request_id.into(),
+            from_agent_id: from.clone().into(),
+            to_agent_id: to.clone().into(),
+            request_id: request_id.clone().into(),
             space_address: space.space_address().into(),
         };
 
@@ -573,21 +581,21 @@ pub mod tests {
             &log_context,
             &space,
             &request_id,
-            &from.into(),
-            &to.into(),
+            &FromAddress::from(&from),
+            &ToAddress::from(&to),
             &content,
             is_response,
         )
         .is_ok());
 
         // check inbox
-        match check_inbox(&log_context, &space, &to.into()) {
+        match check_inbox(&log_context, &space, &to.clone().into()) {
             Ok(messages) => assert_eq!(vec![(direct_message_data.clone(), is_response)], messages),
             Err(err) => panic!("incorrect request id {:?}", err),
         };
 
         // check again, should be empty
-        match check_inbox(&log_context, &space, &to.into()) {
+        match check_inbox(&log_context, &space, &to.clone().into()) {
             Ok(request_ids) => {
                 let v: Vec<(DirectMessageData, bool)> = Vec::new();
                 assert_eq!(v, request_ids);

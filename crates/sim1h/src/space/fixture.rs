@@ -6,6 +6,7 @@ use crate::space::SpaceAddress;
 use crate::dht::bbdht::dynamodb::client::fixture::local_connection_fresh;
 use uuid::Uuid;
 use crate::space::Space;
+use crate::dht::bbdht::dynamodb::client::fixture::connection_bad;
 
 pub fn space_address_fresh() -> SpaceAddress {
     Uuid::new_v4().to_string().into()
@@ -22,6 +23,14 @@ pub fn space_data_fresh() -> SpaceData {
 pub fn space_fresh() -> Space {
     Space {
         connection: local_connection_fresh(),
+        network_id: network_id_fresh(),
+        space_address: space_address_fresh(),
+    }
+}
+
+pub fn space_bad() -> Space {
+    Space {
+        connection: connection_bad(),
         network_id: network_id_fresh(),
         space_address: space_address_fresh(),
     }

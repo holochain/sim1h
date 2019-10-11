@@ -11,6 +11,12 @@ impl From<AgentAddress> for Address {
     }
 }
 
+impl From<Address> for AgentAddress {
+    fn from(address: Address) -> Self {
+        AgentAddress(address)
+    }
+}
+
 impl From<String> for AgentAddress {
     fn from(string: String) -> Self {
         AgentAddress(string.into())

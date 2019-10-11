@@ -136,13 +136,22 @@ pub mod test {
     use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
     use crate::dht::bbdht::dynamodb::api::table::describe::describe_table;
     use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
+    use crate::dht::bbdht::dynamodb::api::space::exist::space_exists;
     use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
+    use crate::space::fixture::space_fresh;
     use crate::dht::bbdht::dynamodb::schema::cas::attribute_definitions_cas;
     use crate::dht::bbdht::dynamodb::schema::cas::key_schema_cas;
+    use crate::dht::bbdht::dynamodb::api::item::fixture::content_fresh;
     use crate::dht::bbdht::dynamodb::schema::fixture::attribute_definitions_a;
     use crate::dht::bbdht::dynamodb::schema::fixture::key_schema_a;
+    use rusoto_dynamodb::TransactWriteItemsInput;
+    use rusoto_dynamodb::TransactWriteItem;
+    use crate::dht::bbdht::dynamodb::api::space::create::ensure_space;
+    use rusoto_dynamodb::Put;
+    use crate::dht::bbdht::dynamodb::api::item::write::content_to_item;
     use crate::trace::tracer;
+    use rusoto_dynamodb::DynamoDb;
 
     #[test]
     fn create_table_test() {
@@ -245,6 +254,50 @@ pub mod test {
         for _ in 0..100 {
             assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
         }
+    }
+
+    #[test]
+    /// older versions of dynamodb don't support transact writes
+    /// test that this version is supported
+    fn transact_write_item_test() {
+        let log_context = "transact_write_item_test";
+
+        tracer(&log_context, "fixtures");
+        let space = space_fresh();
+        let content_a = content_fresh();
+        let content_b = content_fresh();
+
+        // ensure space
+        assert!(ensure_space(&log_context, &space).is_ok());
+
+        // space exists
+        assert!(space_exists(&log_context, &space).is_ok());
+
+        // transact
+        space.connection().client()
+            .transact_write_items(TransactWriteItemsInput {
+                transact_items: vec![
+                    TransactWriteItem {
+                        put: Some(Put {
+                            table_name: space.connection().table_name().into(),
+                            item: content_to_item(&space, &content_a),
+                            ..Default::default()
+                        }),
+                        ..Default::default()
+                    },
+                    TransactWriteItem {
+                        put: Some(Put {
+                            table_name: space.connection().table_name().into(),
+                            item: content_to_item(&space, &content_b),
+                            ..Default::default()
+                        }),
+                        ..Default::default()
+                    },
+                ],
+                ..Default::default()
+            })
+            .sync()
+            .expect("could not transact write items");
     }
 
 }
