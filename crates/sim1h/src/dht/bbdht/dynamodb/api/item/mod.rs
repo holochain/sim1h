@@ -24,7 +24,7 @@ pub struct ItemKey(String);
 
 impl From<&RequestId> for String {
     fn from(request_id: &RequestId) -> Self {
-        request_id.to_owned().into()
+        (*request_id).clone().into()
     }
 }
 
@@ -36,7 +36,7 @@ impl From<RequestId> for ItemKey {
 
 impl From<&RequestId> for ItemKey {
     fn from(request_id: &RequestId) -> Self {
-        request_id.to_owned().into()
+        (*request_id).clone().into()
     }
 }
 
@@ -72,7 +72,7 @@ impl From<AgentAddress> for ItemKey {
 
 impl From<&AgentAddress> for ItemKey {
     fn from(agent_address: &AgentAddress) -> Self {
-        agent_address.to_owned().into()
+        (*agent_address).clone().into()
     }
 }
 
@@ -84,7 +84,7 @@ impl From<EntryAspectData> for ItemKey {
 
 impl From<&EntryAspectData> for ItemKey {
     fn from(entry_aspect_data: &EntryAspectData) -> Self {
-        entry_aspect_data.to_owned().into()
+        (*entry_aspect_data).clone().into()
     }
 }
 
@@ -96,7 +96,7 @@ impl From<AspectAddress> for ItemKey {
 
 impl From<&AspectAddress> for ItemKey {
     fn from(aspect_address: &AspectAddress) -> Self {
-        aspect_address.to_owned().into()
+        (*aspect_address).clone().into()
     }
 }
 
@@ -108,7 +108,7 @@ impl From<EntryAddress> for ItemKey {
 
 impl From<&EntryAddress> for ItemKey {
     fn from(entry_address: &EntryAddress) -> Self {
-        entry_address.to_owned().into()
+        (*entry_address).clone().into()
     }
 }
 

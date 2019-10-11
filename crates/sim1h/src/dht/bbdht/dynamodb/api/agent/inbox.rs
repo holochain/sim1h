@@ -27,8 +27,11 @@ use rusoto_dynamodb::PutItemInput;
 use rusoto_dynamodb::UpdateItemInput;
 use std::collections::HashMap;
 
+#[derive(Clone)]
 pub struct FromAddress(Address);
+#[derive(Clone)]
 pub struct ToAddress(Address);
+#[derive(Clone)]
 pub struct Folder(String);
 
 impl From<FromAddress> for String {
@@ -39,7 +42,7 @@ impl From<FromAddress> for String {
 
 impl From<&FromAddress> for String {
     fn from(from_address: &FromAddress) -> Self {
-        from_address.to_owned().into()
+        (*from_address).clone().into()
     }
 }
 
@@ -69,13 +72,13 @@ impl From<AgentAddress> for FromAddress {
 
 impl From<&AgentAddress> for ToAddress {
     fn from(agent_address: &AgentAddress) -> Self {
-        agent_address.to_owned().into()
+        (*agent_address).clone().into()
     }
 }
 
 impl From<&AgentAddress> for FromAddress {
     fn from(agent_address: &AgentAddress) -> Self {
-        agent_address.to_owned().into()
+        (*agent_address).clone().into()
     }
 }
 
@@ -87,7 +90,7 @@ impl From<ToAddress> for String {
 
 impl From<&ToAddress> for String {
     fn from(to_address: &ToAddress) -> Self {
-        to_address.to_owned().into()
+        (*to_address).clone().into()
     }
 }
 
@@ -99,7 +102,7 @@ impl From<ToAddress> for Address {
 
 impl From<&ToAddress> for Address {
     fn from(to_address: &ToAddress) -> Self {
-        to_address.to_owned().into()
+        (*to_address).clone().into()
     }
 }
 
@@ -129,7 +132,7 @@ impl From<String> for Folder {
 
 impl From<&Folder> for String {
     fn from(folder: &Folder) -> Self {
-        folder.to_owned().into()
+        (*folder).clone().into()
     }
 }
 

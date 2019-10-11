@@ -21,7 +21,7 @@ impl From<String> for NetworkId {
 
 impl From<&NetworkId> for String {
     fn from(network_id: &NetworkId) -> Self {
-        network_id.to_owned().into()
+        (*network_id).clone().into()
     }
 }
 
@@ -33,7 +33,7 @@ impl From<RequestId> for String {
 
 impl From<&String> for RequestId {
     fn from(string: &String) -> Self {
-        string.to_owned().into()
+        (*string).clone().into()
     }
 }
 
@@ -46,7 +46,7 @@ impl From<RequestId> for Address {
 
 impl From<&RequestId> for Address {
     fn from(request_id: &RequestId) -> Self {
-        request_id.to_owned().into()
+        (*request_id).clone().into()
     }
 }
 

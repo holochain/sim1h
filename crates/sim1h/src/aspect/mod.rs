@@ -18,7 +18,7 @@ impl From<String> for AspectAddress {
 
 impl From<&String> for AspectAddress {
     fn from(string: &String) -> Self {
-        string.to_owned().into()
+        (*string).clone().into()
     }
 }
 

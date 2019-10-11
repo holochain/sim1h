@@ -25,7 +25,7 @@ impl From<String> for AgentAddress {
 
 impl From<&AgentAddress> for Address {
     fn from(agent_address: &AgentAddress) -> Self {
-        agent_address.to_owned().into()
+        (*agent_address).clone().into()
     }
 }
 

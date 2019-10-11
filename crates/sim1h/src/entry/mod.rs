@@ -12,7 +12,7 @@ impl From<EntryAddress> for String {
 
 impl From<&EntryAddress> for String {
     fn from(entry_address: &EntryAddress) -> Self {
-        entry_address.to_owned().into()
+        (*entry_address).clone().into()
     }
 }
 
@@ -24,7 +24,7 @@ impl From<Address> for EntryAddress {
 
 impl From<&Address> for EntryAddress {
     fn from(address: &Address) -> Self {
-        address.to_owned().into()
+        (*address).clone().into()
     }
 }
 

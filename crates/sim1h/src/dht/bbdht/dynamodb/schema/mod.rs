@@ -22,13 +22,13 @@ impl From<String> for TableName {
 
 impl From<&String> for TableName {
     fn from(string: &String) -> Self {
-        string.to_owned().into()
+        (*string).clone().into()
     }
 }
 
 impl From<&TableName> for String {
     fn from(table_name: &TableName) -> Self {
-        table_name.to_owned().into()
+        (*table_name).clone().into()
     }
 }
 

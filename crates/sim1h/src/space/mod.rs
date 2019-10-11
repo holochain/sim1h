@@ -53,7 +53,7 @@ impl From<SpaceAddress> for String {
 
 impl From<&SpaceAddress> for String {
     fn from(space_address: &SpaceAddress) -> Self {
-        space_address.to_owned().into()
+        (*space_address).clone().into()
     }
 }
 
@@ -65,6 +65,6 @@ impl From<SpaceAddress> for Address {
 
 impl From<&SpaceAddress> for Address {
     fn from(space_address: &SpaceAddress) -> Self {
-        space_address.to_owned().into()
+        (*space_address).clone().into()
     }
 }
