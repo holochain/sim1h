@@ -225,13 +225,15 @@ pub mod tests {
         }
 
         // put aspect list
-        assert!(append_aspect_list_to_entry(
+        match append_aspect_list_to_entry(
             &log_context,
             &space,
             &entry_address,
             &aspect_list
-        )
-        .is_ok());
+        ) {
+            Ok(_) => tracer(&log_context, "append_aspect_list_to_entry Ok"),
+            Err(err) => panic!("{:?}", err),
+        };
 
         // get aspect list
         match get_entry_aspects(&log_context, &space, &entry_address) {

@@ -16,6 +16,7 @@ pub fn get_item_from_space(
     tracer(&log_context, "get_item_from_space");
 
     let key = keyed_item(space, item_key);
+    println!("{:?}", item_key);
     Ok(space
         .connection()
         .client()

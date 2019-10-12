@@ -6,7 +6,6 @@ use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_LIST_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_PUBLISH_TS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_TYPE_HINT_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::ITEM_KEY;
 use crate::dht::bbdht::dynamodb::schema::number_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::string_set_attribute_value;
@@ -21,12 +20,13 @@ use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::PutItemInput;
 use rusoto_dynamodb::UpdateItemInput;
 use std::collections::HashMap;
+use crate::dht::bbdht::dynamodb::api::item::partition_key;
 
-pub fn aspect_list_to_attribute(aspect_list: &Vec<EntryAspectData>) -> AttributeValue {
+pub fn aspect_list_to_attribute(space: &Space, aspect_list: &Vec<EntryAspectData>) -> AttributeValue {
     string_set_attribute_value(
         aspect_list
             .iter()
-            .map(|aspect| aspect.aspect_address.clone().into())
+            .map(|aspect| partition_key(space, &aspect.aspect_address.clone().into()))
             .collect(),
     )
 }
@@ -92,16 +92,12 @@ pub fn append_aspect_list_to_entry(
     }
 
     // the aspect addressses live under the entry address
-    let mut aspect_addresses_key = HashMap::new();
-    aspect_addresses_key.insert(
-        String::from(ITEM_KEY),
-        string_attribute_value(&entry_address.into()),
-    );
+    let aspect_addresses_key = keyed_item(space, &entry_address.into());
 
     let mut expression_attribute_values = HashMap::new();
     expression_attribute_values.insert(
         ":aspects".to_string(),
-        aspect_list_to_attribute(&aspect_list),
+        aspect_list_to_attribute(space, aspect_list),
     );
 
     let mut expression_attribute_names = HashMap::new();
@@ -134,9 +130,10 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::api::aspect::write::append_aspect_list_to_entry;
     use crate::dht::bbdht::dynamodb::api::aspect::write::aspect_list_to_attribute;
     use crate::dht::bbdht::dynamodb::api::aspect::write::put_aspect;
+    use crate::dht::bbdht::dynamodb::schema::cas::PARTITION_KEY;
+    use crate::dht::bbdht::dynamodb::api::item::partition_key;
     use crate::dht::bbdht::dynamodb::api::item::read::get_item_from_space;
     use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_LIST_KEY;
-    use crate::dht::bbdht::dynamodb::schema::cas::ITEM_KEY;
     use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
     use crate::entry::fixture::entry_address_fresh;
     use crate::trace::tracer;
@@ -175,11 +172,11 @@ pub mod tests {
         let mut expected = HashMap::new();
         expected.insert(
             ASPECT_LIST_KEY.to_string(),
-            aspect_list_to_attribute(&aspect_list),
+            aspect_list_to_attribute(&space, &aspect_list),
         );
         expected.insert(
-            ITEM_KEY.to_string(),
-            string_attribute_value(&String::from(entry_address.clone())),
+            PARTITION_KEY.to_string(),
+            string_attribute_value(&partition_key(&space, &entry_address.clone().into())),
         );
 
         // ensure space
@@ -203,10 +200,10 @@ pub mod tests {
             match get_item_from_space(&log_context, &space, &entry_address.clone().into()) {
                 Ok(get_item_output) => match get_item_output {
                     Some(item) => {
-                        assert_eq!(expected["address"], item["address"],);
+                        assert_eq!(expected[PARTITION_KEY], item[PARTITION_KEY],);
                         assert_eq!(
-                            expected["aspect_list"].ss.iter().count(),
-                            item["aspect_list"].ss.iter().count(),
+                            expected[ASPECT_LIST_KEY].ss.iter().count(),
+                            item[ASPECT_LIST_KEY].ss.iter().count(),
                         );
                     }
                     None => {
