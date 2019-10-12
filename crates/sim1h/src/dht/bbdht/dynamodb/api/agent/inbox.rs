@@ -1,6 +1,6 @@
 use crate::agent::AgentAddress;
 use crate::dht::bbdht::dynamodb::api::item::keyed_item;
-use crate::dht::bbdht::dynamodb::api::item::partition_key;
+// use crate::dht::bbdht::dynamodb::api::item::partition_key;
 use crate::dht::bbdht::dynamodb::api::item::read::get_item_from_space;
 use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
 use crate::dht::bbdht::dynamodb::api::item::Item;
@@ -162,6 +162,16 @@ pub fn put_inbox_message(
     );
 
     item.insert(
+        String::from(SPACE_KEY),
+        string_attribute_value(&space.space_address().into()),
+    );
+
+    item.insert(
+        String::from(ITEM_KEY),
+        string_attribute_value(&request_id.into()),
+    );
+
+    item.insert(
         String::from(MESSAGE_CONTENT_KEY),
         blob_attribute_value(&content),
     );
@@ -204,7 +214,7 @@ pub fn append_request_id_to_inbox(
     let mut inbox_attribute_values = HashMap::new();
     inbox_attribute_values.insert(
         ":request_ids".to_string(),
-        string_set_attribute_value(vec![partition_key(space, &request_id.into())]),
+        string_set_attribute_value(vec![request_id.into()]),
     );
 
     let mut inbox_attribute_names = HashMap::new();
