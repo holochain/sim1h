@@ -5,6 +5,13 @@ jobs:
    - image: holochain/holonix
   steps:
    - checkout
+
+   - run:
+      name: allow unfree nix (for ngrok)
+      command: |
+       mkdir -p $HOME/.config/nixpkgs
+       echo '{ allowUnfree = true; }' >> $HOME/.config/nixpkgs/config.nix
+
    - run:
       name: start dynamodb
       background: true

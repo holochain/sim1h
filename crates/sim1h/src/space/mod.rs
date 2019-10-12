@@ -1,28 +1,25 @@
 pub mod fixture;
 use crate::dht::bbdht::dynamodb::client::connection::Connection;
 use crate::network::NetworkId;
-use holochain_persistence_api::cas::content::Address;
-
-#[derive(Clone, Default)]
-pub struct SpaceAddress(Address);
+use lib3h_protocol::types::SpaceHash;
 
 #[derive(Clone, Default)]
 pub struct Space {
     connection: Connection,
     network_id: NetworkId,
-    space_address: SpaceAddress,
+    space_hash: SpaceHash,
 }
 
 impl Space {
     pub fn new(
         connection: &Connection,
         network_id: &NetworkId,
-        space_address: &SpaceAddress,
+        space_hash: &SpaceHash,
     ) -> Space {
         Space {
             connection: connection.to_owned(),
             network_id: network_id.to_owned(),
-            space_address: space_address.to_owned(),
+            space_hash: space_hash.to_owned(),
         }
     }
 
@@ -34,37 +31,31 @@ impl Space {
         &self.network_id
     }
 
-    pub fn space_address(&self) -> &SpaceAddress {
-        &self.space_address
+    pub fn space_hash(&self) -> &SpaceHash {
+        &self.space_hash
     }
 }
 
-impl From<String> for SpaceAddress {
-    fn from(string: String) -> Self {
-        SpaceAddress(string.into())
-    }
-}
+// impl From<String> for SpaceHash {
+//     fn from(string: String) -> Self {
+//         SpaceHash(string.into())
+//     }
+// }
 
-impl From<SpaceAddress> for String {
-    fn from(space_address: SpaceAddress) -> Self {
-        space_address.0.into()
-    }
-}
+// impl From<SpaceHash> for String {
+//     fn from(space_hash: SpaceHash) -> Self {
+//         space_hash.0.into()
+//     }
+// }
 
-impl From<&SpaceAddress> for String {
-    fn from(space_address: &SpaceAddress) -> Self {
-        (*space_address).clone().into()
-    }
-}
+// impl From<&SpaceHash> for String {
+//     fn from(space_hash: &SpaceHash) -> Self {
+//         (*space_hash).clone().into()
+//     }
+// }
 
-impl From<SpaceAddress> for Address {
-    fn from(space_address: SpaceAddress) -> Self {
-        space_address.0
-    }
-}
-
-impl From<&SpaceAddress> for Address {
-    fn from(space_address: &SpaceAddress) -> Self {
-        (*space_address).clone().into()
-    }
-}
+// impl From<&SpaceHash> for Address {
+//     fn from(space_hash: &SpaceHash) -> Self {
+//         (*space_hash).clone().into()
+//     }
+// }

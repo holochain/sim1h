@@ -1,6 +1,5 @@
 use crate::agent::AgentAddress;
 use crate::dht::bbdht::dynamodb::api::item::keyed_item;
-// use crate::dht::bbdht::dynamodb::api::item::partition_key;
 use crate::dht::bbdht::dynamodb::api::item::read::get_item_from_space;
 use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
 use crate::dht::bbdht::dynamodb::api::item::Item;
@@ -22,6 +21,7 @@ use crate::space::Space;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use holochain_persistence_api::cas::content::Address;
+use holochain_persistence_api::hash::HashString;
 use lib3h_protocol::data_types::DirectMessageData;
 use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::PutItemInput;
@@ -163,7 +163,7 @@ pub fn put_inbox_message(
 
     item.insert(
         String::from(SPACE_KEY),
-        string_attribute_value(&space.space_address().into()),
+        string_attribute_value(&space.space_hash().into()),
     );
 
     item.insert(
@@ -353,7 +353,7 @@ pub fn item_to_direct_message_data(item: &Item) -> BbDhtResult<(DirectMessageDat
             from_agent_id: from_agent_id.into(),
             to_agent_id: to_agent_id.into(),
             request_id: request_id,
-            space_address: space_address.into(),
+            space_address: HashString::from(space_address).into(),
         },
         is_response,
     ))
