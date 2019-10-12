@@ -57,6 +57,7 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::schema::cas::partition_key_attribute_definition;
     use crate::dht::bbdht::dynamodb::schema::cas::partition_key_schema;
     use crate::dht::bbdht::dynamodb::schema::cas::ITEM_KEY;
+    use crate::dht::bbdht::dynamodb::schema::cas::PARTITION_KEY;
     use crate::trace::tracer;
     use rusoto_dynamodb::AttributeDefinition;
     use rusoto_dynamodb::KeySchemaElement;
@@ -82,7 +83,7 @@ pub mod tests {
         tracer(&log_context, "compare values");
         assert_eq!(
             vec![KeySchemaElement {
-                attribute_name: ITEM_KEY.into(),
+                attribute_name: PARTITION_KEY.into(),
                 key_type: "HASH".into(),
             }],
             key_schema_cas()
