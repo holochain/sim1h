@@ -6,7 +6,7 @@ use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_LIST_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_PUBLISH_TS_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_TYPE_HINT_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::ITEM_KEY;
+use crate::dht::bbdht::dynamodb::schema::cas::PARTITION_KEY;
 use crate::dht::bbdht::error::BbDhtError;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::entry::EntryAddress;
@@ -156,7 +156,7 @@ pub fn scan_aspects(
         .scan(ScanInput {
             consistent_read: Some(true),
             table_name: space.connection().table_name().into(),
-            projection_expression: projection_expression(vec![ITEM_KEY, ASPECT_LIST_KEY]),
+            projection_expression: projection_expression(vec![PARTITION_KEY, ASPECT_LIST_KEY]),
             exclusive_start_key,
             ..Default::default()
         })
@@ -169,7 +169,7 @@ pub fn scan_aspects(
                 .into_iter()
                 .filter_map(|mut item: Item| {
                     Some((
-                        Address::from(item.remove(ITEM_KEY)?.s?),
+                        Address::from(item.remove(PARTITION_KEY)?.s?),
                         item.remove(ASPECT_LIST_KEY)?
                             .ss?
                             .into_iter()
@@ -198,6 +198,7 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::api::space::create::ensure_space;
     use crate::entry::fixture::entry_address_fresh;
     use crate::space::fixture::space_fresh;
+    use crate::dht::bbdht::dynamodb::api::item::partition_key;
     use crate::test::unordered_vec_compare;
     use crate::trace::tracer;
     use lib3h_protocol::data_types::EntryAspectData;
@@ -308,7 +309,7 @@ pub mod tests {
 
         assert!(items.len() == 1);
         assert!(unordered_vec_compare(
-            items[&entry_address.into()].clone().into_iter().collect(),
+            items[&partition_key(&space, &entry_address.into()).into()].clone().into_iter().collect(),
             aspect_addresses
         ));
     }
