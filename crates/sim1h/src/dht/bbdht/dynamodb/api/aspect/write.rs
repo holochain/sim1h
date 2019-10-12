@@ -1,5 +1,4 @@
 use crate::dht::bbdht::dynamodb::api::item::keyed_item;
-use crate::dht::bbdht::dynamodb::api::item::partition_key;
 use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
 use crate::dht::bbdht::dynamodb::schema::blob_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_ADDRESS_KEY;
@@ -23,13 +22,12 @@ use rusoto_dynamodb::UpdateItemInput;
 use std::collections::HashMap;
 
 pub fn aspect_list_to_attribute(
-    space: &Space,
     aspect_list: &Vec<EntryAspectData>,
 ) -> AttributeValue {
     string_set_attribute_value(
         aspect_list
             .iter()
-            .map(|aspect| partition_key(space, &aspect.aspect_address.clone().into()))
+            .map(|aspect| aspect.aspect_address.clone().into())
             .collect(),
     )
 }
@@ -100,7 +98,7 @@ pub fn append_aspect_list_to_entry(
     let mut expression_attribute_values = HashMap::new();
     expression_attribute_values.insert(
         ":aspects".to_string(),
-        aspect_list_to_attribute(space, aspect_list),
+        aspect_list_to_attribute(aspect_list),
     );
 
     let mut expression_attribute_names = HashMap::new();
@@ -175,7 +173,7 @@ pub mod tests {
         let mut expected = HashMap::new();
         expected.insert(
             ASPECT_LIST_KEY.to_string(),
-            aspect_list_to_attribute(&space, &aspect_list),
+            aspect_list_to_attribute(&aspect_list),
         );
         expected.insert(
             PARTITION_KEY.to_string(),

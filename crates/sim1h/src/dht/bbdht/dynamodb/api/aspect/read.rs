@@ -121,6 +121,7 @@ pub fn get_entry_aspects(
             Some(item) => {
                 let aspect_list = try_aspect_list_from_item(item)?;
                 let mut aspects = Vec::new();
+                println!("{:?}", aspect_list);
                 for aspect_address in aspect_list {
                     aspects.push(
                         match get_aspect(log_context, space, &aspect_address.clone().into()) {
