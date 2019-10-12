@@ -1,18 +1,18 @@
+use crate::agent::AgentAddress;
 use crate::dht::bbdht::dynamodb::api::agent::inbox::check_inbox;
 use crate::dht::bbdht::dynamodb::api::aspect::read::get_aspect;
 use crate::dht::bbdht::dynamodb::api::aspect::read::scan_aspects;
 use crate::dht::bbdht::dynamodb::api::item::Item;
+use crate::space::Space;
 use lib3h_protocol::data_types::GetListData;
 use lib3h_protocol::data_types::StoreEntryAspectData;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
 use lib3h_protocol::protocol::Lib3hToClient;
 use lib3h_protocol::Address;
 use std::collections::hash_map::Entry::Occupied;
-use crate::space::Space;
 use std::collections::hash_map::Entry::Vacant;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use crate::agent::AgentAddress;
 use std::time::Instant;
 use uuid::Uuid;
 
@@ -76,11 +76,7 @@ impl Sim1hState {
             return Vec::new();
         }
         let log_context = "Sim1hState::create_direct_message_requests";
-        match check_inbox(
-            &log_context,
-            self.space(),
-            &self.agent_address().into(),
-        ) {
+        match check_inbox(&log_context, self.space(), &self.agent_address().into()) {
             Ok(direct_messages) => direct_messages
                 .into_iter()
                 .map(|(message, is_response)| {
@@ -148,9 +144,7 @@ impl Sim1hState {
         Ok(messages)
     }
 
-    pub fn process_pending_requests_to_client(
-        &mut self,
-    ) -> Sim1hResult<Vec<Lib3hToClient>> {
+    pub fn process_pending_requests_to_client(&mut self) -> Sim1hResult<Vec<Lib3hToClient>> {
         let requests = if self.should_get_authoring_list() {
             self.initialized = true;
             self.create_authoring_gossip_list_requests()

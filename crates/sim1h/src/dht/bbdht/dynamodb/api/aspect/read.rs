@@ -194,9 +194,9 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::api::aspect::read::scan_aspects;
     use crate::dht::bbdht::dynamodb::api::aspect::write::append_aspect_list_to_entry;
     use crate::dht::bbdht::dynamodb::api::aspect::write::put_aspect;
-    use crate::space::fixture::space_fresh;
     use crate::dht::bbdht::dynamodb::api::space::create::ensure_space;
     use crate::entry::fixture::entry_address_fresh;
+    use crate::space::fixture::space_fresh;
     use crate::test::unordered_vec_compare;
     use crate::trace::tracer;
     use lib3h_protocol::data_types::EntryAspectData;
@@ -225,12 +225,7 @@ pub mod tests {
         }
 
         // put aspect list
-        match append_aspect_list_to_entry(
-            &log_context,
-            &space,
-            &entry_address,
-            &aspect_list
-        ) {
+        match append_aspect_list_to_entry(&log_context, &space, &entry_address, &aspect_list) {
             Ok(_) => tracer(&log_context, "append_aspect_list_to_entry Ok"),
             Err(err) => panic!("{:?}", err),
         };
@@ -305,13 +300,7 @@ pub mod tests {
             assert!(items.len() == 0);
         }
 
-        append_aspect_list_to_entry(
-            &log_context,
-            &space,
-            &entry_address,
-            &aspect_list,
-        )
-        .unwrap();
+        append_aspect_list_to_entry(&log_context, &space, &entry_address, &aspect_list).unwrap();
 
         let (items, _) = scan_aspects(&log_context, &space, None)
             .unwrap_or_else(|err| panic!("error while scanning: {:?}", err));

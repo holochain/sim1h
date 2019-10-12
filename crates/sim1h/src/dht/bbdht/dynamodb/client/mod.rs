@@ -1,6 +1,6 @@
+pub mod connection;
 pub mod fixture;
 pub mod local;
-pub mod connection;
 
 use dynomite::dynamodb::DynamoDbClient;
 use dynomite::retry::Policy;

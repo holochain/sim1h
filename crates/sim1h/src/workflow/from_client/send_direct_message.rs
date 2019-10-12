@@ -1,10 +1,10 @@
 use crate::dht::bbdht::dynamodb::api::agent::inbox::send_to_agent_inbox;
+use crate::dht::bbdht::dynamodb::api::agent::inbox::FromAddress;
+use crate::dht::bbdht::dynamodb::api::agent::inbox::ToAddress;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::space::Space;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use crate::dht::bbdht::dynamodb::api::agent::inbox::FromAddress;
-use crate::dht::bbdht::dynamodb::api::agent::inbox::ToAddress;
 use lib3h_protocol::data_types::DirectMessageData;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
 

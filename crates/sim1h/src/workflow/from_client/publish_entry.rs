@@ -1,10 +1,10 @@
 use crate::dht::bbdht::dynamodb::api::aspect::write::append_aspect_list_to_entry;
 use crate::dht::bbdht::error::BbDhtResult;
+use crate::entry::EntryAddress;
 use crate::space::Space;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use lib3h_protocol::data_types::ProvidedEntryData;
-use crate::entry::EntryAddress;
 
 /// MVP
 /// append list of aspect addresses to entry address
@@ -30,14 +30,14 @@ pub fn publish_entry(
 #[cfg(test)]
 pub mod tests {
 
+    use crate::agent::fixture::agent_address_fresh;
     use crate::entry::fixture::entry_address_fresh;
+    use crate::space::fixture::space_bad;
+    use crate::space::fixture::space_fresh;
     use crate::trace::tracer;
     use crate::workflow::from_client::fixture::provided_entry_data_fresh;
     use crate::workflow::from_client::publish_entry::publish_entry;
     use crate::workflow::state::Sim1hState;
-    use crate::space::fixture::space_bad;
-    use crate::space::fixture::space_fresh;
-    use crate::agent::fixture::agent_address_fresh;
 
     #[test]
     fn publish_entry_test() {

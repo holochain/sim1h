@@ -1,6 +1,6 @@
+use crate::dht::bbdht::dynamodb::client::local::local_client;
 use crate::dht::bbdht::dynamodb::client::Client;
 use crate::dht::bbdht::dynamodb::schema::TableName;
-use crate::dht::bbdht::dynamodb::client::local::local_client;
 
 #[derive(Clone)]
 pub struct Connection {
@@ -12,11 +12,10 @@ impl Default for Connection {
     fn default() -> Self {
         Connection {
             client: local_client(),
-            table_name: TableName::default()
+            table_name: TableName::default(),
         }
     }
 }
-
 
 impl Connection {
     pub fn client(&self) -> &Client {

@@ -18,10 +18,10 @@ pub fn bootstrap(log_context: &LogContext, space: &Space) -> BbDhtResult<ClientT
 pub mod tests {
 
     use super::*;
-    use crate::trace::tracer;
-    use crate::space::fixture::space_fresh;
-    use crate::workflow::from_client::bootstrap::bootstrap;
     use crate::space::fixture::space_bad;
+    use crate::space::fixture::space_fresh;
+    use crate::trace::tracer;
+    use crate::workflow::from_client::bootstrap::bootstrap;
 
     #[test]
     fn bootstrap_test() {

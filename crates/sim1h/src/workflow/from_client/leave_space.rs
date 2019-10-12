@@ -14,8 +14,8 @@ pub fn leave_space(log_context: &LogContext, _space: &Space) -> BbDhtResult<Clie
 #[cfg(test)]
 pub mod tests {
 
-    use crate::trace::tracer;
     use crate::space::fixture::space_fresh;
+    use crate::trace::tracer;
     use crate::workflow::from_client::leave_space::leave_space;
     use lib3h_protocol::protocol::ClientToLib3hResponse;
 

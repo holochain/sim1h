@@ -72,6 +72,7 @@ impl Sim1hState {
 #[cfg(test)]
 pub mod tests {
 
+    use crate::agent::fixture::agent_address_fresh;
     use crate::aspect::entry_aspect_to_entry_aspect_data;
     use crate::aspect::fixture::content_aspect_fresh;
     use crate::aspect::fixture::deletion_aspect_fresh;
@@ -80,9 +81,8 @@ pub mod tests {
     use crate::aspect::fixture::link_remove_aspect_fresh;
     use crate::aspect::fixture::update_aspect_fresh;
     use crate::entry::fixture::entry_address_fresh;
-    use crate::agent::fixture::agent_address_fresh;
-    use crate::space::fixture::space_fresh;
     use crate::entry::fixture::entry_fresh;
+    use crate::space::fixture::space_fresh;
     use crate::test::unordered_vec_compare;
     use crate::trace::tracer;
     use crate::workflow::from_client::fixture::provided_entry_data_fresh;

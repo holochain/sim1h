@@ -105,8 +105,8 @@ pub mod tests {
 
     use crate::dht::bbdht::dynamodb::api::item::fixture::content_fresh;
     use crate::dht::bbdht::dynamodb::api::item::write::ensure_content;
-    use crate::dht::bbdht::dynamodb::api::space::exist::space_exists;
     use crate::dht::bbdht::dynamodb::api::space::create::ensure_space;
+    use crate::dht::bbdht::dynamodb::api::space::exist::space_exists;
     use crate::space::fixture::space_fresh;
     use crate::trace::tracer;
 

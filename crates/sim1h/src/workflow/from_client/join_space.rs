@@ -31,10 +31,10 @@ impl Sim1hState {
 pub mod tests {
 
     use super::Sim1hState;
-    use crate::space::fixture::space_fresh;
-    use crate::space::fixture::space_bad;
-    use crate::trace::tracer;
     use crate::agent::fixture::agent_address_fresh;
+    use crate::space::fixture::space_bad;
+    use crate::space::fixture::space_fresh;
+    use crate::trace::tracer;
     use lib3h_protocol::protocol::ClientToLib3hResponse;
 
     #[test]

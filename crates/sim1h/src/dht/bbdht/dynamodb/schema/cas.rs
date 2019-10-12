@@ -69,7 +69,7 @@ pub mod tests {
         tracer(&log_context, "compare values");
         assert_eq!(
             KeySchemaElement {
-                attribute_name: ITEM_KEY.into(),
+                attribute_name: PARTITION_KEY.into(),
                 key_type: "HASH".into(),
             },
             partition_key_schema(),

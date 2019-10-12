@@ -40,8 +40,8 @@ pub mod tests {
 
     use crate::agent::fixture::agent_address_fresh;
     use crate::dht::bbdht::dynamodb::api::agent::write::touch_agent;
-    use crate::space::fixture::space_fresh;
     use crate::dht::bbdht::dynamodb::api::space::create::ensure_space;
+    use crate::space::fixture::space_fresh;
     use crate::trace::tracer;
 
     #[test]

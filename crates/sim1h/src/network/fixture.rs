@@ -1,9 +1,9 @@
+use crate::network::NetworkId;
+use crate::network::RequestId;
 use holochain_core_types::time::test_iso_8601;
 use holochain_core_types::time::Iso8601;
 use lib3h_protocol::data_types::Opaque;
 use uuid::Uuid;
-use crate::network::NetworkId;
-use crate::network::RequestId;
 
 pub fn request_id_fresh() -> RequestId {
     Uuid::new_v4().to_string().into()

@@ -1,4 +1,5 @@
 use crate::dht::bbdht::dynamodb::api::item::keyed_item;
+use crate::dht::bbdht::dynamodb::api::item::partition_key;
 use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
 use crate::dht::bbdht::dynamodb::schema::blob_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_ADDRESS_KEY;
@@ -20,9 +21,11 @@ use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::PutItemInput;
 use rusoto_dynamodb::UpdateItemInput;
 use std::collections::HashMap;
-use crate::dht::bbdht::dynamodb::api::item::partition_key;
 
-pub fn aspect_list_to_attribute(space: &Space, aspect_list: &Vec<EntryAspectData>) -> AttributeValue {
+pub fn aspect_list_to_attribute(
+    space: &Space,
+    aspect_list: &Vec<EntryAspectData>,
+) -> AttributeValue {
     string_set_attribute_value(
         aspect_list
             .iter()
@@ -130,17 +133,17 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::api::aspect::write::append_aspect_list_to_entry;
     use crate::dht::bbdht::dynamodb::api::aspect::write::aspect_list_to_attribute;
     use crate::dht::bbdht::dynamodb::api::aspect::write::put_aspect;
-    use crate::dht::bbdht::dynamodb::schema::cas::PARTITION_KEY;
     use crate::dht::bbdht::dynamodb::api::item::partition_key;
     use crate::dht::bbdht::dynamodb::api::item::read::get_item_from_space;
+    use crate::dht::bbdht::dynamodb::api::space::create::ensure_space;
+    use crate::dht::bbdht::dynamodb::api::space::exist::space_exists;
     use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_LIST_KEY;
+    use crate::dht::bbdht::dynamodb::schema::cas::PARTITION_KEY;
     use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
     use crate::entry::fixture::entry_address_fresh;
+    use crate::space::fixture::space_fresh;
     use crate::trace::tracer;
     use std::collections::HashMap;
-    use crate::space::fixture::space_fresh;
-    use crate::dht::bbdht::dynamodb::api::space::exist::space_exists;
-    use crate::dht::bbdht::dynamodb::api::space::create::ensure_space;
 
     #[test]
     fn put_aspect_test() {

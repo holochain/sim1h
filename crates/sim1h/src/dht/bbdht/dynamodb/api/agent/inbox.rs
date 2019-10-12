@@ -1,4 +1,6 @@
+use crate::agent::AgentAddress;
 use crate::dht::bbdht::dynamodb::api::item::keyed_item;
+use crate::dht::bbdht::dynamodb::api::item::partition_key;
 use crate::dht::bbdht::dynamodb::api::item::read::get_item_from_space;
 use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
 use crate::dht::bbdht::dynamodb::api::item::Item;
@@ -7,7 +9,6 @@ use crate::dht::bbdht::dynamodb::schema::cas::ITEM_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_CONTENT_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_FROM_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_TO_KEY;
-use crate::agent::AgentAddress;
 use crate::dht::bbdht::dynamodb::schema::cas::SEEN_MESSAGES_FOLDER;
 use crate::dht::bbdht::dynamodb::schema::cas::SPACE_KEY;
 use crate::dht::bbdht::dynamodb::schema::cas::{inbox_key, MESSAGE_IS_RESPONSE_KEY};
@@ -15,7 +16,6 @@ use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::string_set_attribute_value;
 use crate::dht::bbdht::dynamodb::schema::{blob_attribute_value, bool_attribute_value};
 use crate::dht::bbdht::error::BbDhtError;
-use crate::dht::bbdht::dynamodb::api::item::partition_key;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::network::RequestId;
 use crate::space::Space;
@@ -413,21 +413,21 @@ pub fn check_inbox(
 #[cfg(test)]
 pub mod tests {
 
+    use super::FromAddress;
+    use super::ToAddress;
     use crate::agent::fixture::agent_address_fresh;
     use crate::agent::fixture::message_content_fresh;
     use crate::dht::bbdht::dynamodb::api::agent::inbox::append_request_id_to_inbox;
     use crate::dht::bbdht::dynamodb::api::agent::inbox::check_inbox;
     use crate::dht::bbdht::dynamodb::api::agent::inbox::get_inbox_request_ids;
-    use crate::dht::bbdht::dynamodb::api::space::create::ensure_space;
     use crate::dht::bbdht::dynamodb::api::agent::inbox::put_inbox_message;
     use crate::dht::bbdht::dynamodb::api::agent::inbox::send_to_agent_inbox;
+    use crate::dht::bbdht::dynamodb::api::space::create::ensure_space;
     use crate::dht::bbdht::dynamodb::schema::cas::ALL_MESSAGES_FOLDER;
     use crate::dht::bbdht::dynamodb::schema::cas::SEEN_MESSAGES_FOLDER;
     use crate::network::fixture::request_id_fresh;
     use crate::space::fixture::space_fresh;
     use crate::trace::tracer;
-    use super::ToAddress;
-    use super::FromAddress;
     use lib3h_protocol::data_types::DirectMessageData;
 
     fn folders() -> Vec<String> {
@@ -456,7 +456,7 @@ pub mod tests {
                 &space,
                 &folder.into(),
                 &request_id,
-                &ToAddress::from(&to)
+                &ToAddress::from(&to),
             ) {
                 Ok(_) => tracer(&log_context, "append_request_id_to_inbox Ok"),
                 Err(err) => panic!("{:?}", err),

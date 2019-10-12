@@ -1,9 +1,9 @@
+use crate::agent::AgentAddress;
 use holochain_core_types::agent::AgentId;
 use holochain_core_types::signature::Provenance;
 use holochain_core_types::signature::Signature;
 use holochain_json_api::json::JsonString;
 use holochain_json_api::json::RawString;
-use crate::agent::AgentAddress;
 use uuid::Uuid;
 
 pub fn agent_address_fresh() -> AgentAddress {

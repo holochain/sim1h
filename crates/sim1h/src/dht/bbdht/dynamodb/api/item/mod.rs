@@ -1,8 +1,8 @@
 use crate::agent::AgentAddress;
 use crate::aspect::AspectAddress;
-use crate::entry::EntryAddress;
 use crate::dht::bbdht::dynamodb::schema::cas::PARTITION_KEY;
 use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
+use crate::entry::EntryAddress;
 use crate::network::RequestId;
 use crate::space::Space;
 use holochain_persistence_api::cas::content::Address;
@@ -110,17 +110,19 @@ impl From<&EntryAddress> for ItemKey {
 }
 
 pub fn partition_key(space: &Space, address: &String) -> String {
-    format!("{}:{}:{}", String::from(space.network_id()), String::from(space.space_address()), address)
+    format!(
+        "{}:{}:{}",
+        String::from(space.network_id()),
+        String::from(space.space_address()),
+        address
+    )
 }
 
 pub fn keyed_item(space: &Space, item_key: &ItemKey) -> Item {
     let mut item = HashMap::new();
     item.insert(
         String::from(PARTITION_KEY),
-        string_attribute_value(&partition_key(
-            &space,
-            &item_key.into(),
-        )),
+        string_attribute_value(&partition_key(&space, &item_key.into())),
     );
     item
 }

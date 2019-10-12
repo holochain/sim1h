@@ -133,25 +133,25 @@ pub mod test {
     use crate::dht::bbdht::dynamodb::api::table::create::create_table;
     use crate::dht::bbdht::dynamodb::api::table::create::ensure_table;
 
+    use crate::dht::bbdht::dynamodb::api::item::fixture::content_fresh;
+    use crate::dht::bbdht::dynamodb::api::item::write::content_to_item;
+    use crate::dht::bbdht::dynamodb::api::space::create::ensure_space;
+    use crate::dht::bbdht::dynamodb::api::space::exist::space_exists;
     use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
     use crate::dht::bbdht::dynamodb::api::table::describe::describe_table;
     use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
-    use crate::dht::bbdht::dynamodb::api::space::exist::space_exists;
     use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::space::fixture::space_fresh;
     use crate::dht::bbdht::dynamodb::schema::cas::attribute_definitions_cas;
     use crate::dht::bbdht::dynamodb::schema::cas::key_schema_cas;
-    use crate::dht::bbdht::dynamodb::api::item::fixture::content_fresh;
     use crate::dht::bbdht::dynamodb::schema::fixture::attribute_definitions_a;
     use crate::dht::bbdht::dynamodb::schema::fixture::key_schema_a;
-    use rusoto_dynamodb::TransactWriteItemsInput;
-    use rusoto_dynamodb::TransactWriteItem;
-    use crate::dht::bbdht::dynamodb::api::space::create::ensure_space;
-    use rusoto_dynamodb::Put;
-    use crate::dht::bbdht::dynamodb::api::item::write::content_to_item;
+    use crate::space::fixture::space_fresh;
     use crate::trace::tracer;
     use rusoto_dynamodb::DynamoDb;
+    use rusoto_dynamodb::Put;
+    use rusoto_dynamodb::TransactWriteItem;
+    use rusoto_dynamodb::TransactWriteItemsInput;
 
     #[test]
     fn create_table_test() {
@@ -274,7 +274,9 @@ pub mod test {
         assert!(space_exists(&log_context, &space).is_ok());
 
         // transact
-        space.connection().client()
+        space
+            .connection()
+            .client()
             .transact_write_items(TransactWriteItemsInput {
                 transact_items: vec![
                     TransactWriteItem {

@@ -24,11 +24,11 @@ pub fn agent_exists(
 #[cfg(test)]
 pub mod tests {
 
-    use crate::space::fixture::space_fresh;
-    use crate::dht::bbdht::dynamodb::api::space::create::ensure_space;
     use crate::agent::fixture::agent_address_fresh;
     use crate::dht::bbdht::dynamodb::api::agent::read::agent_exists;
     use crate::dht::bbdht::dynamodb::api::agent::write::touch_agent;
+    use crate::dht::bbdht::dynamodb::api::space::create::ensure_space;
+    use crate::space::fixture::space_fresh;
     use crate::trace::tracer;
 
     #[test]
