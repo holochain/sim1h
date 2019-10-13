@@ -6,7 +6,6 @@ let
  # point this to your local config.nix file for this project
  # example.config.nix shows and documents a lot of the options
  config = import ./config.nix;
-
  # START HOLONIX IMPORT BOILERPLATE
  holonix = import (
   if ! config.holonix.use-github
@@ -18,9 +17,17 @@ let
  ) { config = config; };
  # END HOLONIX IMPORT BOILERPLATE
 
+ # make dynamodb derivation available to downstream users of sim1h
+ dynamodb = (holonix.pkgs.callPackage ./dynamodb {
+   pkgs = holonix.pkgs;
+ })
+ ;
+
 in
 with holonix.pkgs;
 {
+ dynamodb = dynamodb;
+
  dev-shell = stdenv.mkDerivation (holonix.shell // {
   name = "dev-shell";
 
@@ -49,9 +56,7 @@ with holonix.pkgs;
     pkgs = holonix.pkgs;
    }).buildInputs
 
-   ++ (holonix.pkgs.callPackage ./dynamodb {
-    pkgs = holonix.pkgs;
-   }).buildInputs
+   ++ dynamodb.buildInputs
   ;
  });
 }
