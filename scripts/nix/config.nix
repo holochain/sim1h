@@ -38,7 +38,6 @@
 
  };
 
- # configure the release process
  release = {
   hook = {
    # sanity checks before deploying
@@ -50,26 +49,28 @@ hn-release-hook-preflight-manual
 
    # bump versions in the repo
    version = ''
-hn-release-hook-version-readme
+hn-release-hook-version-rust
+sim1h-release-hook-version
 '';
 
    # publish artifacts to the world
    publish = ''
-echo "All finished!!!"
+sim1h-release-hook-publish
 '';
   };
 
   # the commit hash that the release process should target
   # this will always be behind what ends up being deployed
   # the release process needs to add some commits for changelog etc.
-  commit = "04f2cef0cb26f26868ae3e4e1c3df281b0d8fc3e";
+  commit = "6374ad94f02033fa8387c636bfcfff4e5020f4c7";
 
   # the semver for prev and current releases
   # the previous version will be scanned/bumped by release scripts
   # the current version is what the release scripts bump *to*
   version = {
-   current = "0.0.1";
-   previous = "_._._";
+   current = "0.0.2";
+   # not used by version hooks in this repo
+   previous = "0.0.1";
   };
 
   github = {

@@ -5,7 +5,7 @@ let
 
  # point this to your local config.nix file for this project
  # example.config.nix shows and documents a lot of the options
- config = import ./config.nix;
+ config = import ./scripts/nix/config.nix;
  # START HOLONIX IMPORT BOILERPLATE
  holonix = import (
   if ! config.holonix.use-github
@@ -47,6 +47,12 @@ with holonix.pkgs;
   ]
    ++ holonix.shell.buildInputs
    ++ config.buildInputs
+
+   # release hooks
+   ++ (holonix.pkgs.callPackage ./scripts/nix/release {
+     pkgs = holonix.pkgs;
+     config = config;
+   }).buildInputs
 
    ++ (holonix.pkgs.callPackage ./.aws {
     pkgs = holonix.pkgs;
