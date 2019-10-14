@@ -48,6 +48,12 @@ with holonix.pkgs;
    ++ holonix.shell.buildInputs
    ++ config.buildInputs
 
+   # release hooks
+   ++ (holonix.pkgs.callPackage ./nix/release {
+     pkgs = holonix.pkgs;
+     config = config;
+   }).buildInputs
+
    ++ (holonix.pkgs.callPackage ./.aws {
     pkgs = holonix.pkgs;
    }).buildInputs

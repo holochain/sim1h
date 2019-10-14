@@ -14,14 +14,14 @@
 
    # can be any github ref
    # branch, tag, commit, etc.
-   ref = "v0.0.36";
+   ref = "v0.0.37";
 
    # the sha of what is downloaded from the above ref
    # note: even if you change the above ref it will not be redownloaded until
    #       the sha here changes (the sha is the cache key for downloads)
    # note: to get a new sha, get nix to try and download a bad sha
    #       it will complain and tell you the right sha
-   sha256 = "10wslqp5h8fypjp9f4bwqv0qgx9kzwk2092nkn3s3dcivlyjgav4";
+   sha256 = "1dhv61x6lvpxvrs6ij44piqswb62hgn0q9fdxv7fnhc1a9grqcr3";
 
    # the github owner of the holonix repo
    owner = "holochain";
@@ -38,7 +38,6 @@
 
  };
 
- # configure the release process
  release = {
   hook = {
    # sanity checks before deploying
@@ -51,25 +50,28 @@ hn-release-hook-preflight-manual
    # bump versions in the repo
    version = ''
 hn-release-hook-version-readme
+hn-release-hook-version-rust
+sim1h-release-hook-version
 '';
 
    # publish artifacts to the world
    publish = ''
-echo "All finished!!!"
+sim1h-release-hook-publish
 '';
   };
 
   # the commit hash that the release process should target
   # this will always be behind what ends up being deployed
   # the release process needs to add some commits for changelog etc.
-  commit = "7e302c99b4fec515adb4926943b170e107fbc610";
+  commit = "6374ad94f02033fa8387c636bfcfff4e5020f4c7";
 
   # the semver for prev and current releases
   # the previous version will be scanned/bumped by release scripts
   # the current version is what the release scripts bump *to*
   version = {
-   current = "0.0.1";
-   previous = "_._._";
+   current = "0.0.2";
+   # not used by version hooks in this repo
+   previous = "0.0.1";
   };
 
   github = {
