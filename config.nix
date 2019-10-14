@@ -49,6 +49,7 @@ hn-release-hook-preflight-manual
 
    # bump versions in the repo
    version = ''
+hn-release-hook-version-readme
 hn-release-hook-version-rust
 sim1h-release-hook-version
 '';
