@@ -1,4 +1,4 @@
-use crate::dht::bbdht::dynamodb::client::Client;
+use crate::space::Space;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use lib3h_protocol::data_types::DisconnectedData;
@@ -7,7 +7,7 @@ use lib3h_protocol::data_types::DisconnectedData;
 // no-op
 pub fn disconnected(
     log_context: &LogContext,
-    _client: &Client,
+    _space: &Space,
     disconnected_data: &DisconnectedData,
 ) {
     tracer(

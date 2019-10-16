@@ -1,3 +1,4 @@
+pub mod connection;
 pub mod fixture;
 pub mod local;
 

@@ -1,5 +1,6 @@
 use crate::dht::bbdht::dynamodb::api::table::describe::describe_table;
 use crate::dht::bbdht::dynamodb::client::Client;
+use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::dht::bbdht::error::BbDhtError;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
@@ -8,9 +9,9 @@ use crate::trace::LogContext;
 pub fn table_exists(
     log_context: &LogContext,
     client: &Client,
-    table_name: &str,
+    table_name: &TableName,
 ) -> BbDhtResult<bool> {
-    tracer(&log_context, &format!("table_exists {}", &table_name));
+    tracer(&log_context, &format!("table_exists {:?}", &table_name));
 
     let table_description_result = describe_table(log_context, client, table_name);
     match table_description_result {
@@ -34,7 +35,7 @@ pub fn table_exists(
 pub fn until_table_exists_or_not(
     log_context: &LogContext,
     client: &Client,
-    table_name: &str,
+    table_name: &TableName,
     exists: bool,
 ) {
     loop {
@@ -52,11 +53,11 @@ pub fn until_table_exists_or_not(
     }
 }
 
-pub fn until_table_exists(log_context: &LogContext, client: &Client, table_name: &str) {
+pub fn until_table_exists(log_context: &LogContext, client: &Client, table_name: &TableName) {
     until_table_exists_or_not(log_context, client, table_name, true);
 }
 
-pub fn until_table_not_exists(log_context: &LogContext, client: &Client, table_name: &str) {
+pub fn until_table_not_exists(log_context: &LogContext, client: &Client, table_name: &TableName) {
     until_table_exists_or_not(log_context, client, table_name, false);
 }
 

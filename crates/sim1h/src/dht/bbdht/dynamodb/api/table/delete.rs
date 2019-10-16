@@ -1,5 +1,6 @@
 use crate::dht::bbdht::dynamodb::api::table::exist::until_table_not_exists;
 use crate::dht::bbdht::dynamodb::client::Client;
+use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
@@ -9,11 +10,11 @@ use rusoto_dynamodb::DynamoDb;
 pub fn delete_table(
     log_context: &LogContext,
     client: &Client,
-    table_name: &str,
+    table_name: &TableName,
 ) -> BbDhtResult<()> {
     tracer(&log_context, "delete_table");
     let delete_table_input = DeleteTableInput {
-        table_name: table_name.to_string(),
+        table_name: table_name.into(),
     };
     client.delete_table(delete_table_input).sync()?;
     until_table_not_exists(log_context, client, table_name);

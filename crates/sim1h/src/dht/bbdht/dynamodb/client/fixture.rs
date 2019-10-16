@@ -1,6 +1,9 @@
 //! fixtures for test clients
 
+use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
 use crate::dht::bbdht::dynamodb::client::client;
+use crate::dht::bbdht::dynamodb::client::connection::Connection;
+use crate::dht::bbdht::dynamodb::client::local::local_client;
 use crate::dht::bbdht::dynamodb::client::Client;
 use rusoto_core::region::Region;
 
@@ -18,6 +21,14 @@ pub fn bad_region() -> Region {
 
 pub fn bad_client() -> Client {
     client(bad_region())
+}
+
+pub fn local_connection_fresh() -> Connection {
+    Connection::new(&local_client(), &table_name_fresh())
+}
+
+pub fn connection_bad() -> Connection {
+    Connection::new(&bad_client(), &table_name_fresh())
 }
 
 #[cfg(test)]

@@ -1,16 +1,11 @@
-use crate::dht::bbdht::dynamodb::client::Client;
 use crate::dht::bbdht::error::BbDhtResult;
+use crate::space::Space;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use lib3h_protocol::data_types::SpaceData;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
 
 /// no-op
-pub fn leave_space(
-    log_context: &LogContext,
-    _client: &Client,
-    _leave_space_data: &SpaceData,
-) -> BbDhtResult<ClientToLib3hResponse> {
+pub fn leave_space(log_context: &LogContext, _space: &Space) -> BbDhtResult<ClientToLib3hResponse> {
     tracer(&log_context, "leave_space");
     // leave space is a no-op in a simulation
     Ok(ClientToLib3hResponse::LeaveSpaceResult)
@@ -19,8 +14,7 @@ pub fn leave_space(
 #[cfg(test)]
 pub mod tests {
 
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::space::fixture::space_data_fresh;
+    use crate::space::fixture::space_fresh;
     use crate::trace::tracer;
     use crate::workflow::from_client::leave_space::leave_space;
     use lib3h_protocol::protocol::ClientToLib3hResponse;
@@ -30,11 +24,10 @@ pub mod tests {
         let log_context = "leave_space_test";
 
         tracer(&log_context, "fixtures");
-        let local_client = local_client();
-        let space_data = space_data_fresh();
+        let space = space_fresh();
 
         tracer(&log_context, "check response");
-        match leave_space(&log_context, &local_client, &space_data) {
+        match leave_space(&log_context, &space) {
             Ok(ClientToLib3hResponse::LeaveSpaceResult) => {
                 tracer(&log_context, "👌");
             }

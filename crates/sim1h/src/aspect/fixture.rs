@@ -17,7 +17,7 @@ use uuid::Uuid;
 pub fn link_add_aspect_fresh(entry: &Entry) -> EntryAspect {
     let link_data = LinkData::new_add(
         &entry.address(),
-        &entry_address_fresh(),
+        &entry_address_fresh().into(),
         &link_tag_fresh(),
         &link_type_fresh(),
         chain_header_fresh(&entry_fresh()),
@@ -29,7 +29,7 @@ pub fn link_add_aspect_fresh(entry: &Entry) -> EntryAspect {
 pub fn link_remove_aspect_fresh(entry: &Entry) -> EntryAspect {
     let link_data = LinkData::new_delete(
         &entry.address(),
-        &entry_address_fresh(),
+        &entry_address_fresh().into(),
         &link_tag_fresh(),
         &link_type_fresh(),
         chain_header_fresh(&entry_fresh()),

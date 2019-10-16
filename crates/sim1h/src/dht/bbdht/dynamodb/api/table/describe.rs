@@ -1,4 +1,5 @@
 use crate::dht::bbdht::dynamodb::client::Client;
+use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::dht::bbdht::error::BbDhtError;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
@@ -10,12 +11,12 @@ use rusoto_dynamodb::TableDescription;
 pub fn describe_table(
     log_context: &LogContext,
     client: &Client,
-    table_name: &str,
+    table_name: &TableName,
 ) -> BbDhtResult<TableDescription> {
-    tracer(&log_context, &format!("describe_table {}", &table_name));
+    tracer(&log_context, &format!("describe_table {:?}", &table_name));
     match client
         .describe_table(DescribeTableInput {
-            table_name: table_name.to_string(),
+            table_name: table_name.into(),
         })
         .sync()?
         .table

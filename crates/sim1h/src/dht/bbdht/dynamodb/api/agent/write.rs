@@ -1,41 +1,35 @@
+use crate::agent::AgentAddress;
+use crate::dht::bbdht::dynamodb::api::item::keyed_item;
 use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
-use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
-use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::dht::bbdht::error::BbDhtResult;
+use crate::space::Space;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use holochain_persistence_api::cas::content::Address;
 use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::PutItemInput;
-use std::collections::HashMap;
 
 pub fn touch_agent(
     log_context: &LogContext,
-    client: &Client,
-    table_name: &TableName,
-    agent_id: &Address,
+    space: &Space,
+    agent_address: &AgentAddress,
 ) -> BbDhtResult<()> {
     tracer(&log_context, "touch_agent");
 
-    let mut item = HashMap::new();
-    item.insert(
-        String::from(ADDRESS_KEY),
-        string_attribute_value(&String::from(agent_id.to_owned())),
-    );
+    let item = keyed_item(space, &agent_address.into());
 
     if should_put_item_retry(
         log_context,
-        client
+        space
+            .connection()
+            .client()
             .put_item(PutItemInput {
-                table_name: table_name.to_string(),
+                table_name: space.connection().table_name().into(),
                 item: item,
                 ..Default::default()
             })
             .sync(),
     )? {
-        touch_agent(log_context, client, table_name, agent_id)
+        touch_agent(log_context, space, agent_address)
     } else {
         Ok(())
     }
@@ -44,12 +38,10 @@ pub fn touch_agent(
 #[cfg(test)]
 pub mod tests {
 
-    use crate::agent::fixture::agent_id_fresh;
+    use crate::agent::fixture::agent_address_fresh;
     use crate::dht::bbdht::dynamodb::api::agent::write::touch_agent;
-    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
-    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
-    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
+    use crate::dht::bbdht::dynamodb::api::space::create::ensure_space;
+    use crate::space::fixture::space_fresh;
     use crate::trace::tracer;
 
     #[test]
@@ -57,18 +49,14 @@ pub mod tests {
         let log_context = "touch_agent_test";
 
         tracer(&log_context, "fixtures");
-        let local_client = local_client();
-        let table_name = table_name_fresh();
-        let agent_id = agent_id_fresh();
+        let space = space_fresh();
+        let agent_id = agent_address_fresh();
 
         // ensure cas
-        assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
-
-        // cas exists
-        assert!(table_exists(&log_context, &local_client, &table_name).is_ok());
+        assert!(ensure_space(&log_context, &space).is_ok());
 
         // touch agent
-        assert!(touch_agent(&log_context, &local_client, &table_name, &agent_id).is_ok());
+        assert!(touch_agent(&log_context, &space, &agent_id).is_ok());
     }
 
 }
