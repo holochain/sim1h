@@ -7,10 +7,11 @@ use holochain_core_types::entry::Entry;
 use holochain_persistence_api::cas::content::Address;
 use holochain_persistence_api::cas::content::AddressableContent;
 use lib3h_protocol::data_types::EntryData;
+use lib3h_protocol::types::EntryHash;
 use uuid::Uuid;
 
-pub fn entry_address_fresh() -> Address {
-    Address::from(Uuid::new_v4().to_string())
+pub fn entry_hash_fresh() -> EntryHash {
+    EntryHash::from(Uuid::new_v4().to_string())
 }
 
 pub fn entry_fresh() -> Entry {
@@ -33,9 +34,9 @@ pub fn chain_header_fresh(entry: &Entry) -> ChainHeader {
     )
 }
 
-pub fn entry_data_fresh(entry_address: &Address) -> EntryData {
+pub fn entry_data_fresh(entry_hash: &EntryHash) -> EntryData {
     EntryData {
-        entry_address: entry_address.clone(),
+        entry_address: entry_hash.clone(),
         aspect_list: aspect_list_fresh(),
     }
 }

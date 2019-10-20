@@ -7,7 +7,10 @@ use lib3h_protocol::data_types::GetListData;
 use lib3h_protocol::data_types::StoreEntryAspectData;
 use lib3h_protocol::protocol::ClientToLib3hResponse;
 use lib3h_protocol::protocol::Lib3hToClient;
-use lib3h_protocol::Address;
+use lib3h_protocol::types::AgentPubKey;
+use lib3h_protocol::types::AspectHash;
+use lib3h_protocol::types::EntryHash;
+use lib3h_protocol::types::SpaceHash;
 use std::collections::hash_map::Entry::Occupied;
 use std::collections::hash_map::Entry::Vacant;
 use std::collections::HashMap;
@@ -15,7 +18,7 @@ use std::collections::HashSet;
 use std::time::Instant;
 use uuid::Uuid;
 
-pub type AspectAddressMap = HashMap<Address, HashSet<Address>>;
+pub type AspectAddressMap = HashMap<EntryHash, HashSet<AspectHash>>;
 type Sim1hResult<T> = Result<T, String>;
 
 const MIN_TOLERABLE_TICK_INTERVAL_MS: u128 = 80;
@@ -23,8 +26,8 @@ const MIN_TOLERABLE_TICK_INTERVAL_MS: u128 = 80;
 #[derive(Default)]
 pub struct Sim1hState {
     pub initialized: bool,
-    pub space_address: Address,
-    pub agent_id: Address,
+    pub space_hash: SpaceHash,
+    pub agent_id: AgentPubKey,
     pub client_request_outbox: Vec<Lib3hToClient>,
     pub client_response_outbox: Vec<ClientToLib3hResponse>,
     pub held_aspects: AspectAddressMap,
@@ -34,9 +37,9 @@ pub struct Sim1hState {
 }
 
 impl Sim1hState {
-    pub fn new(space_address: Address, agent_id: Address) -> Self {
+    pub fn new(space_hash: SpaceHash, agent_id: AgentPubKey) -> Self {
         Self {
-            space_address,
+            space_hash,
             agent_id,
             ..Self::default()
         }
@@ -49,12 +52,12 @@ impl Sim1hState {
     fn create_authoring_gossip_list_requests(&self) -> Vec<Lib3hToClient> {
         let mut requests = Vec::new();
         requests.push(Lib3hToClient::HandleGetAuthoringEntryList(GetListData {
-            space_address: self.space_address.clone().into(),
+            space_address: self.space_hash.clone().into(),
             provider_agent_id: self.agent_id.clone(),
             request_id: "".into(),
         }));
         requests.push(Lib3hToClient::HandleGetGossipingEntryList(GetListData {
-            space_address: self.space_address.clone().into(),
+            space_address: self.space_hash.clone().into(),
             provider_agent_id: self.agent_id.clone(),
             request_id: "".into(),
         }));
@@ -70,8 +73,8 @@ impl Sim1hState {
         match check_inbox(
             &log_context,
             client,
-            &self.space_address.to_string(),
-            &Address::from(self.agent_id.to_string()),
+            &self.space_hash.clone().into(),
+            &self.agent_id,
         ) {
             Ok(direct_messages) => direct_messages
                 .into_iter()
@@ -96,9 +99,9 @@ impl Sim1hState {
         }
 
         let log_context = "create_store_requests";
-        let agent_id = self.agent_id.clone();
-        let space_address = self.space_address.clone();
-        let table_name = space_address.to_string();
+        let agent_id = self.agent_id.to_owned();
+        let space_hash = self.space_hash.to_owned();
+        let table_name = space_hash.clone().into();
         let (incoming, last_evaluated_key) = scan_aspects(
             log_context,
             client,
@@ -109,9 +112,9 @@ impl Sim1hState {
         self.last_evaluated_scan_key = last_evaluated_key;
         let mut messages = Vec::new();
 
-        for entry_address in incoming.keys() {
-            let aspects = incoming[entry_address].clone();
-            let diff = match self.held_aspects.entry(entry_address.clone()) {
+        for entry_hash in incoming.keys() {
+            let aspects = incoming[entry_hash].clone();
+            let diff = match self.held_aspects.entry(entry_hash.clone()) {
                 Vacant(e) => {
                     e.insert(aspects.clone());
                     aspects.into_iter().collect()
@@ -131,9 +134,9 @@ impl Sim1hState {
                     .map(|entry_aspect| {
                         Lib3hToClient::HandleStoreEntryAspect(StoreEntryAspectData {
                             request_id: Uuid::new_v4().to_string(), // XXX: well, is this so bad?
-                            space_address: space_address.clone().into(),
+                            space_address: space_hash.clone().into(),
                             provider_agent_id: agent_id.clone(), // TODO: is this OK?
-                            entry_address: entry_address.clone(),
+                            entry_address: entry_hash.clone(),
                             entry_aspect,
                         })
                     })

@@ -81,8 +81,8 @@ pub mod tests {
     use crate::aspect::fixture::link_remove_aspect_fresh;
     use crate::aspect::fixture::update_aspect_fresh;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::entry::fixture::entry_address_fresh;
     use crate::entry::fixture::entry_fresh;
+    use crate::entry::fixture::entry_hash_fresh;
     use crate::space::fixture::space_data_fresh;
     use crate::test::unordered_vec_compare;
     use crate::trace::tracer;
@@ -125,7 +125,7 @@ pub mod tests {
         tracer(&log_context, "fixtures");
         let local_client = local_client();
         let space_data = space_data_fresh();
-        let entry_address = entry_address_fresh();
+        let entry_address = entry_hash_fresh();
         let query_entry_data = query_entry_data_fresh(&space_data, &entry_address);
         let provided_entry_data = provided_entry_data_fresh(&space_data, &entry_address);
 

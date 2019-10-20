@@ -8,6 +8,7 @@ use lib3h_protocol::data_types::Opaque;
 use lib3h_protocol::data_types::ProvidedEntryData;
 use lib3h_protocol::data_types::QueryEntryData;
 use lib3h_protocol::data_types::SpaceData;
+use lib3h_protocol::types::EntryHash;
 
 pub fn query_fresh(_entry_address: &Address) -> Opaque {
     let query = NetworkQuery::GetEntry;
@@ -15,23 +16,23 @@ pub fn query_fresh(_entry_address: &Address) -> Opaque {
     json.to_bytes().into()
 }
 
-pub fn query_entry_data_fresh(space_data: &SpaceData, entry_address: &Address) -> QueryEntryData {
+pub fn query_entry_data_fresh(space_data: &SpaceData, entry_hash: &EntryHash) -> QueryEntryData {
     QueryEntryData {
         space_address: space_data.space_address.clone(),
-        entry_address: entry_address.clone(),
+        entry_address: entry_hash.clone(),
         request_id: request_id_fresh(),
         requester_agent_id: agent_id_fresh(),
-        query: query_fresh(&entry_address),
+        query: query_fresh(&entry_hash),
     }
 }
 
 pub fn provided_entry_data_fresh(
     space_data: &SpaceData,
-    entry_address: &Address,
+    entry_hash: &EntryHash,
 ) -> ProvidedEntryData {
     ProvidedEntryData {
         space_address: space_data.space_address.clone(),
         provider_agent_id: agent_id_fresh(),
-        entry: entry_data_fresh(entry_address),
+        entry: entry_data_fresh(entry_hash),
     }
 }

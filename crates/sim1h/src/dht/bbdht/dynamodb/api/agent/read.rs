@@ -5,13 +5,13 @@ use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use holochain_persistence_api::cas::content::Address;
+use lib3h_protocol::types::AgentPubKey;
 
 pub fn agent_exists(
     log_context: &LogContext,
     client: &Client,
     table_name: &TableName,
-    agent_id: &Address,
+    agent_id: &AgentPubKey,
 ) -> BbDhtResult<bool> {
     tracer(&log_context, "agent_exists");
 

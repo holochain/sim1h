@@ -13,6 +13,8 @@ use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
 use crate::workflow::state::AspectAddressMap;
+use lib3h_protocol::types::AspectHash;
+use lib3h_protocol::types::EntryHash;
 
 use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::ScanInput;
@@ -32,11 +34,11 @@ fn get_or_err<'a, V: Debug>(item: &'a HashMap<String, V>, key: &'a str) -> BbDht
 }
 
 fn try_aspect_from_item(item: Item) -> BbDhtResult<EntryAspectData> {
-    let aspect_address = match get_or_err(&item, ASPECT_ADDRESS_KEY)?.s.clone() {
-        Some(address) => Address::from(address),
+    let aspect_hash = match get_or_err(&item, ASPECT_ADDRESS_KEY)?.s.clone() {
+        Some(address) => AspectHash::from(address),
         None => {
             return Err(BbDhtError::MissingData(format!(
-                "Missing aspect_address: {:?}",
+                "Missing aspect_hash: {:?}",
                 item
             )))
         }
@@ -73,7 +75,7 @@ fn try_aspect_from_item(item: Item) -> BbDhtResult<EntryAspectData> {
     };
 
     Ok(EntryAspectData {
-        aspect_address: aspect_address,
+        aspect_address: aspect_hash,
         aspect: aspect,
         publish_ts: publish_ts,
         type_hint: type_hint,
@@ -167,11 +169,11 @@ pub fn scan_aspects(
                 .into_iter()
                 .filter_map(|mut item: Item| {
                     Some((
-                        Address::from(item.remove(ADDRESS_KEY)?.s?),
+                        EntryHash::from(item.remove(ADDRESS_KEY)?.s?),
                         item.remove(ASPECT_LIST_KEY)?
                             .ss?
                             .into_iter()
-                            .map(Address::from)
+                            .map(AspectHash::from)
                             .collect(),
                     ))
                 })
@@ -198,10 +200,11 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
     use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::entry::fixture::entry_address_fresh;
+    use crate::entry::fixture::entry_hash_fresh;
     use crate::test::unordered_vec_compare;
     use crate::trace::tracer;
     use lib3h_protocol::data_types::EntryAspectData;
+    use lib3h_protocol::types::AspectHash;
 
     #[test]
     fn get_entry_aspects_test() {
@@ -210,7 +213,7 @@ pub mod tests {
         tracer(&log_context, "fixtures");
         let local_client = local_client();
         let table_name = table_name_fresh();
-        let entry_address = entry_address_fresh();
+        let entry_address = entry_hash_fresh();
         let aspect_list = aspect_list_fresh();
 
         // ensure cas
@@ -301,9 +304,9 @@ pub mod tests {
         tracer(&log_context, "fixtures");
         let local_client = local_client();
         let table_name = table_name_fresh();
-        let entry_address = entry_address_fresh();
+        let entry_address = entry_hash_fresh();
         let aspect_list = aspect_list_fresh();
-        let aspect_addresses = aspect_list
+        let aspect_hashes: Vec<AspectHash> = aspect_list
             .iter()
             .map(|a| a.aspect_address.clone())
             .collect();
@@ -331,7 +334,7 @@ pub mod tests {
         assert!(items.len() == 1);
         assert!(unordered_vec_compare(
             items[&entry_address].clone().into_iter().collect(),
-            aspect_addresses
+            aspect_hashes
         ));
     }
 }
