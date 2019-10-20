@@ -32,7 +32,7 @@ pub mod tests {
 
     use crate::dht::bbdht::dynamodb::client::fixture::bad_client;
     use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::entry::fixture::entry_address_fresh;
+    use crate::entry::fixture::entry_hash_fresh;
     use crate::space::fixture::space_data_fresh;
     use crate::trace::tracer;
     use crate::workflow::from_client::fixture::provided_entry_data_fresh;
@@ -46,7 +46,7 @@ pub mod tests {
         tracer(&log_context, "fixtures");
         let local_client = local_client();
         let space_data = space_data_fresh();
-        let entry_address = entry_address_fresh();
+        let entry_address = entry_hash_fresh();
         let provided_entry_data = provided_entry_data_fresh(&space_data, &entry_address);
 
         tracer(&log_context, "check response");
@@ -72,7 +72,7 @@ pub mod tests {
         tracer(&log_context, "fixtures");
         let local_client = local_client();
         let space_data = space_data_fresh();
-        let entry_address = entry_address_fresh();
+        let entry_address = entry_hash_fresh();
         let provided_entry_data = provided_entry_data_fresh(&space_data, &entry_address);
 
         tracer(&log_context, "check response");
@@ -94,7 +94,7 @@ pub mod tests {
         tracer(&log_context, "fixtures");
         let bad_client = bad_client();
         let space_data = space_data_fresh();
-        let entry_address = entry_address_fresh();
+        let entry_address = entry_hash_fresh();
         let provided_entry_data = provided_entry_data_fresh(&space_data, &entry_address);
 
         tracer(&log_context, "check response");

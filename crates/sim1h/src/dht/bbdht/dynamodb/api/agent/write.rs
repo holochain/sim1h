@@ -6,7 +6,7 @@ use crate::dht::bbdht::dynamodb::schema::TableName;
 use crate::dht::bbdht::error::BbDhtResult;
 use crate::trace::tracer;
 use crate::trace::LogContext;
-use holochain_persistence_api::cas::content::Address;
+use lib3h_protocol::types::AgentPubKey;
 use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::PutItemInput;
 use std::collections::HashMap;
@@ -15,7 +15,7 @@ pub fn touch_agent(
     log_context: &LogContext,
     client: &Client,
     table_name: &TableName,
-    agent_id: &Address,
+    agent_id: &AgentPubKey,
 ) -> BbDhtResult<()> {
     tracer(&log_context, "touch_agent");
 

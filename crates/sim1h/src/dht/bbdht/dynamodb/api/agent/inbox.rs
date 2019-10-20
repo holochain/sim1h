@@ -20,6 +20,7 @@ use crate::trace::LogContext;
 use holochain_persistence_api::cas::content::Address;
 use holochain_persistence_api::hash::HashString;
 use lib3h_protocol::data_types::DirectMessageData;
+use lib3h_protocol::types::AgentPubKey;
 use rusoto_dynamodb::DynamoDb;
 use rusoto_dynamodb::GetItemInput;
 use rusoto_dynamodb::PutItemInput;
@@ -331,7 +332,7 @@ pub fn check_inbox(
     log_context: &LogContext,
     client: &Client,
     table_name: &TableName,
-    to: &Address,
+    to: &AgentPubKey,
 ) -> BbDhtResult<Vec<(DirectMessageData, bool)>> {
     tracer(&log_context, "check_inbox");
 

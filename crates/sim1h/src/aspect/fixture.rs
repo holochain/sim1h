@@ -1,23 +1,23 @@
 use crate::agent::fixture::core_agent_id_fresh;
 use crate::entry::fixture::chain_header_fresh;
-use crate::entry::fixture::entry_address_fresh;
 use crate::entry::fixture::entry_fresh;
+use crate::entry::fixture::entry_hash_fresh;
 use crate::entry::fixture::link_tag_fresh;
 use crate::entry::fixture::link_type_fresh;
 use holochain_core_types::entry::Entry;
 use holochain_core_types::link::link_data::LinkData;
 use holochain_core_types::network::entry_aspect::EntryAspect;
 use holochain_json_api::json::JsonString;
-use holochain_persistence_api::cas::content::Address;
 use holochain_persistence_api::cas::content::AddressableContent;
 use lib3h_protocol::data_types::EntryAspectData;
 use lib3h_protocol::data_types::Opaque;
+use lib3h_protocol::types::AspectHash;
 use uuid::Uuid;
 
 pub fn link_add_aspect_fresh(entry: &Entry) -> EntryAspect {
     let link_data = LinkData::new_add(
         &entry.address(),
-        &entry_address_fresh(),
+        &entry_hash_fresh(),
         &link_tag_fresh(),
         &link_type_fresh(),
         chain_header_fresh(&entry_fresh()),
@@ -29,7 +29,7 @@ pub fn link_add_aspect_fresh(entry: &Entry) -> EntryAspect {
 pub fn link_remove_aspect_fresh(entry: &Entry) -> EntryAspect {
     let link_data = LinkData::new_delete(
         &entry.address(),
-        &entry_address_fresh(),
+        &entry_hash_fresh(),
         &link_tag_fresh(),
         &link_type_fresh(),
         chain_header_fresh(&entry_fresh()),
@@ -57,7 +57,7 @@ pub fn header_aspect_fresh(entry: &Entry) -> EntryAspect {
 
 pub fn entry_aspect_data_fresh() -> EntryAspectData {
     EntryAspectData {
-        aspect_address: aspect_address_fresh(),
+        aspect_address: aspect_hash_fresh(),
         type_hint: type_hint_fresh(),
         aspect: opaque_aspect_fresh(),
         publish_ts: publish_ts_fresh(),
@@ -78,8 +78,8 @@ pub fn opaque_aspect_fresh() -> Opaque {
     JsonString::from(content_aspect_fresh()).to_bytes().into()
 }
 
-pub fn aspect_address_fresh() -> Address {
-    Address::from(Uuid::new_v4().to_string())
+pub fn aspect_hash_fresh() -> AspectHash {
+    AspectHash::from(Uuid::new_v4().to_string())
 }
 
 pub fn type_hint_fresh() -> String {

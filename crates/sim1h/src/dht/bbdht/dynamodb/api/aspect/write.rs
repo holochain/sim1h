@@ -143,7 +143,7 @@ pub mod tests {
     use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
     use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_LIST_KEY;
     use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
-    use crate::entry::fixture::entry_address_fresh;
+    use crate::entry::fixture::entry_hash_fresh;
     use crate::trace::tracer;
     use std::collections::HashMap;
 
@@ -173,7 +173,7 @@ pub mod tests {
         tracer(&log_context, "fixtures");
         let local_client = local_client();
         let table_name = table_name_fresh();
-        let entry_address = entry_address_fresh();
+        let entry_address = entry_hash_fresh();
         let aspect_list = aspect_list_fresh();
 
         let mut expected = HashMap::new();
