@@ -19,9 +19,9 @@ There is no "global store" to audit to see what has been published.
 
 Which is great for scalability/decentralisation but problematic for:
 
-- Holochain Core devs trying to distinguishing a networking error from a core error
+- Holochain Core devs trying to distinguish a networking error from a core error
 - Conductor devs verifying the crossover between wasm and network workflows
-- Zome devs reviewing how data is published and recieved across nodes
+- Zome devs reviewing how data is published and received across nodes
 - Hardware (e.g. holoport) devs wanting to test OS level concerns decoupled from DHT network health etc.
 
 It's also nice to have another implementation of `Lib3hProtocol`.
@@ -50,11 +50,11 @@ Devs can open up the database with a GUI like [dynamodb-admin](https://github.co
 
 Currently wrapping dynamodb from AWS for the key/value store because:
 
-- has a cloud option to support nodes in different locations
-- has a local/self-install option for local development/CI/testing
-- has a 25GB free tier with no monthly fees
+- it has a cloud option to support nodes in different locations
+- it has a local/self-install option for local development/CI/testing
+- it has a 25 GB free tier with no monthly fees
 - it's pretty popular and does what you'd expect for basic key/value stuff
-- provides a stream client that shows an ordered history of all recent writes
+- it provides a stream client that shows an ordered history of all recent writes
 
 ## Implementation Details
 
@@ -64,7 +64,7 @@ All entry data published to the network is represented as "entry aspects".
 
 This includes:
 
-- Entry CRUD operations
+- Entry [CRUD operations](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete)
 - Link add/removal
 - Entry headers
 
@@ -113,11 +113,11 @@ locally in the `dynamodb` jar but is tricky on the managed AWS service.
 
 For the purposes of testing hApps with large numbers of "nodes" sim1h should
 scale well because Dynamodb itself is very scalable in terms of raw storage/read/write
-metrics (e.g. 25GB storage in the free tier).
+metrics (e.g. 25 GB storage in the free tier).
 
 There are some details to be aware of.
 
-String based attribute values are [limited to 400kb total size](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.String).
+String based attribute values are [limited to 400 KB total size](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.String).
 
 This means that agent inboxes and entry aspect lists will blow up at some point.
 
@@ -136,13 +136,13 @@ First person to blow up inboxes/links can implement a solution ;)
 
 Also note that [we are](https://github.com/holochain/sim1h/pull/24):
 
-- enabling strong consistency for all reads
+- enabling [strong consistency](https://en.wikipedia.org/wiki/Strong_consistency) for all reads
 - using dynamodb scans for entry aspects
 - avoiding write transactions
 - recursively brute forcing several failure modes for puts, such as rate limits
 - scaling a bunch of reads linearly with number of agents due to polling
 
-Some of these things could potentially be refactored to be more polite (e.g. exponential backoff for failures and avoiding scans)
+Some of these things could potentially be refactored to be more polite (e.g. [exponential backoff](https://en.wikipedia.org/wiki/Exponential_backoff) for failures and avoiding scans)
 and some are unlikely to change (e.g. the read consistency model).
 
 ## Security model
@@ -199,7 +199,7 @@ If you want to expose your local dynamodb instance over the internet, we suggest
 
 Ngrok is also included in the `sim1h` nix-shell.
 
-Please note that you must define `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables when running your conductor which are passed to [rusoto](https://github.com/rusoto/rusoto) (the underlying library we use to access dynamodb).  When running your own instance of dynamodb, these two values can be what ever you want, but they must be set.  Additionally in this case you can use the value of the `AWS_ACCESS_KEY_ID` to create completely different name-spaces for different conductor sets.
+Please note that you must define `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables when running your conductor which are passed to [rusoto](https://github.com/rusoto/rusoto) (the underlying library we use to access dynamodb).  When running your own instance of dynamodb, these two values can be whatever you want, but they must be set.  Additionally in this case you can use the value of the `AWS_ACCESS_KEY_ID` to create completely different name-spaces for different conductor sets.
 
 That's it!
 
