@@ -1,6 +1,6 @@
 [package]
 name = "sim1h"
-version = "0.0.4"
+version = "0.0.5"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 description = "A simulation of lib3h"
