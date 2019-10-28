@@ -63,15 +63,15 @@ sim1h-release-hook-publish
   # the commit hash that the release process should target
   # this will always be behind what ends up being deployed
   # the release process needs to add some commits for changelog etc.
-  commit = "7a16bbac2749d32b70455e676e8993d67b4f981a";
+  commit = "03dc763edd9add334e25a339b8a64abb58da92a9";
 
   # the semver for prev and current releases
   # the previous version will be scanned/bumped by release scripts
   # the current version is what the release scripts bump *to*
   version = {
-   current = "0.0.3";
+   current = "0.0.5";
    # not used by version hooks in this repo
-   previous = "0.0.2";
+   previous = "0.0.4";
   };
 
   github = {
