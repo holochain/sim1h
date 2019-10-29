@@ -8,6 +8,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
+- update to lib3h v0.0.21
+
 ### Deprecated
 
 ### Removed
